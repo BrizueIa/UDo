@@ -133,6 +133,10 @@ Build a high-performance, cross-platform desktop application (Linux primary, Win
   * Full "Whiteboard Note" type for visual brainstorming and diagrams.
   * Embedded "Sketch Block" within standard markdown notes for quick inline drawings.
   * Smooth curve smoothing, eraser, background grid toggle, and export to PNG.
+* **FR-18.1 (Unified Modern Block Sheet — Target Sprint 5):**
+  * Single fluid document canvas (Notion / Obsidian Live Preview style): eliminates static separation between media top attachments and body text.
+  * Inline mixed media: users can type a paragraph, insert an inline image, embed interactive task checkboxes, attach a freehand whiteboard canvas sketch, and continue with more text and rich links in a single continuous document flow.
+  * Zero-markdown friction: visual insertion controls (+ buttons / slash menu) rendering interactive components in place without requiring users to memorize raw markdown syntax or switch modes.
 
 ---
 

@@ -1,6 +1,49 @@
-export type ThemeId = 'tokyo-night' | 'catppuccin-mocha' | 'nord' | 'rose-pine' | 'oled' | 'catppuccin-latte';
+export type ThemeId =
+  | 'tokyo-night'
+  | 'default-dark'
+  | 'catppuccin-mocha'
+  | 'dracula'
+  | 'gruvbox'
+  | 'monokai'
+  | 'one-dark'
+  | 'solarized-dark'
+  | 'vesper'
+  | 'oled'
+  | 'nord'
+  | 'rose-pine'
+  | 'synthwave'
+  | 'default-light'
+  | 'catppuccin-latte'
+  | 'gruvbox-light'
+  | 'one-light'
+  | 'solarized-light'
+  | (string & {});
 
-export type AccentColor = 'purple' | 'blue' | 'emerald' | 'amber' | 'rose' | 'cyan';
+export interface ThemePreset {
+  id: ThemeId;
+  name: string;
+  category: 'dark' | 'light';
+  icon: string;
+  previewColors: [string, string, string];
+}
+
+export type AccentColor = 'default' | 'purple' | 'blue' | 'emerald' | 'amber' | 'rose' | 'cyan';
+
+export interface CustomThemeDefinition {
+  id: string;
+  name: string;
+  colors: {
+    bgBase: string;
+    bgSidebar: string;
+    bgColumn: string;
+    bgCard: string;
+    bgHover: string;
+    border: string;
+    textMain: string;
+    textMuted: string;
+    accent: string;
+  };
+}
 
 export type ViewFilter = 'all' | 'pending' | 'completed';
 

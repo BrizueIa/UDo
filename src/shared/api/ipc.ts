@@ -105,6 +105,23 @@ export const api = {
     return subject;
   },
 
+  async deleteSubject(subjectId: string): Promise<void> {
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('delete_subject', { id: subjectId });
+        return;
+      } catch (err) {
+        console.warn('Tauri invoke failed, using local storage fallback', err);
+      }
+    }
+    const state = getLocalState();
+    state.subjects = state.subjects.filter((s) => s.id !== subjectId);
+    state.folders = state.folders.filter((f) => f.subjectId !== subjectId);
+    state.notes = state.notes.filter((n) => n.subjectId !== subjectId);
+    saveLocalState(state);
+  },
+
   async saveFolder(folder: FolderItem): Promise<FolderItem> {
     if (isTauri) {
       try {
@@ -123,6 +140,22 @@ export const api = {
     }
     saveLocalState(state);
     return folder;
+  },
+
+  async deleteFolder(folderId: string): Promise<void> {
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('delete_folder', { id: folderId });
+        return;
+      } catch (err) {
+        console.warn('Tauri invoke failed, using local storage fallback', err);
+      }
+    }
+    const state = getLocalState();
+    state.folders = state.folders.filter((f) => f.id !== folderId);
+    state.notes = state.notes.filter((n) => n.folderId !== folderId);
+    saveLocalState(state);
   },
 
   async toggleWidgetMode(isMini: boolean): Promise<void> {
