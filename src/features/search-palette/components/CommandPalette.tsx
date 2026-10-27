@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next';
 
 interface Props {
   isOpen: boolean;
+  initialQuery?: string;
   notes: NoteItem[];
   subjects: SubjectItem[];
   folders: FolderItem[];
@@ -14,6 +15,7 @@ interface Props {
 
 export const CommandPalette: React.FC<Props> = ({
   isOpen,
+  initialQuery = '',
   notes,
   subjects,
   folders,
@@ -21,8 +23,15 @@ export const CommandPalette: React.FC<Props> = ({
   onSelectNote,
 }) => {
   const { t } = useTranslation();
-  const [query, setQuery] = useState('');
+  const [query, setQuery] = useState(initialQuery);
   const [selectedIndex, setSelectedIndex] = useState(0);
+
+  useEffect(() => {
+    if (isOpen) {
+      setQuery(initialQuery);
+      setSelectedIndex(0);
+    }
+  }, [isOpen, initialQuery]);
 
   useEffect(() => {
     setSelectedIndex(0);
