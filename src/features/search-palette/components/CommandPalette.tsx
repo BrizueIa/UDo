@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { NoteItem, SubjectItem, FolderItem } from '../../../shared/types';
-import { Search, Hash, FileText } from 'lucide-react';
+import { Search, Hash, FileText, CornerDownLeft, ArrowUpDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { api } from '../../../shared/api/ipc';
 
 interface Props {
   isOpen: boolean;
@@ -25,6 +26,7 @@ export const CommandPalette: React.FC<Props> = ({
   const { t } = useTranslation();
   const [query, setQuery] = useState(initialQuery);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [results, setResults] = useState<NoteItem[]>([]);
 
   useEffect(() => {
     if (isOpen) {
@@ -33,38 +35,60 @@ export const CommandPalette: React.FC<Props> = ({
     }
   }, [isOpen, initialQuery]);
 
+  // Query SQLite FTS5 index via api.searchNotes
   useEffect(() => {
-    setSelectedIndex(0);
-  }, [query]);
+    let isCancelled = false;
+    const trimmed = query.trim();
+
+    if (!trimmed) {
+      setResults(notes.slice(0, 10));
+      return;
+    }
+
+    api.searchNotes(trimmed).then((res) => {
+      if (!isCancelled) {
+        setResults(res);
+        setSelectedIndex(0);
+      }
+    });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [query, notes]);
 
   if (!isOpen) return null;
-
-  const filteredNotes = query.trim()
-    ? notes.filter((n) => {
-        const q = query.toLowerCase();
-        return (
-          n.title.toLowerCase().includes(q) ||
-          n.content.toLowerCase().includes(q) ||
-          n.tags.some((tag) => tag.toLowerCase().includes(q))
-        );
-      })
-    : notes.slice(0, 10);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       onClose();
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex((idx) => Math.min(filteredNotes.length - 1, idx + 1));
+      setSelectedIndex((idx) => Math.min(results.length - 1, idx + 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       setSelectedIndex((idx) => Math.max(0, idx - 1));
-    } else if (e.key === 'Enter' && filteredNotes[selectedIndex]) {
+    } else if (e.key === 'Enter' && results[selectedIndex]) {
       e.preventDefault();
-      const selected = filteredNotes[selectedIndex];
+      const selected = results[selectedIndex];
       onSelectNote(selected.id, selected.subjectId);
       onClose();
     }
+  };
+
+  // Helper to extract a context snippet if content matches
+  const getContentSnippet = (content: string, q: string) => {
+    if (!q) return null;
+    const lowerContent = content.toLowerCase();
+    const lowerQuery = q.toLowerCase();
+    const matchPos = lowerContent.indexOf(lowerQuery);
+    if (matchPos === -1) return null;
+
+    const start = Math.max(0, matchPos - 25);
+    const end = Math.min(content.length, matchPos + lowerQuery.length + 35);
+    const prefix = start > 0 ? '...' : '';
+    const suffix = end < content.length ? '...' : '';
+    return `${prefix}${content.substring(start, end).replace(/\n/g, ' ')}${suffix}`;
   };
 
   return (
@@ -95,15 +119,18 @@ export const CommandPalette: React.FC<Props> = ({
 
         {/* Results List */}
         <div className="max-h-80 overflow-y-auto p-2 space-y-1">
-          {filteredNotes.length === 0 ? (
+          {results.length === 0 ? (
             <div className="py-8 text-center text-xs text-theme-muted">
-              No matching notes found for "{query}"
+              {query.trim()
+                ? t('palette.noResults', { query })
+                : t('palette.noNotes')}
             </div>
           ) : (
-            filteredNotes.map((note, idx) => {
+            results.map((note, idx) => {
               const isSelected = idx === selectedIndex;
               const subject = subjects.find((s) => s.id === note.subjectId);
               const folder = folders.find((f) => f.id === note.folderId);
+              const snippet = getContentSnippet(note.content, query.trim());
 
               return (
                 <div
@@ -112,39 +139,65 @@ export const CommandPalette: React.FC<Props> = ({
                     onSelectNote(note.id, note.subjectId);
                     onClose();
                   }}
-                  className={`flex items-center justify-between px-3 py-2.5 rounded-xl cursor-pointer transition-colors ${
-                    isSelected ? 'bg-theme-card text-theme-text border border-theme-accent/40' : 'hover:bg-theme-hover/60 text-theme-muted'
+                  className={`flex flex-col space-y-1 px-3 py-2 rounded-xl cursor-pointer transition-colors ${
+                    isSelected
+                      ? 'bg-theme-card text-theme-text border border-theme-accent/40 shadow-xs'
+                      : 'hover:bg-theme-hover/60 text-theme-muted'
                   }`}
                 >
-                  <div className="flex items-center space-x-2.5 min-w-0">
-                    <FileText size={15} className="text-theme-accent flex-shrink-0" />
-                    <span className="text-xs font-medium text-theme-text truncate">
-                      {note.title}
-                    </span>
-                    {note.tags.length > 0 && (
-                      <span className="flex items-center space-x-1 text-[11px] text-theme-muted">
-                        <Hash size={11} />
-                        <span>{note.tags[0]}</span>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2.5 min-w-0">
+                      <FileText size={15} className="text-theme-accent flex-shrink-0" />
+                      <span className="text-xs font-medium text-theme-text truncate">
+                        {note.title || t('note.untitled', 'Untitled note')}
                       </span>
-                    )}
+                      {note.tags.length > 0 && (
+                        <span className="flex items-center space-x-0.5 text-[11px] text-theme-muted">
+                          <Hash size={11} />
+                          <span>{note.tags[0]}</span>
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center space-x-2 text-[11px] text-theme-muted flex-shrink-0">
+                      {subject && (
+                        <span className="flex items-center space-x-1">
+                          <span
+                            className="w-2 h-2 rounded-full"
+                            style={{ backgroundColor: subject.color }}
+                          />
+                          <span>{subject.name}</span>
+                        </span>
+                      )}
+                      {folder && <span>/ {folder.name}</span>}
+                    </div>
                   </div>
 
-                  <div className="flex items-center space-x-2 text-[11px] text-theme-muted">
-                    {subject && (
-                      <span className="flex items-center space-x-1">
-                        <span
-                          className="w-2 h-2 rounded-full"
-                          style={{ backgroundColor: subject.color }}
-                        />
-                        <span>{subject.name}</span>
-                      </span>
-                    )}
-                    {folder && <span>/ {folder.name}</span>}
-                  </div>
+                  {/* Context Preview of Matching Text (FR-05) */}
+                  {snippet && (
+                    <div className="pl-6 text-[11px] text-theme-muted/80 font-mono italic truncate">
+                      "{snippet}"
+                    </div>
+                  )}
                 </div>
               );
             })
           )}
+        </div>
+
+        {/* Footer Navigation Bar */}
+        <div className="px-3 py-2 bg-theme-column/60 border-t border-theme-border/60 flex items-center justify-between text-[11px] text-theme-muted">
+          <div className="flex items-center space-x-3">
+            <span className="flex items-center space-x-1">
+              <ArrowUpDown size={12} />
+              <span>{t('palette.navigate')}</span>
+            </span>
+            <span className="flex items-center space-x-1">
+              <CornerDownLeft size={12} />
+              <span>{t('palette.open')}</span>
+            </span>
+          </div>
+          <span>{t('palette.closeHint')}</span>
         </div>
       </div>
     </div>

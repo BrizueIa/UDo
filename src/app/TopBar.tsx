@@ -50,6 +50,20 @@ export const TopBar: React.FC<Props> = ({
   onToggleWidgetMode,
 }) => {
   const { t, i18n } = useTranslation();
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Global Ctrl + F listener to focus & select active category search bar (FR-06)
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const filterTabs = [
     { id: 'all', label: `${t('nav.filterAll')} (${totalCount})` },
@@ -58,7 +72,10 @@ export const TopBar: React.FC<Props> = ({
   ];
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
+    if (e.key === 'Escape') {
+      onSearchChange('');
+      searchInputRef.current?.blur();
+    } else if (e.key === 'Enter') {
       onOpenSearchPalette(searchQuery);
     }
   };
@@ -94,6 +111,7 @@ export const TopBar: React.FC<Props> = ({
             className="absolute left-3 text-theme-muted group-hover:text-theme-accent transition-colors pointer-events-none"
           />
           <input
+            ref={searchInputRef}
             type="text"
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
