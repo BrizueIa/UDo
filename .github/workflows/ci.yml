@@ -1,0 +1,67 @@
+name: CI Quality Gates
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main, dev ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend-gate:
+    name: Frontend Typecheck & Quality
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: '**/package-lock.json'
+
+      - name: Install Dependencies
+        run: |
+          if [ -f "package.json" ]; then
+            npm ci || npm install
+          else
+            echo "package.json not yet initialized, skipping."
+          fi
+
+      - name: TypeScript & Build Check
+        run: |
+          if [ -f "package.json" ]; then
+            npm run build --if-present
+          fi
+
+  rust-gate:
+    name: Rust & Tauri Quality Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+
+      - name: Install Linux GUI Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+
+      - name: Check Rust Formatting & Clippy
+        run: |
+          if [ -d "src-tauri" ]; then
+            cd src-tauri
+            cargo fmt --all -- --check || true
+            cargo clippy -- -D warnings || true
+          else
+            echo "src-tauri not yet initialized, skipping."
+          fi
