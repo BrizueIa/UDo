@@ -8,6 +8,11 @@ pub fn get_initial_data(db: State<'_, DatabaseManager>) -> Result<InitialData, S
 }
 
 #[tauri::command]
+pub fn search_notes(db: State<'_, DatabaseManager>, query: String) -> Result<Vec<NoteItem>, String> {
+    db.search_notes(&query).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn save_note(db: State<'_, DatabaseManager>, note: NoteItem) -> Result<NoteItem, String> {
     db.save_note(&note).map_err(|e| e.to_string())?;
     Ok(note)

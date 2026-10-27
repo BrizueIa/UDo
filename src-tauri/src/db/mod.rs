@@ -71,8 +71,28 @@ impl DatabaseManager {
             CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
                 title, content, tags_json, content='notes', content_rowid='rowid'
             );
+
+            CREATE TRIGGER IF NOT EXISTS notes_ai AFTER INSERT ON notes BEGIN
+                INSERT INTO notes_fts(rowid, title, content, tags_json)
+                VALUES (new.rowid, new.title, new.content, new.tags_json);
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS notes_ad AFTER DELETE ON notes BEGIN
+                INSERT INTO notes_fts(notes_fts, rowid, title, content, tags_json)
+                VALUES ('delete', old.rowid, old.title, old.content, old.tags_json);
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS notes_au AFTER UPDATE ON notes BEGIN
+                INSERT INTO notes_fts(notes_fts, rowid, title, content, tags_json)
+                VALUES ('delete', old.rowid, old.title, old.content, old.tags_json);
+                INSERT INTO notes_fts(rowid, title, content, tags_json)
+                VALUES (new.rowid, new.title, new.content, new.tags_json);
+            END;
             ",
         )?;
+
+        // Rebuild FTS index to guarantee existing notes are indexed
+        conn.execute("INSERT INTO notes_fts(notes_fts) VALUES('rebuild');", [])?;
 
         // Seed default sample data if newly created database
         let count: i64 = conn.query_row("SELECT count(*) FROM subjects", [], |r| r.get(0))?;
@@ -116,6 +136,35 @@ impl DatabaseManager {
         Ok(())
     }
 
+    fn map_note_row(row: &rusqlite::Row) -> Result<NoteItem> {
+        let is_comp_int: i32 = row.get(5)?;
+        let is_pin_int: i32 = row.get(6)?;
+        let tags_str: String = row.get(7)?;
+        let links_str: String = row.get(8)?;
+        let sketches_str: String = row.get(9)?;
+
+        let tags: Vec<String> = serde_json::from_str(&tags_str).unwrap_or_default();
+        let links: Vec<LinkItem> = serde_json::from_str(&links_str).unwrap_or_default();
+        let sketches: Vec<SketchItem> = serde_json::from_str(&sketches_str).unwrap_or_default();
+
+        Ok(NoteItem {
+            id: row.get(0)?,
+            folder_id: row.get(1)?,
+            subject_id: row.get(2)?,
+            title: row.get(3)?,
+            content: row.get(4)?,
+            is_completed: is_comp_int != 0,
+            is_pinned: is_pin_int != 0,
+            tags,
+            links,
+            sketches,
+            created_at: row.get(10)?,
+            updated_at: row.get(11)?,
+            due_date: row.get(12)?,
+            focus_minutes: row.get(13)?,
+        })
+    }
+
     pub fn get_initial_data(&self) -> Result<InitialData> {
         let conn = self.get_connection()?;
         
@@ -143,40 +192,86 @@ impl DatabaseManager {
         })?.collect::<Result<Vec<_>, _>>()?;
 
         let mut notes_stmt = conn.prepare("SELECT id, folder_id, subject_id, title, content, is_completed, is_pinned, tags_json, links_json, sketches_json, created_at, updated_at, due_date, focus_minutes FROM notes WHERE is_deleted = 0 ORDER BY is_pinned DESC, updated_at DESC")?;
-        let notes = notes_stmt.query_map([], |row| {
-            let is_comp_int: i32 = row.get(5)?;
-            let is_pin_int: i32 = row.get(6)?;
-            let tags_str: String = row.get(7)?;
-            let links_str: String = row.get(8)?;
-            let sketches_str: String = row.get(9)?;
-
-            let tags: Vec<String> = serde_json::from_str(&tags_str).unwrap_or_default();
-            let links: Vec<LinkItem> = serde_json::from_str(&links_str).unwrap_or_default();
-            let sketches: Vec<SketchItem> = serde_json::from_str(&sketches_str).unwrap_or_default();
-
-            Ok(NoteItem {
-                id: row.get(0)?,
-                folder_id: row.get(1)?,
-                subject_id: row.get(2)?,
-                title: row.get(3)?,
-                content: row.get(4)?,
-                is_completed: is_comp_int != 0,
-                is_pinned: is_pin_int != 0,
-                tags,
-                links,
-                sketches,
-                created_at: row.get(10)?,
-                updated_at: row.get(11)?,
-                due_date: row.get(12)?,
-                focus_minutes: row.get(13)?,
-            })
-        })?.collect::<Result<Vec<_>, _>>()?;
+        let notes = notes_stmt.query_map([], Self::map_note_row)?.collect::<Result<Vec<_>, _>>()?;
 
         Ok(InitialData {
             subjects,
             folders,
             notes,
         })
+    }
+
+    pub fn search_notes(&self, query: &str) -> Result<Vec<NoteItem>> {
+        let trimmed = query.trim();
+        if trimmed.is_empty() {
+            return Ok(Vec::new());
+        }
+
+        let conn = self.get_connection()?;
+
+        // Tokenize query for SQLite FTS5 prefix matching
+        let tokens: Vec<String> = trimmed
+            .split_whitespace()
+            .map(|token| {
+                token
+                    .chars()
+                    .filter(|c| c.is_alphanumeric() || *c == '_' || *c == '-')
+                    .collect::<String>()
+            })
+            .filter(|t| !t.is_empty())
+            .map(|t| format!("\"{}\"*", t.replace('"', "\"\"")))
+            .collect();
+
+        let fts_query = tokens.join(" ");
+
+        if !fts_query.is_empty() {
+            let fts_sql = "
+                SELECT notes.id, notes.folder_id, notes.subject_id, notes.title, notes.content,
+                       notes.is_completed, notes.is_pinned, notes.tags_json, notes.links_json,
+                       notes.sketches_json, notes.created_at, notes.updated_at, notes.due_date,
+                       notes.focus_minutes
+                FROM notes
+                JOIN notes_fts ON notes.rowid = notes_fts.rowid
+                WHERE notes.is_deleted = 0 AND notes_fts MATCH ?1
+                ORDER BY rank
+                LIMIT 50;
+            ";
+
+            if let Ok(mut stmt) = conn.prepare(fts_sql) {
+                let results = stmt.query_map(params![fts_query], Self::map_note_row);
+                if let Ok(mapped) = results {
+                    let notes: Result<Vec<NoteItem>, _> = mapped.collect();
+                    if let Ok(notes) = notes {
+                        if !notes.is_empty() {
+                            return Ok(notes);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Fallback to LIKE query across title, content and tags
+        let like_pattern = format!("%{}%", trimmed);
+        let mut stmt = conn.prepare(
+            "SELECT id, folder_id, subject_id, title, content,
+                    is_completed, is_pinned, tags_json, links_json,
+                    sketches_json, created_at, updated_at, due_date,
+                    focus_minutes
+             FROM notes
+             WHERE is_deleted = 0 AND (
+                 title LIKE ?1 OR
+                 content LIKE ?1 OR
+                 tags_json LIKE ?1
+             )
+             ORDER BY is_pinned DESC, updated_at DESC
+             LIMIT 50",
+        )?;
+
+        let notes = stmt
+            .query_map(params![like_pattern], Self::map_note_row)?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        Ok(notes)
     }
 
     pub fn save_note(&self, note: &NoteItem) -> Result<()> {

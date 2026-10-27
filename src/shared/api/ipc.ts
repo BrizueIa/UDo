@@ -50,6 +50,27 @@ export const api = {
     return getLocalState();
   },
 
+  async searchNotes(query: string): Promise<NoteItem[]> {
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        return await invoke<NoteItem[]>('search_notes', { query });
+      } catch (err) {
+        console.warn('Tauri search_notes failed, falling back to local search', err);
+      }
+    }
+    const state = getLocalState();
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return state.notes.filter((n) => {
+      return (
+        n.title.toLowerCase().includes(q) ||
+        n.content.toLowerCase().includes(q) ||
+        n.tags.some((tag) => tag.toLowerCase().includes(q))
+      );
+    });
+  },
+
   async saveNote(note: NoteItem): Promise<NoteItem> {
     if (isTauri) {
       try {
