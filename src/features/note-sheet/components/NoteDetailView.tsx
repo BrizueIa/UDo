@@ -1,57 +1,79 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NoteItem, LinkItem, SketchItem, FolderItem } from '../../../shared/types';
-import { formatRelativeTime } from '../../../shared/utils/formatTime';
 import { NoteActionRibbon } from './NoteActionRibbon';
 import { NoteAttachmentsDrawer } from './NoteAttachmentsDrawer';
 import { MarkdownSheetPreview } from './MarkdownSheetPreview';
-import {
-  Clock,
-  Tag,
-  Link as LinkIcon,
-  Image as ImageIcon,
-  Timer,
-  Plus,
-  Eye,
-  Edit3,
-  ListTodo,
-  Paperclip,
-} from 'lucide-react';
+import { NoteMetadataBar } from './NoteMetadataBar';
+import { NoteFindBar } from './NoteFindBar';
+import { NoteMediaBar } from './NoteMediaBar';
+import { NoteContentHeader } from './NoteContentHeader';
+import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 interface Props {
   note: NoteItem;
+  notes: NoteItem[];
   folderName: string;
   folders: FolderItem[];
+  activeTagFilter?: string | null;
   onUpdateNote: (note: NoteItem) => void;
   onDeleteNote: (id: string) => void;
+  onSelectNote: (noteId: string, subjectId: string) => void;
+  onCreateNoteWithTitle: (title: string) => void;
+  onSelectTagFilter: (tag: string) => void;
   onOpenSketchAnnotator: (sketch: SketchItem) => void;
   onOpenWhiteboard: () => void;
 }
 
 export const NoteDetailView: React.FC<Props> = ({
   note,
+  notes,
   folderName,
   folders,
+  activeTagFilter,
   onUpdateNote,
   onDeleteNote,
+  onSelectNote,
+  onCreateNoteWithTitle,
+  onSelectTagFilter,
   onOpenSketchAnnotator,
   onOpenWhiteboard,
 }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   // Inputs state
-  const [newTagInput, setNewTagInput] = useState('');
-  const [showTagInput, setShowTagInput] = useState(false);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
   const [isMediaDrawerOpen, setIsMediaDrawerOpen] = useState(true);
+
+  // In-Note Search (FR-07)
+  const [isFindBarOpen, setIsFindBarOpen] = useState(false);
+  const [findQuery, setFindQuery] = useState('');
+  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
+  const [totalMatches, setTotalMatches] = useState(0);
 
   // View Mode: 'preview' (Interactive checkboxes/markdown) vs 'edit' (Markdown source)
   const [viewMode, setViewMode] = useState<'preview' | 'edit'>('preview');
 
   // Textarea Ref for cursor preservation
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Listen for Ctrl+Shift+F (Find in note) and Ctrl+E (Markdown edit mode)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        setIsFindBarOpen(true);
+      } else if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'e') {
+        e.preventDefault();
+        setViewMode('edit');
+        setTimeout(() => textareaRef.current?.focus(), 50);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onUpdateNote({
@@ -93,7 +115,6 @@ export const NoteDetailView: React.FC<Props> = ({
     });
   };
 
-  // Insert a task checkbox without needing markdown knowledge
   const handleInsertTask = () => {
     const taskPrefix = '- [ ] ';
     let newContent = '';
@@ -170,18 +191,13 @@ export const NoteDetailView: React.FC<Props> = ({
     });
   };
 
-  const handleAddTag = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && newTagInput.trim()) {
-      e.preventDefault();
-      if (!note.tags.includes(newTagInput.trim())) {
-        onUpdateNote({
-          ...note,
-          tags: [...note.tags, newTagInput.trim()],
-          updatedAt: new Date().toISOString(),
-        });
-      }
-      setNewTagInput('');
-      setShowTagInput(false);
+  const handleAddTag = (tag: string) => {
+    if (!note.tags.includes(tag)) {
+      onUpdateNote({
+        ...note,
+        tags: [...note.tags, tag],
+        updatedAt: new Date().toISOString(),
+      });
     }
   };
 
@@ -197,7 +213,7 @@ export const NoteDetailView: React.FC<Props> = ({
 
   return (
     <div className="flex-1 bg-theme-base flex flex-col h-full overflow-y-auto">
-      {/* Top Action Ribbon Component */}
+      {/* Top Action Ribbon */}
       <NoteActionRibbon
         note={note}
         folderName={folderName}
@@ -210,187 +226,122 @@ export const NoteDetailView: React.FC<Props> = ({
 
       {/* Main Content Area */}
       <div className="max-w-4xl w-full mx-auto px-10 py-6 space-y-5">
-        {/* Title & Metadata */}
+        {/* Title & Find Bar Header */}
         <div className="space-y-3">
-          <input
-            type="text"
-            value={note.title}
-            onChange={handleTitleChange}
-            placeholder={t('note.titlePlaceholder')}
-            className={`w-full text-3xl font-bold bg-transparent outline-none border-b border-transparent focus:border-theme-accent/50 pb-1 transition-colors ${
-              note.isCompleted ? 'line-through text-theme-muted opacity-80' : 'text-theme-text'
-            }`}
-          />
-
-          {/* Metadata Row */}
-          <div className="flex flex-wrap items-center gap-3 text-xs text-theme-muted">
-            <span className="flex items-center space-x-1.5">
-              <Clock size={13} />
-              <span>
-                {t('note.modified')}: {formatRelativeTime(note.updatedAt, i18n.language)}
-              </span>
-            </span>
-
-            {/* Tags */}
-            <div className="flex items-center space-x-1.5">
-              <Tag size={13} className="text-theme-muted" />
-              {note.tags.map((tag) => (
-                <span
-                  key={tag}
-                  onClick={() => handleRemoveTag(tag)}
-                  className="px-2 py-0.5 rounded-md bg-theme-card text-theme-text hover:bg-red-500/20 hover:text-red-400 cursor-pointer transition-colors"
-                  title="Click to remove"
-                >
-                  #{tag}
-                </span>
-              ))}
-
-              {showTagInput ? (
-                <input
-                  type="text"
-                  value={newTagInput}
-                  onChange={(e) => setNewTagInput(e.target.value)}
-                  onKeyDown={handleAddTag}
-                  onBlur={() => setShowTagInput(false)}
-                  placeholder={t('note.tagPlaceholder')}
-                  autoFocus
-                  className="bg-theme-card px-2 py-0.5 rounded text-xs outline-none border border-theme-accent text-theme-text"
-                />
-              ) : (
+          <div className="flex items-center justify-between gap-4">
+            <input
+              type="text"
+              value={note.title}
+              onChange={handleTitleChange}
+              placeholder={t('note.titlePlaceholder')}
+              className={`w-full text-3xl font-bold bg-transparent outline-none border-b border-transparent focus:border-theme-accent/50 pb-1 transition-colors ${
+                note.isCompleted ? 'line-through text-theme-muted opacity-80' : 'text-theme-text'
+              }`}
+            />
+            {/* Find in Note Trigger & Toolbar (FR-07) */}
+            <div className="flex-shrink-0 flex items-center space-x-2">
+              <NoteFindBar
+                isOpen={isFindBarOpen}
+                findQuery={findQuery}
+                matchIndex={currentMatchIndex}
+                totalMatches={totalMatches}
+                onChangeQuery={(q) => {
+                  setFindQuery(q);
+                  setCurrentMatchIndex(0);
+                }}
+                onNextMatch={() => {
+                  if (totalMatches > 0) {
+                    setCurrentMatchIndex((prev) => (prev + 1) % totalMatches);
+                  }
+                }}
+                onPrevMatch={() => {
+                  if (totalMatches > 0) {
+                    setCurrentMatchIndex((prev) => (prev - 1 + totalMatches) % totalMatches);
+                  }
+                }}
+                onClose={() => {
+                  setIsFindBarOpen(false);
+                  setFindQuery('');
+                  setCurrentMatchIndex(0);
+                }}
+              />
+              {!isFindBarOpen && (
                 <button
-                  onClick={() => setShowTagInput(true)}
-                  className="p-0.5 rounded text-theme-muted hover:text-theme-text"
+                  type="button"
+                  onClick={() => setIsFindBarOpen(true)}
+                  className="p-1.5 rounded-lg text-theme-muted hover:text-theme-text hover:bg-theme-card border border-white/[0.05] transition-colors"
+                  title={t('note.findInNote')}
                 >
-                  <Plus size={13} />
+                  <Search size={15} />
                 </button>
               )}
             </div>
-
-            {/* Focus Sprint Badge */}
-            {note.focusMinutes && (
-              <span className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-theme-accent/15 text-theme-accent border border-theme-accent/30 font-mono">
-                <Timer size={12} />
-                <span>{note.focusMinutes} min</span>
-              </span>
-            )}
-
-            {/* Minimalist Attachments Pill */}
-            {totalMediaCount > 0 && (
-              <button
-                type="button"
-                onClick={() => setIsMediaDrawerOpen(!isMediaDrawerOpen)}
-                className={`flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs transition-all ${
-                  isMediaDrawerOpen
-                    ? 'bg-theme-accent/20 text-theme-accent border border-theme-accent/30 font-medium'
-                    : 'bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.06]'
-                }`}
-                title={isMediaDrawerOpen ? t('note.hideMedia') : t('note.showMedia')}
-              >
-                <Paperclip size={11} className={isMediaDrawerOpen ? 'text-theme-accent' : 'text-theme-muted'} />
-                <span>
-                  {totalMediaCount} {totalMediaCount === 1 ? 'adjunto' : 'adjuntos'}
-                </span>
-                <span className="text-[9px] opacity-70">
-                  {isMediaDrawerOpen ? '▲' : '▼'}
-                </span>
-              </button>
-            )}
           </div>
 
-          {/* Attachments Drawer Component */}
-          <NoteAttachmentsDrawer
-            links={note.links}
-            sketches={note.sketches}
-            isOpen={isMediaDrawerOpen}
-            showLinkInput={showLinkInput}
-            newLinkTitle={newLinkTitle}
-            newLinkUrl={newLinkUrl}
-            onSetNewLinkTitle={setNewLinkTitle}
-            onSetNewLinkUrl={setNewLinkUrl}
-            onAddLink={handleAddLink}
-            onCloseLinkInput={() => setShowLinkInput(false)}
-            onRemoveLink={handleRemoveLink}
-            onRemoveSketch={handleRemoveSketch}
-            onOpenSketchAnnotator={onOpenSketchAnnotator}
+          {/* Modular Metadata Row (FR-21) */}
+          <NoteMetadataBar
+            updatedAt={note.updatedAt}
+            tags={note.tags}
+            activeTagFilter={activeTagFilter}
+            onSelectTagFilter={onSelectTagFilter}
+            onRemoveTag={handleRemoveTag}
+            onAddTag={handleAddTag}
           />
         </div>
 
-        {/* Section: CONTENIDO DE LA HOJA (Quick Actions Toolbar + Markdown/Interactive View) */}
-        <div className="space-y-2.5 pt-1">
-          {/* Action Toolbar above content */}
-          <div className="flex items-center justify-between border-b border-theme-border/40 pb-2">
-            {/* Quick Insertion Tools for users who don't know markdown */}
-            <div className="flex items-center space-x-2">
-              <button
-                type="button"
-                onClick={handleInsertTask}
-                className="flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-theme-card hover:bg-theme-hover border border-white/[0.06] text-xs font-semibold text-theme-text transition-colors shadow-xs"
-                title="Insert task checkbox (- [ ])"
-              >
-                <ListTodo size={14} className="text-emerald-400" />
-                <span>+ {t('note.addTask')}</span>
-              </button>
+        {/* Media & Attachments Bar */}
+        <NoteMediaBar
+          isMediaDrawerOpen={isMediaDrawerOpen}
+          totalMediaCount={totalMediaCount}
+          onToggleMediaDrawer={() => setIsMediaDrawerOpen(!isMediaDrawerOpen)}
+          onToggleAddLink={() => setShowLinkInput(!showLinkInput)}
+          onOpenWhiteboard={onOpenWhiteboard}
+        />
 
-              <button
-                type="button"
-                onClick={onOpenWhiteboard}
-                className="flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-theme-card hover:bg-theme-hover border border-white/[0.06] text-xs font-semibold text-theme-text transition-colors shadow-xs"
-                title="Create a canvas sketch"
-              >
-                <ImageIcon size={13} className="text-pink-400" />
-                <span>+ {t('note.addSketch')}</span>
-              </button>
+        {/* Attachments Drawer */}
+        <NoteAttachmentsDrawer
+          isOpen={isMediaDrawerOpen}
+          links={note.links}
+          sketches={note.sketches}
+          showLinkInput={showLinkInput}
+          newLinkTitle={newLinkTitle}
+          newLinkUrl={newLinkUrl}
+          onSetNewLinkTitle={setNewLinkTitle}
+          onSetNewLinkUrl={setNewLinkUrl}
+          onAddLink={handleAddLink}
+          onCloseLinkInput={() => setShowLinkInput(false)}
+          onRemoveLink={handleRemoveLink}
+          onRemoveSketch={handleRemoveSketch}
+          onOpenSketchAnnotator={onOpenSketchAnnotator}
+        />
 
-              <button
-                type="button"
-                onClick={() => {
-                  setIsMediaDrawerOpen(true);
-                  setShowLinkInput(true);
-                }}
-                className="flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-theme-card hover:bg-theme-hover border border-white/[0.06] text-xs font-semibold text-theme-text transition-colors shadow-xs"
-                title={t('note.addLink')}
-              >
-                <LinkIcon size={13} className="text-blue-400" />
-                <span>+ {t('note.addLink')}</span>
-              </button>
-            </div>
+        {/* Sheet Content Section */}
+        <div className="space-y-4 pt-2">
+          {/* Section Header with Mode Switches */}
+          <NoteContentHeader
+            viewMode={viewMode}
+            onSetViewMode={(mode) => {
+              setViewMode(mode);
+              if (mode === 'edit') {
+                setTimeout(() => textareaRef.current?.focus(), 50);
+              }
+            }}
+            onInsertTask={handleInsertTask}
+          />
 
-            {/* Toggle View Mode: Interactive Preview vs Source Editor */}
-            <div className="flex items-center bg-theme-column/80 p-0.5 rounded-lg border border-white/[0.05] text-xs">
-              <button
-                type="button"
-                onClick={() => setViewMode('preview')}
-                className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-colors ${
-                  viewMode === 'preview'
-                    ? 'bg-theme-accent text-white shadow-sm font-semibold'
-                    : 'text-theme-muted hover:text-theme-text'
-                }`}
-              >
-                <Eye size={12} />
-                <span>{t('note.interactive')}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('edit')}
-                className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-colors ${
-                  viewMode === 'edit'
-                    ? 'bg-theme-accent text-white shadow-sm font-semibold'
-                    : 'text-theme-muted hover:text-theme-text'
-                }`}
-              >
-                <Edit3 size={12} />
-                <span>{t('note.markdown')}</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Markdown / Interactive Sheet Preview Component */}
+          {/* Markdown Sheet Preview with Wiki-Links & Match Highlighting (FR-07, FR-22) */}
           <MarkdownSheetPreview
             content={note.content}
+            notes={notes}
             viewMode={viewMode}
             textareaRef={textareaRef}
+            findQuery={findQuery}
+            currentMatchIndex={currentMatchIndex}
             onChangeContent={handleContentChange}
             onToggleCheckbox={handleToggleCheckbox}
+            onSelectNote={onSelectNote}
+            onCreateNoteWithTitle={onCreateNoteWithTitle}
+            onMatchCountCalculated={setTotalMatches}
           />
         </div>
       </div>

@@ -1,14 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import {
-  NoteItem,
-  SubjectItem,
-  FolderItem,
-  ViewFilter,
-  SketchItem,
-} from '../shared/types';
+import React, { useState } from 'react';
+import { ViewFilter, SketchItem } from '../shared/types';
 import { useThemeManager } from '../shared/hooks/useThemeManager';
-import { useKeyboardShortcuts } from '../shared/hooks/useKeyboardShortcuts';
-import { api } from '../shared/api/ipc';
+import { useWorkspaceState } from '../shared/hooks/useWorkspaceState';
+import { useKeyboardShortcuts, ColumnIndex } from '../shared/hooks/useKeyboardShortcuts';
 import { TopBar } from './TopBar';
 import { SubjectsSidebar } from '../features/subjects/components/SubjectsSidebar';
 import { FoldersList } from '../features/folders/components/FoldersList';
@@ -22,16 +16,39 @@ import { useTranslation } from 'react-i18next';
 export const App: React.FC = () => {
   const { t, i18n } = useTranslation();
 
-  // State
-  const [subjects, setSubjects] = useState<SubjectItem[]>([]);
-  const [folders, setFolders] = useState<FolderItem[]>([]);
-  const [notes, setNotes] = useState<NoteItem[]>([]);
+  // State slices
+  const {
+    subjects,
+    folders,
+    notes,
+    selectedSubjectId,
+    selectedNoteId,
+    activeTagFilter,
+    currentSubject,
+    currentSubjectFolders,
+    currentNote,
+    currentFolder,
+    setSelectedSubjectId,
+    setSelectedNoteId,
+    setActiveTagFilter,
+    handleUpdateNote,
+    handleToggleNoteComplete,
+    handleDeleteNote,
+    handleCreateNote,
+    handleAddFolder,
+    handleUpdateFolder,
+    handleDeleteFolder,
+    handleToggleFolderExpand,
+    handleAddSubject,
+    handleUpdateSubject,
+    handleDeleteSubject,
+    getSubjectNoteCount,
+  } = useWorkspaceState();
 
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
-  const [selectedNoteId, setSelectedNoteId] = useState<string>('');
   const [filter, setFilter] = useState<ViewFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchPaletteInitialQuery, setSearchPaletteInitialQuery] = useState<string>('');
+  const [activeColumn, setActiveColumn] = useState<ColumnIndex>(2);
 
   // Modals & Mode Toggles
   const [isWidgetMode, setIsWidgetMode] = useState(false);
@@ -51,164 +68,57 @@ export const App: React.FC = () => {
     handleDeleteCustomTheme,
   } = useThemeManager();
 
-  // Load initial data from Rust / LocalStorage
-  useEffect(() => {
-    api.getInitialData().then((data) => {
-      setSubjects(data.subjects);
-      setFolders(data.folders);
-      setNotes(data.notes);
-      if (data.subjects.length > 0) {
-        setSelectedSubjectId(data.subjects[0].id);
-      }
-      if (data.notes.length > 0) {
-        setSelectedNoteId(data.notes[0].id);
-      }
-    });
-  }, []);
-
-  // Handlers
-  const currentSubject = subjects.find((s) => s.id === selectedSubjectId);
-  const currentSubjectFolders = folders.filter((f) => f.subjectId === selectedSubjectId);
-  const currentNote = notes.find((n) => n.id === selectedNoteId);
-  const currentFolder = folders.find((f) => f.id === currentNote?.folderId);
-
-  const handleUpdateNote = (updatedNote: NoteItem) => {
-    setNotes((prev) => prev.map((n) => (n.id === updatedNote.id ? updatedNote : n)));
-    api.saveNote(updatedNote);
-  };
-
-  const handleToggleNoteComplete = (id: string) => {
-    setNotes((prev) =>
-      prev.map((n) => {
-        if (n.id === id) {
-          const updated = {
-            ...n,
-            isCompleted: !n.isCompleted,
-            updatedAt: new Date().toISOString(),
-          };
-          api.saveNote(updated);
-          return updated;
-        }
-        return n;
-      })
-    );
-  };
-
-  const handleDeleteNote = (id: string) => {
-    setNotes((prev) => prev.filter((n) => n.id !== id));
-    api.deleteNote(id);
-    if (selectedNoteId === id) {
-      const remaining = notes.filter((n) => n.id !== id);
-      setSelectedNoteId(remaining.length > 0 ? remaining[0].id : '');
-    }
-  };
-
-  const handleCreateNote = (targetFolderId?: string) => {
-    let folderId = targetFolderId;
-    let subjectId = selectedSubjectId;
-
-    if (!folderId) {
-      const defaultFolder = currentSubjectFolders[0] || folders[0];
-      if (defaultFolder) {
-        folderId = defaultFolder.id;
-        subjectId = defaultFolder.subjectId;
-      } else {
-        return;
-      }
-    }
-
-    const newNote: NoteItem = {
-      id: `note-${Date.now()}`,
-      folderId,
-      subjectId,
-      title: '',
-      content: '',
-      isCompleted: false,
-      isPinned: false,
-      tags: [],
-      links: [],
-      sketches: [],
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    setNotes((prev) => [newNote, ...prev]);
-    setSelectedNoteId(newNote.id);
-    api.saveNote(newNote);
-  };
-
-  const handleAddFolder = (name: string) => {
-    if (!selectedSubjectId) return;
-    const newFolder: FolderItem = {
-      id: `folder-${Date.now()}`,
-      subjectId: selectedSubjectId,
-      name,
-      isExpanded: true,
-      order: currentSubjectFolders.length,
-    };
-    setFolders((prev) => [...prev, newFolder]);
-    api.saveFolder(newFolder);
-  };
-
-  const handleUpdateFolder = (updatedFolder: FolderItem) => {
-    setFolders((prev) => prev.map((f) => (f.id === updatedFolder.id ? updatedFolder : f)));
-    api.saveFolder(updatedFolder);
-  };
-
-  const handleDeleteFolder = (id: string) => {
-    setFolders((prev) => prev.filter((f) => f.id !== id));
-    setNotes((prev) => prev.filter((n) => n.folderId !== id));
-    api.deleteFolder(id);
-  };
-
-  const handleToggleFolderExpand = (id: string) => {
-    setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id === id) {
-          const updated = { ...f, isExpanded: !f.isExpanded };
-          api.saveFolder(updated);
-          return updated;
-        }
-        return f;
-      })
-    );
-  };
-
-  const handleAddSubject = (name: string, color: string) => {
-    const newSubject: SubjectItem = {
-      id: `sub-${Date.now()}`,
-      name,
-      color,
-      order: subjects.length,
-    };
-    setSubjects((prev) => [...prev, newSubject]);
-    setSelectedSubjectId(newSubject.id);
-    api.saveSubject(newSubject);
-  };
-
-  const handleUpdateSubject = (updatedSubject: SubjectItem) => {
-    setSubjects((prev) => prev.map((s) => (s.id === updatedSubject.id ? updatedSubject : s)));
-    api.saveSubject(updatedSubject);
-  };
-
-  const handleDeleteSubject = (id: string) => {
-    setSubjects((prev) => prev.filter((s) => s.id !== id));
-    setFolders((prev) => prev.filter((f) => f.subjectId !== id));
-    setNotes((prev) => prev.filter((n) => n.subjectId !== id));
-    api.deleteSubject(id);
-
-    if (selectedSubjectId === id) {
-      const remaining = subjects.filter((s) => s.id !== id);
-      setSelectedSubjectId(remaining.length > 0 ? remaining[0].id : '');
-    }
-  };
-
   const handleOpenSearchPalette = (initialQuery?: string) => {
     setSearchPaletteInitialQuery(initialQuery || '');
     setIsSearchPaletteOpen(true);
   };
 
-  // Modular Keyboard Shortcuts Hook
+  // Keyboard vertical navigation (j/k or ArrowDown/ArrowUp) (FR-08)
+  const handleVerticalNavigate = (direction: 'up' | 'down') => {
+    if (activeColumn === 1) {
+      const curIdx = subjects.findIndex((s) => s.id === selectedSubjectId);
+      const nextIdx =
+        direction === 'down'
+          ? Math.min(subjects.length - 1, curIdx + 1)
+          : Math.max(0, curIdx - 1);
+      if (subjects[nextIdx]) {
+        setSelectedSubjectId(subjects[nextIdx].id);
+      }
+    } else if (activeColumn === 2) {
+      const visibleNotes = notes.filter((n) => {
+        if (!currentSubjectFolders.some((f) => f.id === n.folderId)) return false;
+        if (filter === 'pending' && n.isCompleted) return false;
+        if (filter === 'completed' && !n.isCompleted) return false;
+        if (activeTagFilter && !n.tags.includes(activeTagFilter)) return false;
+        return true;
+      });
+      const curIdx = visibleNotes.findIndex((n) => n.id === selectedNoteId);
+      const nextIdx =
+        direction === 'down'
+          ? Math.min(visibleNotes.length - 1, curIdx + 1)
+          : Math.max(0, curIdx - 1);
+      if (visibleNotes[nextIdx]) {
+        setSelectedNoteId(visibleNotes[nextIdx].id);
+      }
+    }
+  };
+
+  // Global Escape handler (FR-08)
+  const handleEscape = () => {
+    if (isSearchPaletteOpen) {
+      setIsSearchPaletteOpen(false);
+    } else if (isShortcutsModalOpen) {
+      setIsShortcutsModalOpen(false);
+    } else if (activeSketch) {
+      setActiveSketch(null);
+    } else if (activeTagFilter) {
+      setActiveTagFilter(null);
+    } else if (searchQuery) {
+      setSearchQuery('');
+    }
+  };
+
+  // Keyboard Shortcuts Hook (FR-08)
   useKeyboardShortcuts({
     onToggleSearchPalette: () => {
       setSearchPaletteInitialQuery(searchQuery);
@@ -217,17 +127,29 @@ export const App: React.FC = () => {
     onToggleWidgetMode: () => setIsWidgetMode((prev) => !prev),
     onToggleZenMode: () => setIsZenMode((prev) => !prev),
     onToggleShortcutsModal: () => setIsShortcutsModalOpen((prev) => !prev),
-    onCreateNote: handleCreateNote,
+    onCreateNote: () => {
+      handleCreateNote();
+      setActiveColumn(3);
+    },
+    onCreateFolder: () =>
+      handleAddFolder(`${t('folders.addFolder')} ${currentSubjectFolders.length + 1}`),
     onToggleCurrentNoteComplete: () => {
       if (selectedNoteId) {
         handleToggleNoteComplete(selectedNoteId);
       }
     },
+    onFocusMarkdownEditor: () => setActiveColumn(3),
+    onSetActiveColumn: setActiveColumn,
+    onCycleColumn: (direction) => {
+      setActiveColumn((prev) =>
+        direction === 'next'
+          ? ((prev % 3 + 1) as ColumnIndex)
+          : (((prev - 2 + 3) % 3 + 1) as ColumnIndex)
+      );
+    },
+    onNavigateVertical: handleVerticalNavigate,
+    onEscape: handleEscape,
   });
-
-  const getSubjectNoteCount = (subjectId: string) => {
-    return notes.filter((n) => n.subjectId === subjectId).length;
-  };
 
   // Filter Counts
   const pendingCount = notes.filter((n) => !n.isCompleted).length;
@@ -261,12 +183,16 @@ export const App: React.FC = () => {
 
       {/* Main 3-Column Workspace */}
       <main className="flex-1 flex overflow-hidden">
-        {/* Column 1: Subjects Sidebar (collapses in Zen Mode) */}
+        {/* Column 1: Subjects Sidebar */}
         {!isZenMode && (
           <SubjectsSidebar
             subjects={subjects}
             selectedSubjectId={selectedSubjectId}
-            onSelectSubject={setSelectedSubjectId}
+            isFocused={activeColumn === 1}
+            onSelectSubject={(id) => {
+              setSelectedSubjectId(id);
+              setActiveColumn(1);
+            }}
             onAddSubject={handleAddSubject}
             onUpdateSubject={handleUpdateSubject}
             onDeleteSubject={handleDeleteSubject}
@@ -274,7 +200,7 @@ export const App: React.FC = () => {
           />
         )}
 
-        {/* Column 2: Folders & Tasks List (collapses in Zen Mode) */}
+        {/* Column 2: Folders & Tasks List */}
         {!isZenMode && (
           <FoldersList
             currentSubject={currentSubject}
@@ -283,40 +209,67 @@ export const App: React.FC = () => {
             selectedNoteId={selectedNoteId}
             filter={filter}
             searchQuery={searchQuery}
-            onSelectNote={setSelectedNoteId}
+            activeTagFilter={activeTagFilter}
+            isFocused={activeColumn === 2}
+            onClearTagFilter={() => setActiveTagFilter(null)}
+            onSelectNote={(id) => {
+              setSelectedNoteId(id);
+              setActiveColumn(2);
+            }}
             onToggleNoteComplete={handleToggleNoteComplete}
             onToggleFolderExpand={handleToggleFolderExpand}
             onAddFolder={handleAddFolder}
             onUpdateFolder={handleUpdateFolder}
             onDeleteFolder={handleDeleteFolder}
-            onAddNote={handleCreateNote}
+            onAddNote={(folderId) => {
+              handleCreateNote(folderId);
+              setActiveColumn(3);
+            }}
           />
         )}
 
         {/* Column 3: Note Detail View */}
-        {currentNote ? (
-          <NoteDetailView
-            note={currentNote}
-            folderName={currentFolder?.name || 'Notes'}
-            folders={currentSubjectFolders}
-            onUpdateNote={handleUpdateNote}
-            onDeleteNote={handleDeleteNote}
-            onOpenSketchAnnotator={(sketch) => setActiveSketch(sketch)}
-            onOpenWhiteboard={() => {
-              const newSketch: SketchItem = {
-                id: `sketch-${Date.now()}`,
-                title: 'New Canvas Drawing',
-                dataUrl: '',
-                createdAt: new Date().toISOString(),
-              };
-              setActiveSketch(newSketch);
-            }}
-          />
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-sm text-theme-muted">
-            {t('folders.empty')}
-          </div>
-        )}
+        <div
+          onClick={() => setActiveColumn(3)}
+          className={`flex-1 flex overflow-hidden transition-all ${
+            activeColumn === 3 ? 'ring-1 ring-inset ring-theme-accent/20' : ''
+          }`}
+        >
+          {currentNote ? (
+            <NoteDetailView
+              note={currentNote}
+              notes={notes}
+              folderName={currentFolder?.name || 'Notes'}
+              folders={currentSubjectFolders}
+              activeTagFilter={activeTagFilter}
+              onUpdateNote={handleUpdateNote}
+              onDeleteNote={handleDeleteNote}
+              onSelectNote={(noteId, subjectId) => {
+                setSelectedSubjectId(subjectId);
+                setSelectedNoteId(noteId);
+              }}
+              onCreateNoteWithTitle={(title) => {
+                handleCreateNote(undefined, title);
+                setActiveColumn(3);
+              }}
+              onSelectTagFilter={(tag) => setActiveTagFilter(tag)}
+              onOpenSketchAnnotator={(sketch) => setActiveSketch(sketch)}
+              onOpenWhiteboard={() => {
+                const newSketch: SketchItem = {
+                  id: `sketch-${Date.now()}`,
+                  title: 'New Canvas Drawing',
+                  dataUrl: '',
+                  createdAt: new Date().toISOString(),
+                };
+                setActiveSketch(newSketch);
+              }}
+            />
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-sm text-theme-muted">
+              {t('folders.empty')}
+            </div>
+          )}
+        </div>
       </main>
 
       {/* Always-on-Top Floating Widget Mode */}
@@ -324,26 +277,7 @@ export const App: React.FC = () => {
         <FloatingWidget
           notes={notes}
           onToggleComplete={handleToggleNoteComplete}
-          onQuickAddNote={(title) => {
-            const defaultFolder = currentSubjectFolders[0] || folders[0];
-            if (!defaultFolder) return;
-            const newNote: NoteItem = {
-              id: `note-${Date.now()}`,
-              folderId: defaultFolder.id,
-              subjectId: defaultFolder.subjectId,
-              title,
-              content: '',
-              isCompleted: false,
-              isPinned: false,
-              tags: [],
-              links: [],
-              sketches: [],
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            };
-            setNotes((prev) => [newNote, ...prev]);
-            api.saveNote(newNote);
-          }}
+          onQuickAddNote={(title) => handleCreateNote(undefined, title)}
           onRestoreFullApp={() => setIsWidgetMode(false)}
         />
       )}
@@ -366,7 +300,7 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* Command Palette (Ctrl+K) */}
+      {/* Command Palette (Ctrl+K or /) (FR-05) */}
       <CommandPalette
         isOpen={isSearchPaletteOpen}
         initialQuery={searchPaletteInitialQuery}
@@ -377,6 +311,7 @@ export const App: React.FC = () => {
         onSelectNote={(noteId, subjectId) => {
           setSelectedSubjectId(subjectId);
           setSelectedNoteId(noteId);
+          setActiveColumn(3);
         }}
       />
 

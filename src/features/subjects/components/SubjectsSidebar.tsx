@@ -18,6 +18,7 @@ const COLOR_PALETTE = [
 interface Props {
   subjects: SubjectItem[];
   selectedSubjectId: string;
+  isFocused?: boolean;
   onSelectSubject: (id: string) => void;
   onAddSubject: (name: string, color: string) => void;
   onUpdateSubject: (subject: SubjectItem) => void;
@@ -28,6 +29,7 @@ interface Props {
 export const SubjectsSidebar: React.FC<Props> = ({
   subjects,
   selectedSubjectId,
+  isFocused = false,
   onSelectSubject,
   onAddSubject,
   onUpdateSubject,
@@ -94,7 +96,11 @@ export const SubjectsSidebar: React.FC<Props> = ({
   };
 
   return (
-    <aside className="w-56 flex-shrink-0 bg-theme-sidebar border-r border-theme-border flex flex-col h-full select-none">
+    <aside
+      className={`w-56 flex-shrink-0 bg-theme-sidebar border-r border-theme-border flex flex-col h-full select-none transition-all ${
+        isFocused ? 'ring-1 ring-inset ring-theme-accent/40 shadow-sm' : ''
+      }`}
+    >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-theme-border/50">
         <span className="text-xs font-semibold tracking-wider text-theme-muted uppercase">
