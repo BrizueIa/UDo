@@ -4,9 +4,10 @@ import {
   SubjectItem,
   FolderItem,
   ViewFilter,
-  ThemeId,
   SketchItem,
 } from '../shared/types';
+import { useThemeManager } from '../shared/hooks/useThemeManager';
+import { useKeyboardShortcuts } from '../shared/hooks/useKeyboardShortcuts';
 import { api } from '../shared/api/ipc';
 import { TopBar } from './TopBar';
 import { SubjectsSidebar } from '../features/subjects/components/SubjectsSidebar';
@@ -19,7 +20,7 @@ import { ShortcutsModal } from '../shared/ui/ShortcutsModal';
 import { useTranslation } from 'react-i18next';
 
 export const App: React.FC = () => {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // State
   const [subjects, setSubjects] = useState<SubjectItem[]>([]);
@@ -30,6 +31,7 @@ export const App: React.FC = () => {
   const [selectedNoteId, setSelectedNoteId] = useState<string>('');
   const [filter, setFilter] = useState<ViewFilter>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchPaletteInitialQuery, setSearchPaletteInitialQuery] = useState<string>('');
 
   // Modals & Mode Toggles
   const [isWidgetMode, setIsWidgetMode] = useState(false);
@@ -38,25 +40,16 @@ export const App: React.FC = () => {
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [activeSketch, setActiveSketch] = useState<SketchItem | null>(null);
 
-  // Theme & Language
-  const [currentTheme, setCurrentTheme] = useState<ThemeId>(() => {
-    return (localStorage.getItem('udo_theme') as ThemeId) || 'tokyo-night';
-  });
-
-  const themes: ThemeId[] = [
-    'tokyo-night',
-    'catppuccin-mocha',
-    'nord',
-    'rose-pine',
-    'oled',
-    'catppuccin-latte',
-  ];
-
-  // Apply theme to DOM
-  useEffect(() => {
-    document.documentElement.setAttribute('data-theme', currentTheme);
-    localStorage.setItem('udo_theme', currentTheme);
-  }, [currentTheme]);
+  // Modular Theme Manager Hook
+  const {
+    currentTheme,
+    setCurrentTheme,
+    currentAccent,
+    setCurrentAccent,
+    customThemes,
+    handleImportCustomTheme,
+    handleDeleteCustomTheme,
+  } = useThemeManager();
 
   // Load initial data from Rust / LocalStorage
   useEffect(() => {
@@ -73,40 +66,6 @@ export const App: React.FC = () => {
     });
   }, []);
 
-  // Keyboard shortcut listener
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Don't trigger if typing in text inputs, unless Ctrl is held
-      const target = e.target as HTMLElement;
-      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
-
-      if (e.ctrlKey && e.key.toLowerCase() === 'k') {
-        e.preventDefault();
-        setIsSearchPaletteOpen((prev) => !prev);
-      } else if (e.altKey && e.key.toLowerCase() === 'w') {
-        e.preventDefault();
-        setIsWidgetMode((prev) => !prev);
-      } else if (e.key === 'F11') {
-        e.preventDefault();
-        setIsZenMode((prev) => !prev);
-      } else if (!isInput && e.key === '?') {
-        e.preventDefault();
-        setIsShortcutsModalOpen((prev) => !prev);
-      } else if (e.ctrlKey && e.key.toLowerCase() === 'n') {
-        e.preventDefault();
-        handleCreateNote();
-      } else if (e.ctrlKey && e.key === 'Enter') {
-        e.preventDefault();
-        if (selectedNoteId) {
-          handleToggleNoteComplete(selectedNoteId);
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [selectedNoteId, folders, selectedSubjectId]);
-
   // Handlers
   const currentSubject = subjects.find((s) => s.id === selectedSubjectId);
   const currentSubjectFolders = folders.filter((f) => f.subjectId === selectedSubjectId);
@@ -122,7 +81,11 @@ export const App: React.FC = () => {
     setNotes((prev) =>
       prev.map((n) => {
         if (n.id === id) {
-          const updated = { ...n, isCompleted: !n.isCompleted };
+          const updated = {
+            ...n,
+            isCompleted: !n.isCompleted,
+            updatedAt: new Date().toISOString(),
+          };
           api.saveNote(updated);
           return updated;
         }
@@ -131,15 +94,34 @@ export const App: React.FC = () => {
     );
   };
 
-  const handleCreateNote = (folderId?: string) => {
-    const targetFolderId = folderId || currentSubjectFolders[0]?.id;
-    if (!targetFolderId) return;
+  const handleDeleteNote = (id: string) => {
+    setNotes((prev) => prev.filter((n) => n.id !== id));
+    api.deleteNote(id);
+    if (selectedNoteId === id) {
+      const remaining = notes.filter((n) => n.id !== id);
+      setSelectedNoteId(remaining.length > 0 ? remaining[0].id : '');
+    }
+  };
+
+  const handleCreateNote = (targetFolderId?: string) => {
+    let folderId = targetFolderId;
+    let subjectId = selectedSubjectId;
+
+    if (!folderId) {
+      const defaultFolder = currentSubjectFolders[0] || folders[0];
+      if (defaultFolder) {
+        folderId = defaultFolder.id;
+        subjectId = defaultFolder.subjectId;
+      } else {
+        return;
+      }
+    }
 
     const newNote: NoteItem = {
       id: `note-${Date.now()}`,
-      folderId: targetFolderId,
-      subjectId: selectedSubjectId,
-      title: 'New Note',
+      folderId,
+      subjectId,
+      title: '',
       content: '',
       isCompleted: false,
       isPinned: false,
@@ -147,7 +129,7 @@ export const App: React.FC = () => {
       links: [],
       sketches: [],
       createdAt: new Date().toISOString(),
-      updatedAt: 'Just now',
+      updatedAt: new Date().toISOString(),
     };
 
     setNotes((prev) => [newNote, ...prev]);
@@ -155,19 +137,10 @@ export const App: React.FC = () => {
     api.saveNote(newNote);
   };
 
-  const handleDeleteNote = (id: string) => {
-    setNotes((prev) => prev.filter((n) => n.id !== id));
-    api.deleteNote(id);
-    if (selectedNoteId === id) {
-      const remaining = notes.filter((n) => n.id !== id);
-      setSelectedNoteId(remaining[0]?.id || '');
-    }
-  };
-
-  const handleAddFolder = () => {
-    const name = prompt('Folder name:') || 'New Folder';
+  const handleAddFolder = (name: string) => {
+    if (!selectedSubjectId) return;
     const newFolder: FolderItem = {
-      id: `fold-${Date.now()}`,
+      id: `folder-${Date.now()}`,
       subjectId: selectedSubjectId,
       name,
       isExpanded: true,
@@ -177,19 +150,35 @@ export const App: React.FC = () => {
     api.saveFolder(newFolder);
   };
 
-  const handleToggleFolderExpand = (folderId: string) => {
+  const handleUpdateFolder = (updatedFolder: FolderItem) => {
+    setFolders((prev) => prev.map((f) => (f.id === updatedFolder.id ? updatedFolder : f)));
+    api.saveFolder(updatedFolder);
+  };
+
+  const handleDeleteFolder = (id: string) => {
+    setFolders((prev) => prev.filter((f) => f.id !== id));
+    setNotes((prev) => prev.filter((n) => n.folderId !== id));
+    api.deleteFolder(id);
+  };
+
+  const handleToggleFolderExpand = (id: string) => {
     setFolders((prev) =>
-      prev.map((f) => (f.id === folderId ? { ...f, isExpanded: !f.isExpanded } : f))
+      prev.map((f) => {
+        if (f.id === id) {
+          const updated = { ...f, isExpanded: !f.isExpanded };
+          api.saveFolder(updated);
+          return updated;
+        }
+        return f;
+      })
     );
   };
 
-  const handleAddSubject = () => {
-    const name = prompt('Subject / Project name:') || 'New Project';
-    const colors = ['#f97316', '#10b981', '#6366f1', '#ec4899', '#3b82f6', '#eab308'];
+  const handleAddSubject = (name: string, color: string) => {
     const newSubject: SubjectItem = {
-      id: `subj-${Date.now()}`,
+      id: `sub-${Date.now()}`,
       name,
-      color: colors[subjects.length % colors.length],
+      color,
       order: subjects.length,
     };
     setSubjects((prev) => [...prev, newSubject]);
@@ -197,40 +186,75 @@ export const App: React.FC = () => {
     api.saveSubject(newSubject);
   };
 
-  const handleCycleTheme = () => {
-    const nextIdx = (themes.indexOf(currentTheme) + 1) % themes.length;
-    setCurrentTheme(themes[nextIdx]);
+  const handleUpdateSubject = (updatedSubject: SubjectItem) => {
+    setSubjects((prev) => prev.map((s) => (s.id === updatedSubject.id ? updatedSubject : s)));
+    api.saveSubject(updatedSubject);
   };
 
-  const handleCycleLanguage = () => {
-    const nextLang = i18n.language === 'en' ? 'es' : 'en';
-    i18n.changeLanguage(nextLang);
-    localStorage.setItem('udo_language', nextLang);
+  const handleDeleteSubject = (id: string) => {
+    setSubjects((prev) => prev.filter((s) => s.id !== id));
+    setFolders((prev) => prev.filter((f) => f.subjectId !== id));
+    setNotes((prev) => prev.filter((n) => n.subjectId !== id));
+    api.deleteSubject(id);
+
+    if (selectedSubjectId === id) {
+      const remaining = subjects.filter((s) => s.id !== id);
+      setSelectedSubjectId(remaining.length > 0 ? remaining[0].id : '');
+    }
   };
 
-  // Filtered notes by query or filter tab
+  const handleOpenSearchPalette = (initialQuery?: string) => {
+    setSearchPaletteInitialQuery(initialQuery || '');
+    setIsSearchPaletteOpen(true);
+  };
+
+  // Modular Keyboard Shortcuts Hook
+  useKeyboardShortcuts({
+    onToggleSearchPalette: () => {
+      setSearchPaletteInitialQuery(searchQuery);
+      setIsSearchPaletteOpen((prev) => !prev);
+    },
+    onToggleWidgetMode: () => setIsWidgetMode((prev) => !prev),
+    onToggleZenMode: () => setIsZenMode((prev) => !prev),
+    onToggleShortcutsModal: () => setIsShortcutsModalOpen((prev) => !prev),
+    onCreateNote: handleCreateNote,
+    onToggleCurrentNoteComplete: () => {
+      if (selectedNoteId) {
+        handleToggleNoteComplete(selectedNoteId);
+      }
+    },
+  });
+
   const getSubjectNoteCount = (subjectId: string) => {
-    return notes.filter((n) => n.subjectId === subjectId && !n.isCompleted).length;
+    return notes.filter((n) => n.subjectId === subjectId).length;
   };
 
+  // Filter Counts
   const pendingCount = notes.filter((n) => !n.isCompleted).length;
   const completedCount = notes.filter((n) => n.isCompleted).length;
+  const totalCount = notes.length;
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-theme-base text-theme-text font-sans">
-      {/* Top Header */}
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-theme-base text-theme-text font-sans antialiased">
+      {/* Frameless Window Top Navigation Bar */}
       <TopBar
         currentSubjectName={currentSubject?.name}
         searchQuery={searchQuery}
         filter={filter}
         pendingCount={pendingCount}
         completedCount={completedCount}
-        totalCount={notes.length}
+        totalCount={totalCount}
         currentTheme={currentTheme}
+        currentAccent={currentAccent}
+        customThemes={customThemes}
         onSearchChange={setSearchQuery}
+        onOpenSearchPalette={handleOpenSearchPalette}
         onFilterChange={setFilter}
-        onToggleTheme={handleCycleTheme}
-        onToggleLanguage={handleCycleLanguage}
+        onSelectTheme={setCurrentTheme}
+        onSelectAccent={setCurrentAccent}
+        onImportCustomTheme={handleImportCustomTheme}
+        onDeleteCustomTheme={handleDeleteCustomTheme}
+        onToggleLanguage={() => i18n.changeLanguage(i18n.language.startsWith('es') ? 'en' : 'es')}
         onToggleShortcutsModal={() => setIsShortcutsModalOpen(true)}
         onToggleWidgetMode={() => setIsWidgetMode((m) => !m)}
       />
@@ -244,6 +268,8 @@ export const App: React.FC = () => {
             selectedSubjectId={selectedSubjectId}
             onSelectSubject={setSelectedSubjectId}
             onAddSubject={handleAddSubject}
+            onUpdateSubject={handleUpdateSubject}
+            onDeleteSubject={handleDeleteSubject}
             getSubjectNoteCount={getSubjectNoteCount}
           />
         )}
@@ -256,10 +282,13 @@ export const App: React.FC = () => {
             notes={notes}
             selectedNoteId={selectedNoteId}
             filter={filter}
+            searchQuery={searchQuery}
             onSelectNote={setSelectedNoteId}
             onToggleNoteComplete={handleToggleNoteComplete}
             onToggleFolderExpand={handleToggleFolderExpand}
             onAddFolder={handleAddFolder}
+            onUpdateFolder={handleUpdateFolder}
+            onDeleteFolder={handleDeleteFolder}
             onAddNote={handleCreateNote}
           />
         )}
@@ -269,28 +298,23 @@ export const App: React.FC = () => {
           <NoteDetailView
             note={currentNote}
             folderName={currentFolder?.name || 'Notes'}
+            folders={currentSubjectFolders}
             onUpdateNote={handleUpdateNote}
             onDeleteNote={handleDeleteNote}
             onOpenSketchAnnotator={(sketch) => setActiveSketch(sketch)}
             onOpenWhiteboard={() => {
-              // Create new sketch on the fly
               const newSketch: SketchItem = {
                 id: `sketch-${Date.now()}`,
                 title: 'New Canvas Drawing',
-                dataUrl:
-                  'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 450" width="600" height="450"><rect width="600" height="450" fill="%231a1a1a"/></svg>',
+                dataUrl: '',
                 createdAt: new Date().toISOString(),
               };
-              handleUpdateNote({
-                ...currentNote,
-                sketches: [...currentNote.sketches, newSketch],
-              });
               setActiveSketch(newSketch);
             }}
           />
         ) : (
           <div className="flex-1 flex items-center justify-center text-sm text-theme-muted">
-            Select or create a note to get started
+            {t('folders.empty')}
           </div>
         )}
       </main>
@@ -315,7 +339,7 @@ export const App: React.FC = () => {
               links: [],
               sketches: [],
               createdAt: new Date().toISOString(),
-              updatedAt: 'Just now',
+              updatedAt: new Date().toISOString(),
             };
             setNotes((prev) => [newNote, ...prev]);
             api.saveNote(newNote);
@@ -345,6 +369,7 @@ export const App: React.FC = () => {
       {/* Command Palette (Ctrl+K) */}
       <CommandPalette
         isOpen={isSearchPaletteOpen}
+        initialQuery={searchPaletteInitialQuery}
         notes={notes}
         subjects={subjects}
         folders={folders}

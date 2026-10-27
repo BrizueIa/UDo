@@ -1,22 +1,27 @@
-import React, { useState } from 'react';
-import { NoteItem, LinkItem, SketchItem } from '../../../shared/types';
+import React, { useState, useRef } from 'react';
+import { NoteItem, LinkItem, SketchItem, FolderItem } from '../../../shared/types';
+import { formatRelativeTime } from '../../../shared/utils/formatTime';
+import { NoteActionRibbon } from './NoteActionRibbon';
+import { NoteAttachmentsDrawer } from './NoteAttachmentsDrawer';
+import { MarkdownSheetPreview } from './MarkdownSheetPreview';
 import {
   Clock,
   Tag,
   Link as LinkIcon,
-  ExternalLink,
-  CheckSquare,
   Image as ImageIcon,
   Timer,
   Plus,
-  Trash2,
+  Eye,
+  Edit3,
+  ListTodo,
+  Paperclip,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 
 interface Props {
   note: NoteItem;
   folderName: string;
+  folders: FolderItem[];
   onUpdateNote: (note: NoteItem) => void;
   onDeleteNote: (id: string) => void;
   onOpenSketchAnnotator: (sketch: SketchItem) => void;
@@ -26,31 +31,41 @@ interface Props {
 export const NoteDetailView: React.FC<Props> = ({
   note,
   folderName,
+  folders,
   onUpdateNote,
   onDeleteNote,
   onOpenSketchAnnotator,
   onOpenWhiteboard,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+
+  // Inputs state
   const [newTagInput, setNewTagInput] = useState('');
   const [showTagInput, setShowTagInput] = useState(false);
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
+  const [isMediaDrawerOpen, setIsMediaDrawerOpen] = useState(true);
+
+  // View Mode: 'preview' (Interactive checkboxes/markdown) vs 'edit' (Markdown source)
+  const [viewMode, setViewMode] = useState<'preview' | 'edit'>('preview');
+
+  // Textarea Ref for cursor preservation
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     onUpdateNote({
       ...note,
       title: e.target.value,
-      updatedAt: t('note.justNow'),
+      updatedAt: new Date().toISOString(),
     });
   };
 
-  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleContentChange = (newContent: string) => {
     onUpdateNote({
       ...note,
-      content: e.target.value,
-      updatedAt: t('note.justNow'),
+      content: newContent,
+      updatedAt: new Date().toISOString(),
     });
   };
 
@@ -58,8 +73,67 @@ export const NoteDetailView: React.FC<Props> = ({
     onUpdateNote({
       ...note,
       isCompleted: !note.isCompleted,
-      updatedAt: t('note.justNow'),
+      updatedAt: new Date().toISOString(),
     });
+  };
+
+  const handleTogglePin = () => {
+    onUpdateNote({
+      ...note,
+      isPinned: !note.isPinned,
+      updatedAt: new Date().toISOString(),
+    });
+  };
+
+  const handleSelectFolder = (newFolderId: string) => {
+    onUpdateNote({
+      ...note,
+      folderId: newFolderId,
+      updatedAt: new Date().toISOString(),
+    });
+  };
+
+  // Insert a task checkbox without needing markdown knowledge
+  const handleInsertTask = () => {
+    const taskPrefix = '- [ ] ';
+    let newContent = '';
+
+    if (viewMode === 'edit' && textareaRef.current) {
+      const textarea = textareaRef.current;
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const before = note.content.substring(0, start);
+      const after = note.content.substring(end);
+      const needsNewline = before.length > 0 && !before.endsWith('\n');
+      newContent = `${before}${needsNewline ? '\n' : ''}${taskPrefix}${after}`;
+    } else {
+      const needsNewline = note.content.length > 0 && !note.content.endsWith('\n');
+      newContent = `${note.content}${needsNewline ? '\n' : ''}${taskPrefix}${t('note.newTask')}`;
+    }
+
+    onUpdateNote({
+      ...note,
+      content: newContent,
+      updatedAt: new Date().toISOString(),
+    });
+  };
+
+  const handleToggleCheckbox = (targetLineIdx: number) => {
+    const lines = note.content.split('\n');
+    const targetLine = lines[targetLineIdx];
+    if (targetLine === undefined) return;
+
+    const match = targetLine.match(/^(\s*[-*]\s+\[)( |x|X)(\])(.*)$/);
+    if (match) {
+      const isCurrentlyChecked = match[2].toLowerCase() === 'x';
+      const newChar = isCurrentlyChecked ? ' ' : 'x';
+      lines[targetLineIdx] = `${match[1]}${newChar}${match[3]}${match[4]}`;
+      onUpdateNote({
+        ...note,
+        content: lines.join('\n'),
+        updatedAt: new Date().toISOString(),
+      });
+    }
   };
 
   const handleAddLink = (e: React.FormEvent) => {
@@ -73,10 +147,27 @@ export const NoteDetailView: React.FC<Props> = ({
     onUpdateNote({
       ...note,
       links: [...note.links, newLink],
+      updatedAt: new Date().toISOString(),
     });
     setNewLinkTitle('');
     setNewLinkUrl('');
     setShowLinkInput(false);
+  };
+
+  const handleRemoveLink = (linkId: string) => {
+    onUpdateNote({
+      ...note,
+      links: note.links.filter((l) => l.id !== linkId),
+      updatedAt: new Date().toISOString(),
+    });
+  };
+
+  const handleRemoveSketch = (sketchId: string) => {
+    onUpdateNote({
+      ...note,
+      sketches: note.sketches.filter((s) => s.id !== sketchId),
+      updatedAt: new Date().toISOString(),
+    });
   };
 
   const handleAddTag = (e: React.KeyboardEvent) => {
@@ -86,6 +177,7 @@ export const NoteDetailView: React.FC<Props> = ({
         onUpdateNote({
           ...note,
           tags: [...note.tags, newTagInput.trim()],
+          updatedAt: new Date().toISOString(),
         });
       }
       setNewTagInput('');
@@ -97,55 +189,27 @@ export const NoteDetailView: React.FC<Props> = ({
     onUpdateNote({
       ...note,
       tags: note.tags.filter((t) => t !== tagToRemove),
+      updatedAt: new Date().toISOString(),
     });
   };
 
+  const totalMediaCount = note.links.length + note.sketches.length;
+
   return (
     <div className="flex-1 bg-theme-base flex flex-col h-full overflow-y-auto">
-      {/* Top Action Ribbon matching reference image */}
-      <div className="flex items-center justify-between px-8 py-3.5 border-b border-theme-border/60 bg-theme-base/80 backdrop-blur sticky top-0 z-10">
-        <div className="flex items-center space-x-3">
-          {/* Tachar como lista button */}
-          <button
-            onClick={handleToggleComplete}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
-              note.isCompleted
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
-                : 'bg-theme-card hover:bg-theme-hover text-theme-text border border-theme-border'
-            }`}
-          >
-            <CheckSquare size={13} />
-            <span>{t('note.toggleComplete')}</span>
-          </button>
-
-          {/* Folder Indicator Pill */}
-          <span className="flex items-center space-x-1 px-3 py-1.5 rounded-full text-xs bg-theme-card/60 text-theme-muted border border-theme-border">
-            <span>📁</span>
-            <span>{folderName}</span>
-          </span>
-
-          {/* Añadir Link button */}
-          <button
-            onClick={() => setShowLinkInput(!showLinkInput)}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-theme-card hover:bg-theme-hover text-theme-text border border-theme-border transition-colors"
-          >
-            <LinkIcon size={13} className="text-theme-accent" />
-            <span>{t('note.addLink')}</span>
-          </button>
-        </div>
-
-        {/* Delete button */}
-        <button
-          onClick={() => onDeleteNote(note.id)}
-          className="p-1.5 rounded-md text-theme-muted hover:text-red-400 hover:bg-theme-hover transition-colors"
-          title="Delete note"
-        >
-          <Trash2 size={16} />
-        </button>
-      </div>
+      {/* Top Action Ribbon Component */}
+      <NoteActionRibbon
+        note={note}
+        folderName={folderName}
+        folders={folders}
+        onToggleComplete={handleToggleComplete}
+        onTogglePin={handleTogglePin}
+        onSelectFolder={handleSelectFolder}
+        onDeleteNote={onDeleteNote}
+      />
 
       {/* Main Content Area */}
-      <div className="max-w-4xl w-full mx-auto px-10 py-6 space-y-6">
+      <div className="max-w-4xl w-full mx-auto px-10 py-6 space-y-5">
         {/* Title & Metadata */}
         <div className="space-y-3">
           <input
@@ -163,7 +227,7 @@ export const NoteDetailView: React.FC<Props> = ({
             <span className="flex items-center space-x-1.5">
               <Clock size={13} />
               <span>
-                {t('note.modified')}: {note.updatedAt}
+                {t('note.modified')}: {formatRelativeTime(note.updatedAt, i18n.language)}
               </span>
             </span>
 
@@ -209,118 +273,124 @@ export const NoteDetailView: React.FC<Props> = ({
                 <span>{note.focusMinutes} min</span>
               </span>
             )}
+
+            {/* Minimalist Attachments Pill */}
+            {totalMediaCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsMediaDrawerOpen(!isMediaDrawerOpen)}
+                className={`flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full text-xs transition-all ${
+                  isMediaDrawerOpen
+                    ? 'bg-theme-accent/20 text-theme-accent border border-theme-accent/30 font-medium'
+                    : 'bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.06]'
+                }`}
+                title={isMediaDrawerOpen ? t('note.hideMedia') : t('note.showMedia')}
+              >
+                <Paperclip size={11} className={isMediaDrawerOpen ? 'text-theme-accent' : 'text-theme-muted'} />
+                <span>
+                  {totalMediaCount} {totalMediaCount === 1 ? 'adjunto' : 'adjuntos'}
+                </span>
+                <span className="text-[9px] opacity-70">
+                  {isMediaDrawerOpen ? '▲' : '▼'}
+                </span>
+              </button>
+            )}
           </div>
+
+          {/* Attachments Drawer Component */}
+          <NoteAttachmentsDrawer
+            links={note.links}
+            sketches={note.sketches}
+            isOpen={isMediaDrawerOpen}
+            showLinkInput={showLinkInput}
+            newLinkTitle={newLinkTitle}
+            newLinkUrl={newLinkUrl}
+            onSetNewLinkTitle={setNewLinkTitle}
+            onSetNewLinkUrl={setNewLinkUrl}
+            onAddLink={handleAddLink}
+            onCloseLinkInput={() => setShowLinkInput(false)}
+            onRemoveLink={handleRemoveLink}
+            onRemoveSketch={handleRemoveSketch}
+            onOpenSketchAnnotator={onOpenSketchAnnotator}
+          />
         </div>
 
-        {/* Add Link Form Modal/Inline */}
-        {showLinkInput && (
-          <form
-            onSubmit={handleAddLink}
-            className="p-3 rounded-lg bg-theme-card border border-theme-border flex items-center space-x-2"
-          >
-            <input
-              type="text"
-              placeholder="Title (e.g. Modelos en Printables)"
-              value={newLinkTitle}
-              onChange={(e) => setNewLinkTitle(e.target.value)}
-              className="flex-1 bg-theme-column px-3 py-1.5 rounded text-xs outline-none border border-theme-border text-theme-text"
-              required
-            />
-            <input
-              type="text"
-              placeholder="URL (e.g. https://...)"
-              value={newLinkUrl}
-              onChange={(e) => setNewLinkUrl(e.target.value)}
-              className="flex-1 bg-theme-column px-3 py-1.5 rounded text-xs outline-none border border-theme-border text-theme-text"
-              required
-            />
-            <button
-              type="submit"
-              className="px-3 py-1.5 rounded text-xs font-semibold bg-theme-accent text-white hover:bg-theme-accent-hover transition-colors"
-            >
-              Add
-            </button>
-          </form>
-        )}
+        {/* Section: CONTENIDO DE LA HOJA (Quick Actions Toolbar + Markdown/Interactive View) */}
+        <div className="space-y-2.5 pt-1">
+          {/* Action Toolbar above content */}
+          <div className="flex items-center justify-between border-b border-theme-border/40 pb-2">
+            {/* Quick Insertion Tools for users who don't know markdown */}
+            <div className="flex items-center space-x-2">
+              <button
+                type="button"
+                onClick={handleInsertTask}
+                className="flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-theme-card hover:bg-theme-hover border border-white/[0.06] text-xs font-semibold text-theme-text transition-colors shadow-xs"
+                title="Insert task checkbox (- [ ])"
+              >
+                <ListTodo size={14} className="text-emerald-400" />
+                <span>+ {t('note.addTask')}</span>
+              </button>
 
-        {/* Section: Enlaces y Presupuestos Guardados */}
-        {note.links.length > 0 && (
-          <div className="space-y-2">
-            <h3 className="text-xs font-semibold text-theme-muted flex items-center space-x-1.5">
-              <LinkIcon size={13} className="text-theme-accent" />
-              <span>{t('note.savedLinks')}</span>
-            </h3>
-            <div className="flex flex-wrap gap-2.5">
-              {note.links.map((link) => (
-                <a
-                  key={link.id}
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center space-x-2 px-3.5 py-2 rounded-lg bg-theme-card hover:bg-theme-hover border border-theme-border/80 text-xs font-medium text-theme-text transition-all shadow-sm group"
-                >
-                  <span>{link.title}</span>
-                  <ExternalLink
-                    size={13}
-                    className="text-theme-muted group-hover:text-theme-accent transition-colors"
-                  />
-                </a>
-              ))}
+              <button
+                type="button"
+                onClick={onOpenWhiteboard}
+                className="flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-theme-card hover:bg-theme-hover border border-white/[0.06] text-xs font-semibold text-theme-text transition-colors shadow-xs"
+                title="Create a canvas sketch"
+              >
+                <ImageIcon size={13} className="text-pink-400" />
+                <span>+ {t('note.addSketch')}</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setIsMediaDrawerOpen(true);
+                  setShowLinkInput(true);
+                }}
+                className="flex items-center space-x-1.5 px-3 py-1 rounded-lg bg-theme-card hover:bg-theme-hover border border-white/[0.06] text-xs font-semibold text-theme-text transition-colors shadow-xs"
+                title={t('note.addLink')}
+              >
+                <LinkIcon size={13} className="text-blue-400" />
+                <span>+ {t('note.addLink')}</span>
+              </button>
+            </div>
+
+            {/* Toggle View Mode: Interactive Preview vs Source Editor */}
+            <div className="flex items-center bg-theme-column/80 p-0.5 rounded-lg border border-white/[0.05] text-xs">
+              <button
+                type="button"
+                onClick={() => setViewMode('preview')}
+                className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-colors ${
+                  viewMode === 'preview'
+                    ? 'bg-theme-accent text-white shadow-sm font-semibold'
+                    : 'text-theme-muted hover:text-theme-text'
+                }`}
+              >
+                <Eye size={12} />
+                <span>{t('note.interactive')}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('edit')}
+                className={`flex items-center space-x-1 px-2.5 py-1 rounded-md transition-colors ${
+                  viewMode === 'edit'
+                    ? 'bg-theme-accent text-white shadow-sm font-semibold'
+                    : 'text-theme-muted hover:text-theme-text'
+                }`}
+              >
+                <Edit3 size={12} />
+                <span>{t('note.markdown')}</span>
+              </button>
             </div>
           </div>
-        )}
 
-        {/* Section: Imágenes y Bocetos */}
-        <div className="space-y-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xs font-semibold text-theme-muted flex items-center space-x-1.5">
-              <ImageIcon size={13} className="text-pink-400" />
-              <span>
-                {t('note.sketches')} ({note.sketches.length})
-              </span>
-            </h3>
-
-            <button
-              onClick={onOpenWhiteboard}
-              className="flex items-center space-x-1 text-xs text-theme-accent hover:underline font-medium"
-            >
-              <Plus size={12} />
-              <span>{t('note.addSketch')}</span>
-            </button>
-          </div>
-
-          <div className="flex flex-wrap gap-3">
-            {note.sketches.map((sketch) => (
-              <motion.div
-                key={sketch.id}
-                whileHover={{ scale: 1.02 }}
-                onClick={() => onOpenSketchAnnotator(sketch)}
-                className="w-24 h-24 rounded-xl overflow-hidden border border-theme-border/80 bg-theme-card cursor-pointer shadow-md hover:border-theme-accent/60 transition-all flex items-center justify-center p-1.5 group relative"
-              >
-                <img
-                  src={sketch.dataUrl}
-                  alt={sketch.title}
-                  className="w-full h-full object-contain rounded-lg"
-                />
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-[10px] text-white font-medium">
-                  Annotate
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-
-        {/* Section: CONTENIDO DE LA HOJA (Markdown body) */}
-        <div className="space-y-2 pt-2">
-          <h3 className="text-xs font-semibold tracking-wider text-theme-muted uppercase">
-            {t('note.sheetContent')}
-          </h3>
-          <textarea
-            value={note.content}
-            onChange={handleContentChange}
-            placeholder={t('note.markdownPlaceholder')}
-            rows={14}
-            className="w-full bg-theme-card/50 hover:bg-theme-card/80 focus:bg-theme-card rounded-xl p-4 text-sm font-mono text-theme-text leading-relaxed outline-none border border-theme-border focus:border-theme-accent/60 transition-all resize-y shadow-inner"
+          {/* Markdown / Interactive Sheet Preview Component */}
+          <MarkdownSheetPreview
+            content={note.content}
+            viewMode={viewMode}
+            textareaRef={textareaRef}
+            onChangeContent={handleContentChange}
+            onToggleCheckbox={handleToggleCheckbox}
           />
         </div>
       </div>
