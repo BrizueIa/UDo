@@ -1,27 +1,143 @@
-import React from 'react';
-import { CheckSquare, Square } from 'lucide-react';
+import React, { useEffect } from 'react';
+import { CheckSquare, Square, FileText, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { NoteItem } from '../../../shared/types';
 
 interface Props {
   content: string;
+  notes: NoteItem[];
   viewMode: 'preview' | 'edit';
   textareaRef: React.RefObject<HTMLTextAreaElement>;
+  findQuery?: string;
+  currentMatchIndex?: number;
   onChangeContent: (newContent: string) => void;
   onToggleCheckbox: (lineIndex: number) => void;
+  onSelectNote: (noteId: string, subjectId: string) => void;
+  onCreateNoteWithTitle: (title: string) => void;
+  onMatchCountCalculated?: (count: number) => void;
 }
 
 export const MarkdownSheetPreview: React.FC<Props> = ({
   content,
+  notes,
   viewMode,
   textareaRef,
+  findQuery = '',
+  currentMatchIndex = 0,
   onChangeContent,
   onToggleCheckbox,
+  onSelectNote,
+  onCreateNoteWithTitle,
+  onMatchCountCalculated,
 }) => {
   const { t } = useTranslation();
 
+  // Calculate total matches in content
+  useEffect(() => {
+    const q = findQuery.trim();
+    if (!q) {
+      onMatchCountCalculated?.(0);
+      return;
+    }
+    try {
+      const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      const matches = content.match(regex);
+      onMatchCountCalculated?.(matches ? matches.length : 0);
+    } catch {
+      onMatchCountCalculated?.(0);
+    }
+  }, [content, findQuery, onMatchCountCalculated]);
+
+  // Scroll active match into view smoothly
+  useEffect(() => {
+    if (findQuery.trim()) {
+      const activeEl = document.querySelector('[data-current-find-match="true"]');
+      activeEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+  }, [currentMatchIndex, findQuery]);
+
+  let matchCounter = 0;
+
+  const renderTextWithHighlights = (rawText: string, keyPrefix: string): React.ReactNode => {
+    const q = findQuery.trim();
+    if (!q) return rawText;
+
+    try {
+      const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      const segments = rawText.split(regex);
+
+      return segments.map((segment, segIdx) => {
+        if (segment.toLowerCase() === q.toLowerCase()) {
+          const thisIndex = matchCounter++;
+          const isCurrent = thisIndex === currentMatchIndex;
+          return (
+            <mark
+              key={`${keyPrefix}-find-${segIdx}-${thisIndex}`}
+              data-find-match="true"
+              data-current-find-match={isCurrent ? 'true' : undefined}
+              className={`rounded px-0.5 transition-all ${
+                isCurrent
+                  ? 'bg-amber-400 text-black font-semibold ring-2 ring-amber-500 shadow-sm'
+                  : 'bg-amber-300/40 text-theme-text'
+              }`}
+            >
+              {segment}
+            </mark>
+          );
+        }
+        return segment;
+      });
+    } catch {
+      return rawText;
+    }
+  };
+
   const renderInlineMarkdown = (text: string): React.ReactNode => {
-    const parts = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g);
+    // Detects [[Wiki Links]], `code`, **bold**, *italic*
+    const parts = text.split(/(\[\[[^\]]+\]\]|`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g);
     return parts.map((part, i) => {
+      // Wiki Link [[Title]]
+      if (part.startsWith('[[') && part.endsWith(']]')) {
+        const wikiTitle = part.slice(2, -2).trim();
+        const existingNote = notes.find(
+          (n) => n.title.toLowerCase() === wikiTitle.toLowerCase()
+        );
+
+        if (existingNote) {
+          return (
+            <button
+              key={i}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onSelectNote(existingNote.id, existingNote.subjectId);
+              }}
+              className="inline-flex items-center space-x-1 px-2 py-0.5 mx-1 rounded-md bg-theme-accent/20 hover:bg-theme-accent/30 text-theme-accent border border-theme-accent/40 font-medium text-xs transition-colors cursor-pointer"
+              title={t('note.openWikiLink', { title: wikiTitle })}
+            >
+              <FileText size={12} className="flex-shrink-0" />
+              <span>{wikiTitle}</span>
+            </button>
+          );
+        }
+
+        return (
+          <button
+            key={i}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onCreateNoteWithTitle(wikiTitle);
+            }}
+            className="inline-flex items-center space-x-1 px-2 py-0.5 mx-1 rounded-md bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-dashed border-white/[0.15] text-xs transition-colors cursor-pointer"
+            title={t('note.createWikiLink', { title: wikiTitle })}
+          >
+            <Plus size={12} className="flex-shrink-0" />
+            <span>{wikiTitle}</span>
+          </button>
+        );
+      }
+
       if (part.startsWith('`') && part.endsWith('`')) {
         return (
           <code
@@ -35,18 +151,18 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
       if (part.startsWith('**') && part.endsWith('**')) {
         return (
           <strong key={i} className="font-semibold text-theme-text">
-            {part.slice(2, -2)}
+            {renderTextWithHighlights(part.slice(2, -2), `strong-${i}`)}
           </strong>
         );
       }
       if (part.startsWith('*') && part.endsWith('*')) {
         return (
           <em key={i} className="italic text-theme-muted">
-            {part.slice(1, -1)}
+            {renderTextWithHighlights(part.slice(1, -1), `em-${i}`)}
           </em>
         );
       }
-      return part;
+      return renderTextWithHighlights(part, `text-${i}`);
     });
   };
 
@@ -95,21 +211,21 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
             if (line.startsWith('# ')) {
               return (
                 <h1 key={idx} className="text-2xl font-bold text-theme-text pt-2 pb-1 border-b border-white/[0.05]">
-                  {line.slice(2)}
+                  {renderInlineMarkdown(line.slice(2))}
                 </h1>
               );
             }
             if (line.startsWith('## ')) {
               return (
                 <h2 key={idx} className="text-xl font-semibold text-theme-text pt-2 pb-0.5">
-                  {line.slice(3)}
+                  {renderInlineMarkdown(line.slice(3))}
                 </h2>
               );
             }
             if (line.startsWith('### ')) {
               return (
                 <h3 key={idx} className="text-base font-semibold text-theme-text pt-1">
-                  {line.slice(4)}
+                  {renderInlineMarkdown(line.slice(4))}
                 </h3>
               );
             }
