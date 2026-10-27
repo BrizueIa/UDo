@@ -45,7 +45,7 @@ UDo is designed for global accessibility. We enthusiastically welcome community 
 
 ## 🌳 Branching Workflow & Quality Rules
 
-Please read **[BRANCHING_STRATEGY.md](BRANCHING_STRATEGY.md)** for full architectural details.
+Please read **[BRANCHING_STRATEGY.md](docs/workflow/BRANCHING_STRATEGY.md)** for full architectural details.
 
 1. **Target Branch:** **All community pull requests must target the `dev` branch.**
 2. **Review & Approval:** Only the project maintainer (`@BrizueIa`) reviews and merges PRs into `dev`. Releases from `dev` to `main` are handled exclusively by `@BrizueIa`.
@@ -75,7 +75,7 @@ Examples:
 2. **Commit Convention:** Use Conventional Commits format for your PR title.
 3. **Type Safety:** Ensure TypeScript passes cleanly (`npm run build`).
 4. **Rust Checks:** Ensure Tauri backend passes clippy without warnings (`cargo clippy`).
-5. **AI-Assisted Contributions:** If you used generative AI tools to assist in writing code, please mention it in your PR description as outlined in [AI_DISCLOSURE.md](AI_DISCLOSURE.md). You are responsible for validating the correctness of the code.
+5. **AI-Assisted Contributions:** If you used generative AI tools to assist in writing code, please mention it in your PR description as outlined in [AI_DISCLOSURE.md](docs/governance/AI_DISCLOSURE.md). You are responsible for validating the correctness of the code.
 
 ---
 

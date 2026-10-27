@@ -67,15 +67,17 @@
 
 ---
 
-## 📜 Governance, Security & Policies
+## 📜 Architecture, Governance & Policies
 
 UDo is built as an open, transparent, and security-conscious tool:
 
-* **[REQUIREMENTS.md](REQUIREMENTS.md)**: Full Software Requirements Specification (SRS) with RF-01 through RF-34.
-* **[PRIVACY.md](PRIVACY.md)**: Strict zero-telemetry policy, 100% offline-first design (GDPR/CCPA compliant).
-* **[DATA_GOVERNANCE.md](DATA_GOVERNANCE.md)**: User data sovereignty, atomic writes, non-proprietary storage formats.
+* **[ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md)**: Native Rust Core Engine + Feature-Sliced UI specification and data flow.
+* **[REQUIREMENTS.md](docs/specs/REQUIREMENTS.md)**: Full Software Requirements Specification (SRS) with FR-01 through FR-34.
+* **[BRANCHING_STRATEGY.md](docs/workflow/BRANCHING_STRATEGY.md)**: Conventional Commits, branch protection rules, and CI Quality Gates.
+* **[PRIVACY.md](docs/governance/PRIVACY.md)**: Strict zero-telemetry policy, 100% offline-first design (GDPR/CCPA compliant).
+* **[DATA_GOVERNANCE.md](docs/governance/DATA_GOVERNANCE.md)**: User data sovereignty, atomic writes, non-proprietary storage formats.
+* **[AI_DISCLOSURE.md](docs/governance/AI_DISCLOSURE.md)**: Ethical AI co-development disclosure and human verification guidelines.
 * **[SECURITY.md](SECURITY.md)**: Vulnerability disclosure procedure and dependency auditing standards.
-* **[AI_DISCLOSURE.md](AI_DISCLOSURE.md)**: Ethical AI co-development disclosure and human verification guidelines.
 
 ---
 

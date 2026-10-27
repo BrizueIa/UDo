@@ -1,0 +1,67 @@
+{
+  "app": {
+    "title": "UDo",
+    "tagline": "The way u do"
+  },
+  "nav": {
+    "subjects": "TEMAS / SUBJECTS",
+    "addSubject": "Añadir Tema",
+    "searchPlaceholder": "Buscar notas, tags, hojas... (Ctrl+K)",
+    "filterAll": "Todas",
+    "filterPending": "Pendientes",
+    "filterCompleted": "Hechas"
+  },
+  "folders": {
+    "addFolder": "Nueva Carpeta",
+    "addNote": "Nueva Nota",
+    "empty": "No hay carpetas en este tema todavía.",
+    "deleteFolder": "Eliminar Carpeta",
+    "renameFolder": "Renombrar Carpeta"
+  },
+  "note": {
+    "titlePlaceholder": "Título de la nota...",
+    "modified": "Modificado",
+    "justNow": "Recién",
+    "toggleComplete": "Tachar como lista",
+    "addLink": "Añadir Link",
+    "savedLinks": "Enlaces y Presupuestos Guardados:",
+    "sketches": "Imágenes y Bocetos",
+    "addSketch": "Nuevo Boceto",
+    "uploadImage": "Subir Imagen",
+    "sheetContent": "CONTENIDO DE LA HOJA",
+    "markdownPlaceholder": "Empieza a escribir notas en markdown...",
+    "tagPlaceholder": "Añadir etiqueta...",
+    "focusTimer": "Temporizador de Foco",
+    "minutes": "min",
+    "startFocus": "Iniciar Sprint",
+    "stopFocus": "Detener"
+  },
+  "widget": {
+    "title": "UDo Mini",
+    "quickAddPlaceholder": "Tarea rápida... (Enter para guardar)",
+    "noPending": "¡Todo al día! 🎉",
+    "expand": "Abrir App Completa"
+  },
+  "shortcuts": {
+    "title": "Atajos de Teclado",
+    "globalSearch": "Búsqueda Global",
+    "newNote": "Nueva Nota",
+    "newFolder": "Nueva Carpeta",
+    "toggleDone": "Tachar / Completar",
+    "cycleColumns": "Alternar Columnas",
+    "zenMode": "Modo Zen",
+    "quickAdd": "Barra Captura Rápida",
+    "toggleWidget": "Modo Widget Flotante"
+  },
+  "settings": {
+    "title": "Configuración",
+    "theme": "Tema de Color",
+    "accent": "Color de Acento",
+    "language": "Idioma",
+    "audioFeedback": "Efectos de sonido al completar tareas",
+    "autoBackup": "Copias de seguridad diarias",
+    "exportData": "Exportar Datos (JSON)",
+    "importData": "Importar Datos",
+    "version": "Versión"
+  }
+}

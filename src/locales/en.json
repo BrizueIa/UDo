@@ -1,0 +1,67 @@
+{
+  "app": {
+    "title": "UDo",
+    "tagline": "The way u do"
+  },
+  "nav": {
+    "subjects": "SUBJECTS",
+    "addSubject": "Add Subject",
+    "searchPlaceholder": "Search notes, tags, sheets... (Ctrl+K)",
+    "filterAll": "All",
+    "filterPending": "Pending",
+    "filterCompleted": "Done"
+  },
+  "folders": {
+    "addFolder": "New Folder",
+    "addNote": "New Note",
+    "empty": "No folders in this subject yet.",
+    "deleteFolder": "Delete Folder",
+    "renameFolder": "Rename Folder"
+  },
+  "note": {
+    "titlePlaceholder": "Note title...",
+    "modified": "Modified",
+    "justNow": "Just now",
+    "toggleComplete": "Strikethrough sheet",
+    "addLink": "Add Link",
+    "savedLinks": "Saved Links & References",
+    "sketches": "Images & Sketches",
+    "addSketch": "New Sketch",
+    "uploadImage": "Upload Image",
+    "sheetContent": "SHEET CONTENT",
+    "markdownPlaceholder": "Start writing notes in markdown...",
+    "tagPlaceholder": "Add tag...",
+    "focusTimer": "Focus Timer",
+    "minutes": "min",
+    "startFocus": "Start Sprint",
+    "stopFocus": "Stop"
+  },
+  "widget": {
+    "title": "UDo Mini",
+    "quickAddPlaceholder": "Quick task... (Enter to save)",
+    "noPending": "All caught up! 🎉",
+    "expand": "Open Full App"
+  },
+  "shortcuts": {
+    "title": "Keyboard Shortcuts",
+    "globalSearch": "Global Search",
+    "newNote": "New Note",
+    "newFolder": "New Folder",
+    "toggleDone": "Toggle Completed",
+    "cycleColumns": "Cycle Columns",
+    "zenMode": "Zen Mode",
+    "quickAdd": "Quick Add Bar",
+    "toggleWidget": "Toggle Widget Mode"
+  },
+  "settings": {
+    "title": "Settings",
+    "theme": "Color Theme",
+    "accent": "Accent Color",
+    "language": "Language",
+    "audioFeedback": "Sound Effects on Task Completion",
+    "autoBackup": "Daily Local Backups",
+    "exportData": "Export All Data (JSON)",
+    "importData": "Import Data",
+    "version": "Version"
+  }
+}

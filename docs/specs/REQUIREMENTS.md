@@ -25,14 +25,14 @@ Build a high-performance, cross-platform desktop application (Linux primary, Win
 
 | Layer | Technology | Justification |
 | :--- | :--- | :--- |
-| **Native Desktop Shell** | **Tauri v2** (Rust) | ~15 MB installer, ~35 MB RAM footprint, first-class native System Tray, global hotkeys, and OS APIs. |
-| **Frontend Framework** | **React + TypeScript** | Strict typing, robust component ecosystem, and maximum maintainability. |
+| **Native Desktop Shell & Core Engine** | **Tauri v2** (Rust) | ~15 MB installer, ~35 MB RAM footprint, first-class native System Tray, global hotkeys, SQLite FTS5 index, background timers, and OS APIs. |
+| **Frontend Framework** | **React + TypeScript** | Strict typing, robust component ecosystem, Feature-Sliced Design. |
 | **Animation Engine** | **Framer Motion** | Spring physics, automatic layout transitions (`layoutId`), and micro-interactions. |
 | **Styling & Theming** | **Tailwind CSS + CSS Vars** | Dynamic theme swapping (`data-theme`), OLED pure black, and customizable accent colors. |
 | **Iconography** | **Lucide Icons** | Crisp, scalable SVG vector icons. |
 | **Internationalization** | **i18next / React-i18next** | Declarative localization supporting instant runtime language toggling and community translation contributions. |
 | **Markdown & Canvas** | **Markdown GFM + HTML5 Canvas** | GitHub Flavored Markdown, interactive checkboxes, code highlighting, and freehand drawing canvas. |
-| **Local Storage** | **SQLite Local / JSON Store** | Atomic transactions, fast indexing, stored in OS standard directories (`~/.local/share/udo/` on Linux). |
+| **Local Storage** | **SQLite Local (Rust core) / JSON Store** | Atomic transactions, fast indexing, stored in OS standard directories (`~/.local/share/udo/` on Linux). |
 
 ---
 
@@ -63,7 +63,7 @@ Build a high-performance, cross-platform desktop application (Linux primary, Win
 
 ### Module B: Multi-Tier Search Engine
 * **FR-05 (Global Search `Ctrl + K`):**
-  * Real-time indexed search across all note titles, Markdown body text, tags, and folder names.
+  * Real-time indexed search across all note titles, Markdown body text, tags, and folder names using SQLite FTS5.
   * Grouped results with arrow-key keyboard navigation and instant jump.
 * **FR-06 (Category/Folder Scoped Search `Ctrl + F`):**
   * Search scoped strictly to the currently selected subject or folder.
@@ -116,7 +116,7 @@ Build a high-performance, cross-platform desktop application (Linux primary, Win
 * **FR-13 (Native Desktop Notifications):**
   * System desktop notifications (Linux DBus, Windows toast, macOS) for short deadlines (*"in 15 mins"*) and scheduled reminders.
 * **FR-14 (Task Countdown & Focus Timer):**
-  * Assign a countdown sprint (e.g., 25 min, 45 min, or custom) to an active task, visible in both note and floating widget.
+  * Assign a countdown sprint (e.g., 25 min, 45 min, or custom) to an active task, running in Rust background threads.
 * **FR-15 (Satisfying Audio Feedback):**
   * Subtle wooden/click sound upon task completion (with mute toggle in settings).
 
@@ -175,20 +175,20 @@ Build a high-performance, cross-platform desktop application (Linux primary, Win
   * Built-in support for **English** (default) and **Spanish**.
   * Instant language switcher in settings with zero restart required.
 * **FR-29 (Community Translation Architecture):**
-  * Modular JSON translation files stored under `src/locales/{lang}.json`.
+  * Modular JSON translation files stored under `src/shared/locales/{lang}.json`.
   * Open format allowing community contributors to submit pull requests for new languages effortlessly.
 
 ---
 
 ### Module J: Governance, Privacy & Open Source Standards
 * **FR-30 (Strict Zero-Telemetry Privacy):**
-  * Fully compliant with [PRIVACY.md](PRIVACY.md). Zero user tracking or background telemetry.
+  * Fully compliant with [PRIVACY.md](../governance/PRIVACY.md). Zero user tracking or background telemetry.
 * **FR-31 (Data Ownership & Atomic Storage):**
-  * Compliant with [DATA_GOVERNANCE.md](DATA_GOVERNANCE.md). 100% user-owned in standard formats (Markdown, SQLite, PNG), with power-failure-resilient atomic writes.
+  * Compliant with [DATA_GOVERNANCE.md](../governance/DATA_GOVERNANCE.md). 100% user-owned in standard formats (Markdown, SQLite, PNG), with power-failure-resilient atomic writes.
 * **FR-32 (Security & Vulnerability Policy):**
-  * Transparent reporting procedure under [SECURITY.md](SECURITY.md) with strict dependency audits.
+  * Transparent reporting procedure under [SECURITY.md](../../SECURITY.md) with strict dependency audits.
 * **FR-33 (Ethical AI Co-Development Disclosure):**
-  * Transparent AI disclosure under [AI_DISCLOSURE.md](AI_DISCLOSURE.md) with 100% human verification and review.
+  * Transparent AI disclosure under [AI_DISCLOSURE.md](../governance/AI_DISCLOSURE.md) with 100% human verification and review.
 * **FR-34 (Automated Local Backups & Export/Import):**
   * Daily automated JSON snapshots with 7-day retention.
   * One-click database export/import for migration.
