@@ -77,7 +77,8 @@ UDo is built as an open, transparent, and security-conscious tool:
 * **[PRIVACY.md](docs/governance/PRIVACY.md)**: Strict zero-telemetry policy, 100% offline-first design (GDPR/CCPA compliant).
 * **[DATA_GOVERNANCE.md](docs/governance/DATA_GOVERNANCE.md)**: User data sovereignty, atomic writes, non-proprietary storage formats.
 * **[AI_DISCLOSURE.md](docs/governance/AI_DISCLOSURE.md)**: Ethical AI co-development disclosure and human verification guidelines.
-* **[SECURITY.md](SECURITY.md)**: Vulnerability disclosure procedure and dependency auditing standards.
+* **[SECURITY.md](.github/SECURITY.md)**: Vulnerability disclosure procedure and dependency auditing standards.
+* **[CONTRIBUTING.md](.github/CONTRIBUTING.md)**: Guidelines for contributing and code standards.
 
 ---
 

@@ -51,6 +51,8 @@ UDo/
 ├── .github/                      # CI/CD pipelines & GitHub Community Templates
 │   ├── workflows/                # ci.yml (Quality Gates)
 │   ├── ISSUE_TEMPLATE/           # bug_report.md, feature_request.md
+│   ├── CONTRIBUTING.md           # Contribution guidelines
+│   ├── SECURITY.md               # Vulnerability disclosure policy
 │   └── pull_request_template.md  # PR checklist
 │
 ├── docs/                         # Formal Project Documentation
@@ -90,11 +92,9 @@ UDo/
 │   ├── index.html                # Vite entry HTML
 │   └── main.tsx                  # React entrypoint
 │
-├── CONTRIBUTING.md               # GitHub standard root file
 ├── LICENSE                       # Apache License 2.0
 ├── NOTICE                        # Apache 2.0 attribution
-├── README.md                     # Official project landing page
-└── SECURITY.md                   # Vulnerability disclosure policy
+└── README.md                     # Official project landing page
 ```
 
 ---

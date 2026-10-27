@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { NoteItem } from '../../../shared/types';
-import { CheckCircle2, Circle, Maximize2, Plus } from 'lucide-react';
+import { Circle, Maximize2, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 
