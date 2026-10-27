@@ -12,18 +12,22 @@ export const ShortcutsModal: React.FC<Props> = ({ isOpen, onClose }) => {
   if (!isOpen) return null;
 
   const shortcuts = [
-    { key: 'Ctrl + K  /  /', desc: 'Open Global Search & Command Palette' },
-    { key: 'Alt + Shift + Space', desc: 'Summon / Hide App (Global OS Hotkey)' },
-    { key: 'Ctrl + Alt + Space', desc: 'Quick Add / Scratchpad Bar' },
-    { key: 'Alt + W', desc: 'Toggle Full Window ↔ Floating Always-on-Top Widget' },
-    { key: 'Ctrl + N', desc: 'Create New Note in Current Folder' },
-    { key: 'Ctrl + Shift + N', desc: 'Create New Folder / Subject' },
-    { key: 'Ctrl + D  /  Ctrl + Enter', desc: 'Toggle Strikethrough / Complete Note' },
-    { key: 'Tab  /  Shift + Tab', desc: 'Cycle Columns (Subjects ↔ Folders ↔ Note)' },
-    { key: 'j  /  k  (or  ↓ / ↑)', desc: 'Navigate Notes in List' },
-    { key: 'F11', desc: 'Zen Mode (Distraction-free Writing)' },
-    { key: '?', desc: 'Show this Shortcuts Cheat Sheet' },
-    { key: 'Esc', desc: 'Close Modals / Clear Search / Unfocus' },
+    { key: 'Ctrl + K  /  /', descKey: 'shortcuts.globalSearch' },
+    { key: 'Ctrl + F', descKey: 'shortcuts.searchCategory' },
+    { key: 'Ctrl + Shift + F', descKey: 'shortcuts.findInNote' },
+    { key: 'Ctrl + E', descKey: 'shortcuts.focusEditor' },
+    { key: 'Ctrl + N', descKey: 'shortcuts.newNote' },
+    { key: 'Ctrl + Shift + N', descKey: 'shortcuts.newFolder' },
+    { key: 'Ctrl + D  /  Ctrl + Enter', descKey: 'shortcuts.toggleDone' },
+    { key: 'Tab  /  Shift + Tab', descKey: 'shortcuts.cycleColumns' },
+    { key: '1  /  2  /  3', descKey: 'shortcuts.jumpColumn' },
+    { key: 'j  /  k  (↓  /  ↑)', descKey: 'shortcuts.navigateList' },
+    { key: 'Alt + Shift + Space', descKey: 'shortcuts.summonApp' },
+    { key: 'Ctrl + Alt + Space', descKey: 'shortcuts.quickAdd' },
+    { key: 'Alt + W', descKey: 'shortcuts.toggleWidget' },
+    { key: 'F11', descKey: 'shortcuts.zenMode' },
+    { key: '?', descKey: 'shortcuts.showHelp' },
+    { key: 'Esc', descKey: 'shortcuts.escapeAction' },
   ];
 
   return (
@@ -48,13 +52,13 @@ export const ShortcutsModal: React.FC<Props> = ({ isOpen, onClose }) => {
           </button>
         </div>
 
-        <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+        <div className="space-y-1.5 max-h-96 overflow-y-auto pr-1">
           {shortcuts.map((s, idx) => (
             <div
               key={idx}
               className="flex items-center justify-between py-1.5 px-2 rounded-lg hover:bg-theme-card/50 text-xs transition-colors"
             >
-              <span className="text-theme-muted font-medium">{s.desc}</span>
+              <span className="text-theme-muted font-medium">{t(s.descKey)}</span>
               <kbd className="font-mono text-[11px] px-2 py-0.5 rounded bg-theme-card border border-theme-border/80 text-theme-accent font-semibold shadow-sm">
                 {s.key}
               </kbd>

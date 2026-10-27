@@ -10,7 +10,8 @@
     "filterAll": "All",
     "filterPending": "Pending",
     "filterCompleted": "Done",
-    "clearSearch": "Clear search"
+    "clearSearch": "Clear search",
+    "clearFilter": "Clear filter"
   },
   "folders": {
     "addFolder": "New Folder",
@@ -41,6 +42,17 @@
     "sheetContent": "SHEET CONTENT",
     "markdownPlaceholder": "Start writing notes in markdown...",
     "tagPlaceholder": "Add tag...",
+    "addTag": "Add Tag",
+    "removeTag": "Remove tag",
+    "filterByTag": "Filter by #{{tag}}",
+    "findInNote": "Find in note (Ctrl+Shift+F)",
+    "findInNotePlaceholder": "Find in note...",
+    "prevMatch": "Previous match (Shift+Enter)",
+    "nextMatch": "Next match (Enter)",
+    "closeFind": "Close (Esc)",
+    "openWikiLink": "Open note \"{{title}}\"",
+    "createWikiLink": "Create note \"{{title}}\"",
+    "untitled": "Untitled note",
     "focusTimer": "Focus Timer",
     "minutes": "min",
     "startFocus": "Start Sprint",
@@ -64,6 +76,14 @@
     "linkTitle": "Link title",
     "linkUrl": "URL (https://...)"
   },
+  "palette": {
+    "noResults": "No matching notes found for \"{{query}}\"",
+    "noNotes": "No notes available",
+    "navigate": "Navigate",
+    "open": "Open",
+    "close": "Close",
+    "closeHint": "Press Esc to close"
+  },
   "widget": {
     "title": "UDo Mini",
     "quickAddPlaceholder": "Quick task... (Enter to save)",
@@ -72,14 +92,22 @@
   },
   "shortcuts": {
     "title": "Keyboard Shortcuts",
-    "globalSearch": "Global Search",
-    "newNote": "New Note",
-    "newFolder": "New Folder",
-    "toggleDone": "Toggle Completed",
-    "cycleColumns": "Cycle Columns",
-    "zenMode": "Zen Mode",
-    "quickAdd": "Quick Add Bar",
-    "toggleWidget": "Toggle Widget Mode"
+    "globalSearch": "Open Global Search & Command Palette",
+    "searchCategory": "Search within active category",
+    "findInNote": "Find matches in current note",
+    "focusEditor": "Switch to Markdown edit mode",
+    "newNote": "New Note in current folder",
+    "newFolder": "New Folder in active project",
+    "toggleDone": "Toggle Completion / Strikethrough",
+    "cycleColumns": "Cycle Columns (Projects ↔ Folders ↔ Note)",
+    "jumpColumn": "Direct jump to Column 1, 2, or 3",
+    "navigateList": "Navigate notes or projects in list",
+    "summonApp": "Summon / Hide App (Global OS Hotkey)",
+    "quickAdd": "Quick Add / Scratchpad Bar",
+    "toggleWidget": "Toggle Full Window ↔ Floating Widget",
+    "zenMode": "Zen Mode (Distraction-free Writing)",
+    "showHelp": "Show this Shortcuts Cheat Sheet",
+    "escapeAction": "Close modals / Clear search / Unfocus"
   },
   "settings": {
     "title": "Settings",
