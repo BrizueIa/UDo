@@ -20,7 +20,9 @@ impl DatabaseManager {
     }
 
     fn get_connection(&self) -> Result<Connection> {
-        Connection::open(&self.db_path)
+        let conn = Connection::open(&self.db_path)?;
+        conn.execute_batch("PRAGMA foreign_keys = ON;")?;
+        Ok(conn)
     }
 
     fn init_schema(&self) -> Result<()> {
@@ -242,6 +244,12 @@ impl DatabaseManager {
         Ok(())
     }
 
+    pub fn delete_subject(&self, id: &str) -> Result<()> {
+        let conn = self.get_connection()?;
+        conn.execute("DELETE FROM subjects WHERE id = ?1", params![id])?;
+        Ok(())
+    }
+
     pub fn save_folder(&self, folder: &FolderItem) -> Result<()> {
         let conn = self.get_connection()?;
         conn.execute(
@@ -260,6 +268,12 @@ impl DatabaseManager {
                 folder.order
             ],
         )?;
+        Ok(())
+    }
+
+    pub fn delete_folder(&self, id: &str) -> Result<()> {
+        let conn = self.get_connection()?;
+        conn.execute("DELETE FROM folders WHERE id = ?1", params![id])?;
         Ok(())
     }
 }

@@ -1,50 +1,41 @@
-use tauri::{AppHandle, Manager};
+use tauri::State;
 use crate::models::{FolderItem, InitialData, NoteItem, SubjectItem};
 use crate::db::DatabaseManager;
 
 #[tauri::command]
-pub fn get_initial_data() -> Result<InitialData, String> {
-    let db = DatabaseManager::new().map_err(|e| e.to_string())?;
+pub fn get_initial_data(db: State<'_, DatabaseManager>) -> Result<InitialData, String> {
     db.get_initial_data().map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn save_note(note: NoteItem) -> Result<NoteItem, String> {
-    let db = DatabaseManager::new().map_err(|e| e.to_string())?;
+pub fn save_note(db: State<'_, DatabaseManager>, note: NoteItem) -> Result<NoteItem, String> {
     db.save_note(&note).map_err(|e| e.to_string())?;
     Ok(note)
 }
 
 #[tauri::command]
-pub fn delete_note(id: String) -> Result<(), String> {
-    let db = DatabaseManager::new().map_err(|e| e.to_string())?;
+pub fn delete_note(db: State<'_, DatabaseManager>, id: String) -> Result<(), String> {
     db.delete_note(&id).map_err(|e| e.to_string())
 }
 
 #[tauri::command]
-pub fn save_subject(subject: SubjectItem) -> Result<SubjectItem, String> {
-    let db = DatabaseManager::new().map_err(|e| e.to_string())?;
+pub fn save_subject(db: State<'_, DatabaseManager>, subject: SubjectItem) -> Result<SubjectItem, String> {
     db.save_subject(&subject).map_err(|e| e.to_string())?;
     Ok(subject)
 }
 
 #[tauri::command]
-pub fn save_folder(folder: FolderItem) -> Result<FolderItem, String> {
-    let db = DatabaseManager::new().map_err(|e| e.to_string())?;
+pub fn delete_subject(db: State<'_, DatabaseManager>, id: String) -> Result<(), String> {
+    db.delete_subject(&id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn save_folder(db: State<'_, DatabaseManager>, folder: FolderItem) -> Result<FolderItem, String> {
     db.save_folder(&folder).map_err(|e| e.to_string())?;
     Ok(folder)
 }
 
 #[tauri::command]
-pub fn toggle_widget_mode(app: AppHandle, is_mini: bool) -> Result<(), String> {
-    if let Some(window) = app.get_webview_window("main") {
-        if is_mini {
-            window.set_always_on_top(true).ok();
-            window.set_size(tauri::Size::Logical(tauri::LogicalSize { width: 360.0, height: 280.0 })).ok();
-        } else {
-            window.set_always_on_top(false).ok();
-            window.set_size(tauri::Size::Logical(tauri::LogicalSize { width: 1180.0, height: 760.0 })).ok();
-        }
-    }
-    Ok(())
+pub fn delete_folder(db: State<'_, DatabaseManager>, id: String) -> Result<(), String> {
+    db.delete_folder(&id).map_err(|e| e.to_string())
 }
