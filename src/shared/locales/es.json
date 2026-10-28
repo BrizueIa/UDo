@@ -135,7 +135,13 @@
     "title": "UDo Mini",
     "quickAddPlaceholder": "Tarea rápida... (Enter para guardar)",
     "noPending": "¡Todo al día! 🎉",
-    "expand": "Abrir App Completa"
+    "expand": "Abrir App Completa",
+    "expandMedium": "Extender a vista de notas",
+    "shrinkCompact": "Modo widget compacto",
+    "tasksTab": "Tareas",
+    "noteTab": "Nota",
+    "selectNoteToView": "Selecciona una nota para ver o editar",
+    "contentPlaceholder": "Escribe el contenido de la nota aquí..."
   },
   "quickAdd": {
     "title": "Captura Rápida",

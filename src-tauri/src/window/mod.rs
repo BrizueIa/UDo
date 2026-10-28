@@ -221,15 +221,15 @@ pub fn toggle_widget_mode(app: AppHandle, is_mini: bool) -> Result<(), String> {
         if is_mini {
             window
                 .set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
-                    width: 300.0,
-                    height: 200.0,
+                    width: 260.0,
+                    height: 180.0,
                 })))
                 .ok();
             window.set_always_on_top(true).ok();
             window
                 .set_size(tauri::Size::Logical(tauri::LogicalSize {
-                    width: 380.0,
-                    height: 460.0,
+                    width: 320.0,
+                    height: 240.0,
                 }))
                 .ok();
 
@@ -237,7 +237,7 @@ pub fn toggle_widget_mode(app: AppHandle, is_mini: bool) -> Result<(), String> {
                 let _ = std::process::Command::new("hyprctl")
                     .args([
                         "--batch",
-                        &format!("dispatch setfloating pid:{pid} ; dispatch resizewindowpixel exact 380 460,pid:{pid} ; dispatch centerwindow"),
+                        &format!("dispatch setfloating pid:{pid} ; dispatch resizewindowpixel exact 320 240,pid:{pid} ; dispatch centerwindow"),
                     ])
                     .spawn();
             }
@@ -261,6 +261,37 @@ pub fn toggle_widget_mode(app: AppHandle, is_mini: bool) -> Result<(), String> {
                     .args(["dispatch", "settiled", &format!("pid:{pid}")])
                     .spawn();
             }
+        }
+    }
+    Ok(())
+}
+
+/// Dynamically resizes floating widget between compact (320x240) and medium note-reading/writing (480x360)
+#[tauri::command]
+pub fn set_widget_size(app: AppHandle, size: String) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        let is_hyprland = std::env::var("HYPRLAND_INSTANCE_SIGNATURE").is_ok()
+            || std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default().to_lowercase().contains("hyprland")
+            || std::env::var("DESKTOP_SESSION").unwrap_or_default().to_lowercase().contains("omarchy");
+
+        let pid = std::process::id();
+        let (width, height) = if size == "medium" {
+            (480.0, 360.0)
+        } else {
+            (320.0, 240.0)
+        };
+
+        window
+            .set_size(tauri::Size::Logical(tauri::LogicalSize { width, height }))
+            .ok();
+
+        if is_hyprland {
+            let _ = std::process::Command::new("hyprctl")
+                .args([
+                    "--batch",
+                    &format!("dispatch setfloating pid:{pid} ; dispatch resizewindowpixel exact {width} {height},pid:{pid}"),
+                ])
+                .spawn();
         }
     }
     Ok(())

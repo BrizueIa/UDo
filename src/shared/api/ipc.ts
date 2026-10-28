@@ -199,6 +199,17 @@ export const api = {
     }
   },
 
+  async setWidgetSize(size: 'compact' | 'medium'): Promise<void> {
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('set_widget_size', { size });
+      } catch (err) {
+        console.warn('Tauri set widget size failed', err);
+      }
+    }
+  },
+
   async minimizeWindow(): Promise<void> {
     if (isTauri) {
       try {

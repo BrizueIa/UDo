@@ -135,7 +135,13 @@
     "title": "UDo Mini",
     "quickAddPlaceholder": "Quick task... (Enter to save)",
     "noPending": "All caught up! 🎉",
-    "expand": "Open Full App"
+    "expand": "Open Full App",
+    "expandMedium": "Expand to Note View",
+    "shrinkCompact": "Compact Widget View",
+    "tasksTab": "Tasks",
+    "noteTab": "Note",
+    "selectNoteToView": "Select a note to read or edit",
+    "contentPlaceholder": "Write note content here..."
   },
   "quickAdd": {
     "title": "Quick Add",

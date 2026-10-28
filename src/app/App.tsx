@@ -222,11 +222,13 @@ export const App: React.FC = () => {
       <div className="h-screen w-screen bg-theme-base text-theme-text font-sans antialiased overflow-hidden flex flex-col p-2">
         <FloatingWidget
           notes={notes}
+          timer={focusTimer}
           onToggleComplete={handleToggleNoteCompleteWithSound}
           onQuickAddNote={(title) => {
             handleCreateNote(selectedFolderId, title);
             playNoteCreatedSound();
           }}
+          onUpdateNote={handleUpdateNote}
           onRestoreFullApp={() => handleToggleWidgetMode(false)}
         />
       </div>

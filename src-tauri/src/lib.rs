@@ -49,6 +49,7 @@ pub fn run() {
             commands::save_folder,
             commands::delete_folder,
             window::toggle_widget_mode,
+            window::set_widget_size,
             window::minimize_window,
             window::toggle_maximize_window,
             window::close_window_to_tray,
