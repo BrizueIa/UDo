@@ -44,6 +44,8 @@ export const App: React.FC = () => {
     handleToggleNoteComplete,
     handleDeleteNote,
     handleCreateNote,
+    handleMoveNoteToFolder,
+    handleMoveNoteToSubject,
     handleAddFolder,
     handleUpdateFolder,
     handleDeleteFolder,
@@ -216,6 +218,7 @@ export const App: React.FC = () => {
             onUpdateSubject={handleUpdateSubject}
             onDeleteSubject={handleDeleteSubject}
             getSubjectNoteCount={getSubjectNoteCount}
+            onMoveNoteToSubject={handleMoveNoteToSubject}
           />
         )}
 
@@ -248,6 +251,7 @@ export const App: React.FC = () => {
               handleCreateNote(folderId);
               setActiveColumn(3);
             }}
+            onMoveNoteToFolder={handleMoveNoteToFolder}
           />
         )}
 

@@ -190,6 +190,67 @@ export function useWorkspaceState() {
     return notes.filter((n) => n.subjectId === subjectId).length;
   };
 
+  const handleMoveNoteToFolder = (noteId: string, targetFolderId: string) => {
+    const targetFolder = folders.find((f) => f.id === targetFolderId);
+    if (!targetFolder) return;
+
+    setNotes((prev) =>
+      prev.map((n) => {
+        if (n.id === noteId) {
+          const updated = {
+            ...n,
+            folderId: targetFolderId,
+            subjectId: targetFolder.subjectId,
+            updatedAt: new Date().toISOString(),
+          };
+          api.saveNote(updated);
+          return updated;
+        }
+        return n;
+      })
+    );
+    setSelectedFolderId(targetFolderId);
+    setSelectedSubjectId(targetFolder.subjectId);
+    setSelectedNoteId(noteId);
+  };
+
+  const handleMoveNoteToSubject = (noteId: string, targetSubjectId: string) => {
+    const subjectFolders = folders.filter((f) => f.subjectId === targetSubjectId);
+    let targetFolder = subjectFolders[0];
+
+    if (!targetFolder) {
+      const newFolder: FolderItem = {
+        id: `folder-${Date.now()}`,
+        subjectId: targetSubjectId,
+        name: 'General',
+        isExpanded: true,
+        order: 0,
+      };
+      setFolders((prev) => [...prev, newFolder]);
+      api.saveFolder(newFolder);
+      targetFolder = newFolder;
+    }
+
+    setNotes((prev) =>
+      prev.map((n) => {
+        if (n.id === noteId) {
+          const updated = {
+            ...n,
+            subjectId: targetSubjectId,
+            folderId: targetFolder.id,
+            updatedAt: new Date().toISOString(),
+          };
+          api.saveNote(updated);
+          return updated;
+        }
+        return n;
+      })
+    );
+    setSelectedSubjectId(targetSubjectId);
+    setSelectedFolderId(targetFolder.id);
+    setSelectedNoteId(noteId);
+  };
+
   return {
     subjects,
     folders,
@@ -210,6 +271,8 @@ export function useWorkspaceState() {
     handleToggleNoteComplete,
     handleDeleteNote,
     handleCreateNote,
+    handleMoveNoteToFolder,
+    handleMoveNoteToSubject,
     handleAddFolder,
     handleUpdateFolder,
     handleDeleteFolder,

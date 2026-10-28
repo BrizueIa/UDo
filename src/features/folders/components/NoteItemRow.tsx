@@ -19,12 +19,18 @@ export const NoteItemRow: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
 
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    e.dataTransfer.setData('application/udo-note-id', note.id);
+    e.dataTransfer.setData('text/plain', note.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
   return (
-    <motion.div
+    <div
+      draggable
+      onDragStart={handleDragStart}
       onClick={onSelect}
-      whileHover={{ x: 2 }}
-      whileTap={{ scale: 0.98 }}
-      className={`group relative flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-pointer transition-colors select-none ${
+      className={`group relative flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-grab active:cursor-grabbing hover:translate-x-0.5 active:scale-[0.98] transition-all select-none ${
         isSelected
           ? 'text-theme-text font-medium'
           : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover/40'
@@ -34,18 +40,19 @@ export const NoteItemRow: React.FC<Props> = ({
       {isSelected && (
         <motion.div
           layoutId="active-note-pill"
-          className="absolute inset-0 bg-theme-card border border-theme-accent/50 rounded-lg shadow-sm"
+          className="absolute inset-0 bg-theme-card border border-theme-accent/50 rounded-lg shadow-sm pointer-events-none"
           transition={{ type: 'spring', stiffness: 450, damping: 32 }}
         />
       )}
 
       <div className="relative z-10 flex items-center space-x-2 min-w-0 flex-1">
         <button
+          type="button"
           onClick={(e) => {
             e.stopPropagation();
             onToggleComplete();
           }}
-          className="flex-shrink-0 text-theme-muted hover:text-theme-accent transition-colors"
+          className="flex-shrink-0 text-theme-muted hover:text-theme-accent transition-colors cursor-pointer"
         >
           {note.isCompleted ? (
             <CheckCircle2 size={15} className="text-emerald-500" />
@@ -71,6 +78,6 @@ export const NoteItemRow: React.FC<Props> = ({
           <Pin size={11} className="text-amber-400 rotate-45 flex-shrink-0 ml-1 fill-amber-400/30" />
         </span>
       )}
-    </motion.div>
+    </div>
   );
 };

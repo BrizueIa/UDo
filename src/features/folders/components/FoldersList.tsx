@@ -26,6 +26,7 @@ interface Props {
   onUpdateFolder: (folder: FolderItem) => void;
   onDeleteFolder: (id: string) => void;
   onAddNote: (folderId: string) => void;
+  onMoveNoteToFolder?: (noteId: string, folderId: string) => void;
 }
 
 export const FoldersList: React.FC<Props> = ({
@@ -47,6 +48,7 @@ export const FoldersList: React.FC<Props> = ({
   onUpdateFolder,
   onDeleteFolder,
   onAddNote,
+  onMoveNoteToFolder,
 }) => {
   const { t } = useTranslation();
 
@@ -215,6 +217,7 @@ export const FoldersList: React.FC<Props> = ({
                   onAddNote={() => onAddNote(folder.id)}
                   onUpdateFolder={onUpdateFolder}
                   onDeleteFolder={() => onDeleteFolder(folder.id)}
+                  onMoveNoteToFolder={onMoveNoteToFolder}
                 />
 
                 {/* Notes in folder (Animated Accordion) */}

@@ -20,6 +20,7 @@ interface Props {
   onAddNote: () => void;
   onUpdateFolder: (folder: FolderItem) => void;
   onDeleteFolder: () => void;
+  onMoveNoteToFolder?: (noteId: string, folderId: string) => void;
 }
 
 export const FolderItemRow: React.FC<Props> = ({
@@ -31,11 +32,35 @@ export const FolderItemRow: React.FC<Props> = ({
   onAddNote,
   onUpdateFolder,
   onDeleteFolder,
+  onMoveNoteToFolder,
 }) => {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editingName, setEditingName] = useState(folder.name);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('application/udo-note-id') || e.dataTransfer.types.includes('text/plain')) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDragOver(false);
+    const noteId = e.dataTransfer.getData('application/udo-note-id') || e.dataTransfer.getData('text/plain');
+    if (noteId && onMoveNoteToFolder) {
+      onMoveNoteToFolder(noteId, folder.id);
+    }
+  };
 
   const handleSaveEdit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -82,8 +107,13 @@ export const FolderItemRow: React.FC<Props> = ({
   return (
     <div
       onClick={onSelectFolder}
-      className={`group flex items-center justify-between px-2 py-1.5 rounded-md cursor-pointer transition-colors ${
-        isSelected
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+      className={`group flex items-center justify-between px-2 py-1.5 rounded-md cursor-pointer transition-all ${
+        isDragOver
+          ? 'bg-theme-accent/25 border-theme-accent ring-2 ring-theme-accent/60 scale-[1.01] shadow-md'
+          : isSelected
           ? 'bg-theme-card border border-theme-accent/50 text-theme-text font-semibold shadow-xs'
           : 'hover:bg-theme-hover/50 text-theme-text border border-transparent'
       }`}

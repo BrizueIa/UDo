@@ -6,6 +6,12 @@
   "nav": {
     "subjects": "PROJECTS",
     "addSubject": "New Project",
+    "editSubject": "Edit Project",
+    "deleteSubject": "Delete Project",
+    "confirmDelete": "Confirm delete",
+    "del": "Del",
+    "cancel": "Cancel",
+    "save": "Save",
     "searchPlaceholder": "Search notes, projects, folders... (Ctrl+K)",
     "filterAll": "All",
     "filterPending": "Pending",

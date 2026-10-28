@@ -6,6 +6,12 @@
   "nav": {
     "subjects": "PROYECTOS",
     "addSubject": "Nuevo Proyecto",
+    "editSubject": "Editar Proyecto",
+    "deleteSubject": "Eliminar Proyecto",
+    "confirmDelete": "Confirmar eliminación",
+    "del": "Eliminar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
     "searchPlaceholder": "Buscar notas, proyectos, carpetas... (Ctrl+K)",
     "filterAll": "Todo",
     "filterPending": "Pendientes",

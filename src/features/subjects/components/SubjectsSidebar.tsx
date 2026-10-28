@@ -24,6 +24,7 @@ interface Props {
   onUpdateSubject: (subject: SubjectItem) => void;
   onDeleteSubject: (id: string) => void;
   getSubjectNoteCount: (id: string) => number;
+  onMoveNoteToSubject?: (noteId: string, subjectId: string) => void;
 }
 
 export const SubjectsSidebar: React.FC<Props> = ({
@@ -35,8 +36,12 @@ export const SubjectsSidebar: React.FC<Props> = ({
   onUpdateSubject,
   onDeleteSubject,
   getSubjectNoteCount,
+  onMoveNoteToSubject,
 }) => {
   const { t } = useTranslation();
+
+  // Drag and drop state
+  const [dragOverSubjectId, setDragOverSubjectId] = useState<string | null>(null);
 
   // New Subject State
   const [isCreating, setIsCreating] = useState(false);
@@ -158,7 +163,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
                 type="button"
                 onClick={() => setIsCreating(false)}
                 className="p-1 rounded text-theme-muted hover:text-theme-text hover:bg-theme-hover transition-colors"
-                title="Cancel"
+                title={t('nav.cancel')}
               >
                 <X size={14} />
               </button>
@@ -169,7 +174,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
                 className="flex items-center space-x-1 px-2.5 py-1 rounded bg-theme-accent text-white text-xs font-semibold hover:bg-theme-accent-hover transition-colors disabled:opacity-50"
               >
                 <Check size={12} />
-                <span>Save</span>
+                <span>{t('nav.save')}</span>
               </button>
             </div>
           </motion.div>
@@ -237,19 +242,39 @@ export const SubjectsSidebar: React.FC<Props> = ({
             <motion.div
               key={subject.id}
               onClick={() => onSelectSubject(subject.id)}
+              onDragOver={(e) => {
+                if (e.dataTransfer.types.includes('application/udo-note-id') || e.dataTransfer.types.includes('text/plain')) {
+                  e.preventDefault();
+                  e.dataTransfer.dropEffect = 'move';
+                  if (dragOverSubjectId !== subject.id) setDragOverSubjectId(subject.id);
+                }
+              }}
+              onDragLeave={() => {
+                if (dragOverSubjectId === subject.id) setDragOverSubjectId(null);
+              }}
+              onDrop={(e) => {
+                e.preventDefault();
+                setDragOverSubjectId(null);
+                const noteId = e.dataTransfer.getData('application/udo-note-id') || e.dataTransfer.getData('text/plain');
+                if (noteId && onMoveNoteToSubject) {
+                  onMoveNoteToSubject(noteId, subject.id);
+                }
+              }}
               whileHover={{ x: 2 }}
               whileTap={{ scale: 0.98 }}
-              className={`group relative w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer select-none ${
-                isSelected
+              className={`group relative w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer select-none ${
+                dragOverSubjectId === subject.id
+                  ? 'bg-theme-accent/25 ring-2 ring-theme-accent/70 border-theme-accent scale-[1.02] shadow-md text-theme-text font-bold'
+                  : isSelected
                   ? 'text-theme-text font-semibold'
                   : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover/40'
               }`}
             >
               {/* Sliding Active Pill */}
-              {isSelected && (
+              {isSelected && !dragOverSubjectId && (
                 <motion.div
                   layoutId="active-subject-pill"
-                  className="absolute inset-0 bg-theme-card border border-theme-accent/40 rounded-lg shadow-sm"
+                  className="absolute inset-0 bg-theme-card border border-theme-accent/40 rounded-lg shadow-sm pointer-events-none"
                   transition={{ type: 'spring', stiffness: 450, damping: 32 }}
                 />
               )}
@@ -268,7 +293,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
                   <button
                     onClick={(e) => handleStartEdit(subject, e)}
                     className="p-1 text-theme-muted hover:text-theme-text hover:bg-theme-hover rounded"
-                    title="Edit project"
+                    title={t('nav.editSubject')}
                   >
                     <Pencil size={12} />
                   </button>
@@ -277,9 +302,9 @@ export const SubjectsSidebar: React.FC<Props> = ({
                       <button
                         onClick={(e) => handleDelete(subject.id, e)}
                         className="text-[10px] text-red-400 font-bold px-1 hover:underline"
-                        title="Confirm delete"
+                        title={t('nav.confirmDelete')}
                       >
-                        Del
+                        {t('nav.del')}
                       </button>
                       <button
                         onClick={(e) => {
@@ -298,7 +323,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
                         setDeletingSubjectId(subject.id);
                       }}
                       className="p-1 text-theme-muted hover:text-red-400 hover:bg-theme-hover rounded"
-                      title="Delete project"
+                      title={t('nav.deleteSubject')}
                     >
                       <Trash2 size={12} />
                     </button>
