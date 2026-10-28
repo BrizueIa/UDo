@@ -10,6 +10,7 @@ import { NoteContentHeader } from './NoteContentHeader';
 import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { playTaskCompleteSound } from '../../../shared/utils/soundEffects';
+import { processImageDropOrPaste } from '../../../shared/utils/imageClipboard';
 
 interface Props {
   note: NoteItem;
@@ -83,47 +84,25 @@ export const NoteDetailView: React.FC<Props> = ({
   }, []);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdateNote({
-      ...note,
-      title: e.target.value,
-      updatedAt: new Date().toISOString(),
-    });
+    onUpdateNote({ ...note, title: e.target.value, updatedAt: new Date().toISOString() });
   };
 
   const handleContentChange = (newContent: string) => {
-    onUpdateNote({
-      ...note,
-      content: newContent,
-      updatedAt: new Date().toISOString(),
-    });
+    onUpdateNote({ ...note, content: newContent, updatedAt: new Date().toISOString() });
   };
 
   const handleToggleComplete = () => {
     const nextState = !note.isCompleted;
-    if (nextState) {
-      playTaskCompleteSound();
-    }
-    onUpdateNote({
-      ...note,
-      isCompleted: nextState,
-      updatedAt: new Date().toISOString(),
-    });
+    if (nextState) playTaskCompleteSound();
+    onUpdateNote({ ...note, isCompleted: nextState, updatedAt: new Date().toISOString() });
   };
 
   const handleTogglePin = () => {
-    onUpdateNote({
-      ...note,
-      isPinned: !note.isPinned,
-      updatedAt: new Date().toISOString(),
-    });
+    onUpdateNote({ ...note, isPinned: !note.isPinned, updatedAt: new Date().toISOString() });
   };
 
   const handleSelectFolder = (newFolderId: string) => {
-    onUpdateNote({
-      ...note,
-      folderId: newFolderId,
-      updatedAt: new Date().toISOString(),
-    });
+    onUpdateNote({ ...note, folderId: newFolderId, updatedAt: new Date().toISOString() });
   };
 
   const handleInsertTask = () => {
@@ -190,43 +169,64 @@ export const NoteDetailView: React.FC<Props> = ({
   };
 
   const handleRemoveLink = (linkId: string) => {
-    onUpdateNote({
-      ...note,
-      links: note.links.filter((l) => l.id !== linkId),
-      updatedAt: new Date().toISOString(),
-    });
+    onUpdateNote({ ...note, links: note.links.filter((l) => l.id !== linkId), updatedAt: new Date().toISOString() });
   };
 
   const handleRemoveSketch = (sketchId: string) => {
-    onUpdateNote({
-      ...note,
-      sketches: note.sketches.filter((s) => s.id !== sketchId),
-      updatedAt: new Date().toISOString(),
-    });
+    onUpdateNote({ ...note, sketches: note.sketches.filter((s) => s.id !== sketchId), updatedAt: new Date().toISOString() });
   };
 
   const handleAddTag = (tag: string) => {
     if (!note.tags.includes(tag)) {
-      onUpdateNote({
-        ...note,
-        tags: [...note.tags, tag],
-        updatedAt: new Date().toISOString(),
-      });
+      onUpdateNote({ ...note, tags: [...note.tags, tag], updatedAt: new Date().toISOString() });
     }
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
-    onUpdateNote({
-      ...note,
-      tags: note.tags.filter((t) => t !== tagToRemove),
-      updatedAt: new Date().toISOString(),
-    });
+    onUpdateNote({ ...note, tags: note.tags.filter((t) => t !== tagToRemove), updatedAt: new Date().toISOString() });
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    const sketch = await processImageDropOrPaste(e, t('note.pastedImage'));
+    if (sketch) {
+      e.preventDefault();
+      onUpdateNote({
+        ...note,
+        sketches: [...note.sketches, sketch],
+        updatedAt: new Date().toISOString(),
+      });
+      setIsMediaDrawerOpen(true);
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+    }
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    const sketch = await processImageDropOrPaste(e, t('note.droppedImage'));
+    if (sketch) {
+      e.preventDefault();
+      onUpdateNote({
+        ...note,
+        sketches: [...note.sketches, sketch],
+        updatedAt: new Date().toISOString(),
+      });
+      setIsMediaDrawerOpen(true);
+    }
   };
 
   const totalMediaCount = note.links.length + note.sketches.length;
 
   return (
-    <div className="flex-1 bg-theme-base flex flex-col h-full overflow-y-auto">
+    <div
+      onPaste={handlePaste}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      className="flex-1 bg-theme-base flex flex-col h-full overflow-y-auto"
+    >
       {/* Top Action Ribbon */}
       <NoteActionRibbon
         note={note}
