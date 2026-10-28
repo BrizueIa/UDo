@@ -99,3 +99,11 @@ export interface SearchResult {
   folderName: string;
   matches: string[];
 }
+
+export interface CustomTemplateItem {
+  id: string;
+  title: string;
+  description: string;
+  content: string;
+  updatedAt: string;
+}
