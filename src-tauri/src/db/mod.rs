@@ -68,27 +68,22 @@ impl DatabaseManager {
                 FOREIGN KEY(subject_id) REFERENCES subjects(id) ON DELETE CASCADE
             );
 
-            DROP TABLE IF EXISTS notes_fts;
-            CREATE VIRTUAL TABLE notes_fts USING fts5(
+            CREATE VIRTUAL TABLE IF NOT EXISTS notes_fts USING fts5(
                 title, content, tags_json, content='notes', content_rowid='rowid',
                 tokenize = 'unicode61 remove_diacritics 2'
             );
 
-            DROP TRIGGER IF EXISTS notes_ai;
-            DROP TRIGGER IF EXISTS notes_ad;
-            DROP TRIGGER IF EXISTS notes_au;
-
-            CREATE TRIGGER notes_ai AFTER INSERT ON notes BEGIN
+            CREATE TRIGGER IF NOT EXISTS notes_ai AFTER INSERT ON notes BEGIN
                 INSERT INTO notes_fts(rowid, title, content, tags_json)
                 VALUES (new.rowid, new.title, new.content, new.tags_json);
             END;
 
-            CREATE TRIGGER notes_ad AFTER DELETE ON notes BEGIN
+            CREATE TRIGGER IF NOT EXISTS notes_ad AFTER DELETE ON notes BEGIN
                 INSERT INTO notes_fts(notes_fts, rowid, title, content, tags_json)
                 VALUES ('delete', old.rowid, old.title, old.content, old.tags_json);
             END;
 
-            CREATE TRIGGER notes_au AFTER UPDATE ON notes BEGIN
+            CREATE TRIGGER IF NOT EXISTS notes_au AFTER UPDATE ON notes BEGIN
                 INSERT INTO notes_fts(notes_fts, rowid, title, content, tags_json)
                 VALUES ('delete', old.rowid, old.title, old.content, old.tags_json);
                 INSERT INTO notes_fts(rowid, title, content, tags_json)
@@ -97,8 +92,16 @@ impl DatabaseManager {
             ",
         )?;
 
-        // Rebuild FTS index to guarantee existing notes are indexed
-        conn.execute("INSERT INTO notes_fts(notes_fts) VALUES('rebuild');", [])?;
+        // Rebuild FTS index only when notes table has data but notes_fts index is empty
+        let notes_count: i64 = conn.query_row("SELECT count(*) FROM notes", [], |r| r.get(0))?;
+        if notes_count > 0 {
+            let fts_count: i64 = conn
+                .query_row("SELECT count(*) FROM notes_fts_docsize", [], |r| r.get(0))
+                .unwrap_or(0);
+            if fts_count == 0 {
+                conn.execute("INSERT INTO notes_fts(notes_fts) VALUES('rebuild');", [])?;
+            }
+        }
 
         // Seed default sample data if newly created database
         let count: i64 = conn.query_row("SELECT count(*) FROM subjects", [], |r| r.get(0))?;
