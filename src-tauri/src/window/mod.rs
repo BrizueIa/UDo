@@ -23,15 +23,17 @@ pub fn handle_global_shortcut(app: &AppHandle, shortcut: &Shortcut) {
             if window.is_visible().unwrap_or(false) {
                 let _ = window.hide();
             } else {
+                let _ = window.unminimize();
                 let _ = window.show();
                 let _ = window.set_focus();
             }
         }
     } else if Some(shortcut) == ctrl_alt_space.as_ref() {
         if let Some(window) = app.get_webview_window("main") {
+            let _ = window.unminimize();
             let _ = window.show();
             let _ = window.set_focus();
-            let _ = app.emit("tray:quick-add", ());
+            let _ = window.emit("tray:quick-add", ());
         }
     }
 }
@@ -50,23 +52,26 @@ pub fn setup_tray(app: &App) -> Result<(), Box<dyn std::error::Error>> {
         .on_menu_event(|app, event| match event.id.as_ref() {
             "open" => {
                 if let Some(window) = app.get_webview_window("main") {
-                    window.show().ok();
-                    window.set_focus().ok();
+                    let _ = window.unminimize();
+                    let _ = window.show();
+                    let _ = window.set_focus();
                 }
             }
             "toggle_widget" => {
                 if let Some(window) = app.get_webview_window("main") {
-                    window.show().ok();
-                    window.set_focus().ok();
+                    let _ = window.unminimize();
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                    let _ = window.emit("tray:toggle-widget", ());
                 }
-                let _ = app.emit("tray:toggle-widget", ());
             }
             "quick_add" => {
                 if let Some(window) = app.get_webview_window("main") {
-                    window.show().ok();
-                    window.set_focus().ok();
+                    let _ = window.unminimize();
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                    let _ = window.emit("tray:quick-add", ());
                 }
-                let _ = app.emit("tray:quick-add", ());
             }
             "quit" => {
                 app.exit(0);
@@ -82,6 +87,7 @@ pub fn setup_tray(app: &App) -> Result<(), Box<dyn std::error::Error>> {
             {
                 let app = tray.app_handle();
                 if let Some(window) = app.get_webview_window("main") {
+                    let _ = window.unminimize();
                     let _ = window.show();
                     let _ = window.set_focus();
                 }
@@ -100,11 +106,48 @@ pub fn handle_window_event(window: &Window, event: &WindowEvent) {
     }
 }
 
+/// Minimizes the application window
+#[tauri::command]
+pub fn minimize_window(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.minimize().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
+/// Toggles between maximized and unmaximized states
+#[tauri::command]
+pub fn toggle_maximize_window(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        if window.is_maximized().unwrap_or(false) {
+            window.unmaximize().map_err(|e| e.to_string())?;
+        } else {
+            window.maximize().map_err(|e| e.to_string())?;
+        }
+    }
+    Ok(())
+}
+
+/// Closes the application window to system tray
+#[tauri::command]
+pub fn close_window_to_tray(app: AppHandle) -> Result<(), String> {
+    if let Some(window) = app.get_webview_window("main") {
+        window.hide().map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 /// Toggles between full 3-column desktop layout and compact floating mini-widget
 #[tauri::command]
 pub fn toggle_widget_mode(app: AppHandle, is_mini: bool) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("main") {
         if is_mini {
+            window
+                .set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
+                    width: 300.0,
+                    height: 200.0,
+                })))
+                .ok();
             window.set_always_on_top(true).ok();
             window
                 .set_size(tauri::Size::Logical(tauri::LogicalSize {
@@ -119,6 +162,12 @@ pub fn toggle_widget_mode(app: AppHandle, is_mini: bool) -> Result<(), String> {
                     width: 1180.0,
                     height: 760.0,
                 }))
+                .ok();
+            window
+                .set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
+                    width: 850.0,
+                    height: 550.0,
+                })))
                 .ok();
         }
     }

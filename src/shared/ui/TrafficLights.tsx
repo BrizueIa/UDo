@@ -1,44 +1,42 @@
 import React from 'react';
+import { Minus, Square, X } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import { api } from '../api/ipc';
 
 export const TrafficLights: React.FC = () => {
-  const handleClose = async () => {
-    if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      await getCurrentWindow().hide(); // Minimize to tray on close!
-    }
-  };
-
-  const handleMinimize = async () => {
-    if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      await getCurrentWindow().minimize();
-    }
-  };
-
-  const handleMaximize = async () => {
-    if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
-      const { getCurrentWindow } = await import('@tauri-apps/api/window');
-      await getCurrentWindow().toggleMaximize();
-    }
-  };
+  const { t } = useTranslation();
 
   return (
-    <div className="flex items-center space-x-2 px-3 py-2 select-none group">
+    <div className="flex items-center space-x-1 select-none" data-tauri-drag-region="false">
+      {/* Minimize */}
       <button
-        onClick={handleClose}
-        aria-label="Close"
-        className="w-3 h-3 rounded-full bg-[#ff5f56] hover:brightness-90 transition-all flex items-center justify-center text-[8px] text-black/60 opacity-90 group-hover:opacity-100"
-      />
+        onClick={() => api.minimizeWindow()}
+        aria-label={t('window.minimize')}
+        title={t('window.minimize')}
+        className="w-6 h-6 rounded-md flex items-center justify-center text-theme-muted hover:text-theme-text hover:bg-theme-card transition-colors cursor-pointer"
+      >
+        <Minus size={12} />
+      </button>
+
+      {/* Maximize / Restore */}
       <button
-        onClick={handleMinimize}
-        aria-label="Minimize"
-        className="w-3 h-3 rounded-full bg-[#ffbd2e] hover:brightness-90 transition-all flex items-center justify-center text-[8px] text-black/60 opacity-90 group-hover:opacity-100"
-      />
+        onClick={() => api.toggleMaximizeWindow()}
+        aria-label={t('window.maximize')}
+        title={t('window.maximize')}
+        className="w-6 h-6 rounded-md flex items-center justify-center text-theme-muted hover:text-theme-text hover:bg-theme-card transition-colors cursor-pointer"
+      >
+        <Square size={10} />
+      </button>
+
+      {/* Close to Tray */}
       <button
-        onClick={handleMaximize}
-        aria-label="Maximize"
-        className="w-3 h-3 rounded-full bg-[#27c93f] hover:brightness-90 transition-all flex items-center justify-center text-[8px] text-black/60 opacity-90 group-hover:opacity-100"
-      />
+        onClick={() => api.closeWindowToTray()}
+        aria-label={t('window.closeToTray')}
+        title={t('window.closeToTray')}
+        className="w-6 h-6 rounded-md flex items-center justify-center text-theme-muted hover:text-white hover:bg-red-500/90 transition-colors cursor-pointer"
+      >
+        <X size={12} />
+      </button>
     </div>
   );
 };

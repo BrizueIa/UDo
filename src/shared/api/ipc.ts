@@ -191,6 +191,39 @@ export const api = {
     }
   },
 
+  async minimizeWindow(): Promise<void> {
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('minimize_window');
+      } catch (err) {
+        console.warn('Tauri minimize failed', err);
+      }
+    }
+  },
+
+  async toggleMaximizeWindow(): Promise<void> {
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('toggle_maximize_window');
+      } catch (err) {
+        console.warn('Tauri toggle maximize failed', err);
+      }
+    }
+  },
+
+  async closeWindowToTray(): Promise<void> {
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('close_window_to_tray');
+      } catch (err) {
+        console.warn('Tauri close to tray failed', err);
+      }
+    }
+  },
+
   async sendNativeNotification(title: string, body: string): Promise<void> {
     if (isTauri) {
       try {
