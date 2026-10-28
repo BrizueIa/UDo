@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { ViewFilter, SketchItem } from '../shared/types';
 import { useThemeManager } from '../shared/hooks/useThemeManager';
 import { useWorkspaceState } from '../shared/hooks/useWorkspaceState';
@@ -7,18 +7,22 @@ import { useKeyboardShortcuts, ColumnIndex } from '../shared/hooks/useKeyboardSh
 import { useFocusTimer } from '../shared/hooks/useFocusTimer';
 import { useTrayEvents } from '../shared/hooks/useTrayEvents';
 import { api } from '../shared/api/ipc';
-import { playTaskCompleteSound, isAudioMuted, toggleAudioMute } from '../shared/utils/soundEffects';
+import {
+  playTaskCompleteSound,
+  playNoteCreatedSound,
+  isAudioMuted,
+  toggleAudioMute,
+  getAudioVolume,
+  setAudioVolume,
+  setAudioMuted,
+} from '../shared/utils/soundEffects';
 import { TopBar } from './TopBar';
 import { SubjectsSidebar } from '../features/subjects/components/SubjectsSidebar';
 import { FoldersList } from '../features/folders/components/FoldersList';
 import { NoteDetailView } from '../features/note-sheet/components/NoteDetailView';
 import { EmptyNoteView } from '../features/note-sheet/components/EmptyNoteView';
 import { FloatingWidget } from '../features/floating-widget/components/FloatingWidget';
-import { ImageAnnotatorModal } from '../features/canvas-editor/components/ImageAnnotatorModal';
-import { CommandPalette } from '../features/search-palette/components/CommandPalette';
-import { QuickAddModal } from '../features/search-palette/components/QuickAddModal';
-import { FocusTimerPopover } from '../features/focus-timer/components/FocusTimerPopover';
-import { ShortcutsModal } from '../shared/ui/ShortcutsModal';
+import { AppModals } from './AppModals';
 import { useTranslation } from 'react-i18next';
 
 export const App: React.FC = () => {
@@ -69,11 +73,38 @@ export const App: React.FC = () => {
   const [isTimerModalOpen, setIsTimerModalOpen] = useState(false);
   const [activeSketch, setActiveSketch] = useState<SketchItem | null>(null);
   const [soundMuted, setSoundMuted] = useState(() => isAudioMuted());
+  const [soundVolume, setSoundVolume] = useState(() => getAudioVolume());
 
-  const focusTimer = useFocusTimer();
+  // Focus Timer Hook with persistent focusMinutes recording (FR-14)
+  const handleSprintCompleted = useCallback(
+    (noteId: string, secondsSpent: number) => {
+      const minutesSpent = Math.max(1, Math.round(secondsSpent / 60));
+      const targetNote = notes.find((n) => n.id === noteId);
+      if (targetNote) {
+        handleUpdateNote({
+          ...targetNote,
+          focusMinutes: (targetNote.focusMinutes || 0) + minutesSpent,
+        });
+      }
+    },
+    [notes, handleUpdateNote]
+  );
+
+  const focusTimer = useFocusTimer({
+    onSprintCompleted: handleSprintCompleted,
+  });
 
   const handleToggleAudioMute = () => {
     setSoundMuted(toggleAudioMute());
+  };
+
+  const handleVolumeChange = (vol: number) => {
+    setAudioVolume(vol);
+    setSoundVolume(vol);
+    if (soundMuted && vol > 0) {
+      setAudioMuted(false);
+      setSoundMuted(false);
+    }
   };
 
   const handleToggleWidgetMode = (explicitVal?: boolean) => {
@@ -84,7 +115,6 @@ export const App: React.FC = () => {
     });
   };
 
-  // Listen to background system tray events (FR-09)
   useTrayEvents({
     onToggleWidget: () => handleToggleWidgetMode(),
     onQuickAdd: () => setIsQuickAddOpen(true),
@@ -135,12 +165,29 @@ export const App: React.FC = () => {
     handleToggleNoteComplete(id);
   };
 
+  const handleCreateNewNote = useCallback((folderId = selectedFolderId, title?: string) => {
+    handleCreateNote(folderId, title);
+    playNoteCreatedSound();
+    setActiveColumn(3);
+  }, [selectedFolderId, handleCreateNote]);
+
+  const handleSaveSketch = useCallback((updatedSketch: SketchItem) => {
+    if (!currentNote) return;
+    const exists = currentNote.sketches.some((s) => s.id === updatedSketch.id);
+    const newSketches = exists
+      ? currentNote.sketches.map((s) => (s.id === updatedSketch.id ? updatedSketch : s))
+      : [...currentNote.sketches, updatedSketch];
+    handleUpdateNote({
+      ...currentNote,
+      sketches: newSketches,
+    });
+    setActiveSketch(null);
+  }, [currentNote, handleUpdateNote]);
+
   const handleQuickAddSave = (title: string, folderId: string, subjectId: string) => {
     setSelectedSubjectId(subjectId);
     setSelectedFolderId(folderId);
-    handleCreateNote(folderId, title);
-    playTaskCompleteSound();
-    setActiveColumn(3);
+    handleCreateNewNote(folderId, title);
   };
 
   useKeyboardShortcuts({
@@ -152,10 +199,7 @@ export const App: React.FC = () => {
     onToggleWidgetMode: handleToggleWidgetMode,
     onToggleZenMode: () => setIsZenMode((prev) => !prev),
     onToggleShortcutsModal: () => setIsShortcutsModalOpen((prev) => !prev),
-    onCreateNote: () => {
-      handleCreateNote(selectedFolderId);
-      setActiveColumn(3);
-    },
+    onCreateNote: () => handleCreateNewNote(),
     onCreateFolder: () =>
       handleAddFolder(`${t('folders.addFolder')} ${currentSubjectFolders.length + 1}`),
     onToggleCurrentNoteComplete: () => {
@@ -173,6 +217,22 @@ export const App: React.FC = () => {
     onEscape: handleEscape,
   });
 
+  if (isWidgetMode) {
+    return (
+      <div className="h-screen w-screen bg-theme-base text-theme-text font-sans antialiased overflow-hidden flex flex-col p-2">
+        <FloatingWidget
+          notes={notes}
+          onToggleComplete={handleToggleNoteCompleteWithSound}
+          onQuickAddNote={(title) => {
+            handleCreateNote(selectedFolderId, title);
+            playNoteCreatedSound();
+          }}
+          onRestoreFullApp={() => handleToggleWidgetMode(false)}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-theme-base text-theme-text font-sans antialiased">
       <TopBar
@@ -187,6 +247,8 @@ export const App: React.FC = () => {
         customThemes={customThemes}
         timer={focusTimer}
         isAudioMuted={soundMuted}
+        audioVolume={soundVolume}
+        onVolumeChange={handleVolumeChange}
         onSearchChange={setSearchQuery}
         onOpenSearchPalette={(q) => {
           setSearchPaletteInitialQuery(q || '');
@@ -247,10 +309,7 @@ export const App: React.FC = () => {
             onAddFolder={handleAddFolder}
             onUpdateFolder={handleUpdateFolder}
             onDeleteFolder={handleDeleteFolder}
-            onAddNote={(folderId) => {
-              handleCreateNote(folderId);
-              setActiveColumn(3);
-            }}
+            onAddNote={(folderId) => handleCreateNewNote(folderId)}
             onMoveNoteToFolder={handleMoveNoteToFolder}
           />
         )}
@@ -283,10 +342,7 @@ export const App: React.FC = () => {
                 setSelectedNoteId(noteId);
                 setActiveColumn(3);
               }}
-              onCreateNoteWithTitle={(title) => {
-                handleCreateNote(selectedFolderId, title);
-                setActiveColumn(3);
-              }}
+              onCreateNoteWithTitle={(title) => handleCreateNewNote(selectedFolderId, title)}
               onSelectTagFilter={(tag) => setActiveTagFilter(tag)}
               onOpenSketchAnnotator={(sketch) => setActiveSketch(sketch)}
               onOpenWhiteboard={() => {
@@ -299,81 +355,37 @@ export const App: React.FC = () => {
               }}
             />
           ) : (
-            <EmptyNoteView
-              onCreateNote={() => {
-                handleCreateNote(selectedFolderId);
-                setActiveColumn(3);
-              }}
-            />
+            <EmptyNoteView onCreateNote={() => handleCreateNewNote()} />
           )}
         </div>
       </main>
 
-      {isWidgetMode && (
-        <FloatingWidget
-          notes={notes}
-          onToggleComplete={handleToggleNoteCompleteWithSound}
-          onQuickAddNote={(title) => handleCreateNote(selectedFolderId, title)}
-          onRestoreFullApp={() => handleToggleWidgetMode(false)}
-        />
-      )}
-
-      {activeSketch && currentNote && (
-        <ImageAnnotatorModal
-          sketch={activeSketch}
-          isOpen={!!activeSketch}
-          onClose={() => setActiveSketch(null)}
-          onSave={(updatedSketch) => {
-            const exists = currentNote.sketches.some((s) => s.id === updatedSketch.id);
-            const newSketches = exists
-              ? currentNote.sketches.map((s) => (s.id === updatedSketch.id ? updatedSketch : s))
-              : [...currentNote.sketches, updatedSketch];
-            handleUpdateNote({
-              ...currentNote,
-              sketches: newSketches,
-            });
-            setActiveSketch(null);
-          }}
-        />
-      )}
-
-      <CommandPalette
-        isOpen={isSearchPaletteOpen}
-        initialQuery={searchPaletteInitialQuery}
+      <AppModals
+        currentNote={currentNote}
         notes={notes}
         subjects={subjects}
         folders={folders}
-        onClose={() => setIsSearchPaletteOpen(false)}
-        onSelectNote={(noteId, subjectId) => {
+        selectedSubjectId={selectedSubjectId}
+        selectedFolderId={selectedFolderId}
+        activeSketch={activeSketch}
+        isSearchPaletteOpen={isSearchPaletteOpen}
+        searchPaletteInitialQuery={searchPaletteInitialQuery}
+        isQuickAddOpen={isQuickAddOpen}
+        isTimerModalOpen={isTimerModalOpen}
+        isShortcutsModalOpen={isShortcutsModalOpen}
+        focusTimer={focusTimer}
+        onCloseSketch={() => setActiveSketch(null)}
+        onSaveSketch={handleSaveSketch}
+        onCloseSearchPalette={() => setIsSearchPaletteOpen(false)}
+        onSelectNoteFromPalette={(noteId, subjectId) => {
           setSelectedSubjectId(subjectId);
           setSelectedNoteId(noteId);
           setActiveColumn(3);
         }}
-      />
-
-      <QuickAddModal
-        isOpen={isQuickAddOpen}
-        subjects={subjects}
-        folders={folders}
-        defaultSubjectId={selectedSubjectId}
-        defaultFolderId={selectedFolderId}
-        onClose={() => setIsQuickAddOpen(false)}
-        onSave={handleQuickAddSave}
-      />
-
-      {currentNote && (
-        <FocusTimerPopover
-          isOpen={isTimerModalOpen}
-          noteId={currentNote.id}
-          noteTitle={currentNote.title}
-          timer={focusTimer}
-          onClose={() => setIsTimerModalOpen(false)}
-        />
-      )}
-
-      <ShortcutsModal
-        isOpen={isShortcutsModalOpen}
-        onClose={() => setIsShortcutsModalOpen(false)}
+        onCloseQuickAdd={() => setIsQuickAddOpen(false)}
+        onQuickAddSave={handleQuickAddSave}
+        onCloseTimerModal={() => setIsTimerModalOpen(false)}
+        onCloseShortcutsModal={() => setIsShortcutsModalOpen(false)}
       />
     </div>
   );

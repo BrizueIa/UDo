@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ViewFilter, ThemeId, AccentColor, CustomThemeDefinition } from '../shared/types';
 import { TrafficLights } from '../shared/ui/TrafficLights';
 import { ThemeSelectorMenu } from '../shared/ui/ThemeSelectorMenu';
@@ -19,6 +19,8 @@ interface Props {
   customThemes: CustomThemeDefinition[];
   timer?: FocusTimerState;
   isAudioMuted: boolean;
+  audioVolume: number;
+  onVolumeChange: (vol: number) => void;
   onSearchChange: (q: string) => void;
   onOpenSearchPalette: (initialQuery?: string) => void;
   onFilterChange: (f: ViewFilter) => void;
@@ -45,6 +47,8 @@ export const TopBar: React.FC<Props> = ({
   customThemes,
   timer,
   isAudioMuted,
+  audioVolume,
+  onVolumeChange,
   onSearchChange,
   onOpenSearchPalette,
   onFilterChange,
@@ -59,10 +63,24 @@ export const TopBar: React.FC<Props> = ({
   onOpenTimerModal,
 }) => {
   const { t, i18n } = useTranslation();
-  const searchInputRef = React.useRef<HTMLInputElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const volumePopoverRef = useRef<HTMLDivElement>(null);
+  const [showVolumePopover, setShowVolumePopover] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (volumePopoverRef.current && !volumePopoverRef.current.contains(e.target as Node)) {
+        setShowVolumePopover(false);
+      }
+    };
+    if (showVolumePopover) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showVolumePopover]);
 
   // Global Ctrl + Shift + F listener to focus & select active category search bar (FR-06)
-  React.useEffect(() => {
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') {
         e.preventDefault();
@@ -157,7 +175,7 @@ export const TopBar: React.FC<Props> = ({
         {timer && (timer.isRunning || timer.isPaused) && (
           <div
             onClick={onOpenTimerModal}
-            className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold cursor-pointer border transition-colors shadow-sm ${
+            className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold cursor-pointer border transition-colors shadow-sm whitespace-nowrap ${
               timer.isPaused
                 ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
                 : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
@@ -182,7 +200,7 @@ export const TopBar: React.FC<Props> = ({
                   timer.pauseSprint();
                 }
               }}
-              className="p-0.5 rounded hover:bg-white/10 transition-colors ml-0.5"
+              className="p-0.5 rounded hover:bg-white/10 transition-colors ml-0.5 cursor-pointer"
               title={timer.isPaused ? t('focusTimer.resume') : t('focusTimer.pause')}
             >
               {timer.isPaused ? <Play size={10} className="fill-current" /> : <Pause size={10} />}
@@ -220,24 +238,56 @@ export const TopBar: React.FC<Props> = ({
           {/* Always-on-top Widget toggle */}
           <button
             onClick={onToggleWidgetMode}
-            className="p-1.5 rounded-md hover:text-theme-text hover:bg-theme-hover transition-colors"
+            className="p-1.5 rounded-md hover:text-theme-text hover:bg-theme-hover transition-colors cursor-pointer"
             title={t('shortcuts.toggleWidget')}
           >
             <Layers size={15} />
           </button>
 
-          {/* Audio Feedback Mute / Unmute (FR-15) */}
-          <button
-            onClick={onToggleAudioMute}
-            className={`p-1.5 rounded-md transition-colors ${
-              isAudioMuted
-                ? 'text-theme-muted/60 hover:text-theme-text hover:bg-theme-hover'
-                : 'text-theme-accent hover:text-theme-accent-hover hover:bg-theme-hover'
-            }`}
-            title={isAudioMuted ? t('audio.unmute') : t('audio.mute')}
-          >
-            {isAudioMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
-          </button>
+          {/* Audio Feedback Mute & Volume Slider (FR-15) */}
+          <div className="relative" ref={volumePopoverRef}>
+            <button
+              onClick={() => setShowVolumePopover(!showVolumePopover)}
+              className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                isAudioMuted
+                  ? 'text-theme-muted/60 hover:text-theme-text hover:bg-theme-hover'
+                  : 'text-theme-accent hover:text-theme-accent-hover hover:bg-theme-hover'
+              }`}
+              title={isAudioMuted ? t('audio.unmute') : t('audio.mute')}
+            >
+              {isAudioMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
+            </button>
+
+            {showVolumePopover && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-theme-card border border-white/[0.1] rounded-xl shadow-2xl p-2.5 z-50 flex items-center space-x-2">
+                <button
+                  type="button"
+                  onClick={onToggleAudioMute}
+                  className="p-1 rounded text-theme-muted hover:text-theme-text hover:bg-theme-hover transition-colors shrink-0 cursor-pointer"
+                  title={isAudioMuted ? t('audio.unmute') : t('audio.mute')}
+                >
+                  {isAudioMuted ? (
+                    <VolumeX size={14} className="text-red-400" />
+                  ) : (
+                    <Volume2 size={14} className="text-theme-accent" />
+                  )}
+                </button>
+                <input
+                  type="range"
+                  min="0"
+                  max="100"
+                  value={isAudioMuted ? 0 : Math.round(audioVolume * 100)}
+                  onChange={(e) => onVolumeChange(Number(e.target.value) / 100)}
+                  aria-label={t('audio.volume')}
+                  title={t('audio.volume')}
+                  className="w-full accent-theme-accent cursor-pointer h-1.5 bg-theme-base rounded-lg"
+                />
+                <span className="text-[10px] font-mono text-theme-muted w-7 text-right shrink-0">
+                  {isAudioMuted ? '0%' : `${Math.round(audioVolume * 100)}%`}
+                </span>
+              </div>
+            )}
+          </div>
 
           {/* Extracted Theme & VS Code Selector Menu */}
           <ThemeSelectorMenu
@@ -253,7 +303,7 @@ export const TopBar: React.FC<Props> = ({
           {/* Language Switcher */}
           <button
             onClick={onToggleLanguage}
-            className="flex items-center space-x-1 p-1.5 rounded-md hover:text-theme-text hover:bg-theme-hover transition-colors text-xs font-mono"
+            className="flex items-center space-x-1 p-1.5 rounded-md hover:text-theme-text hover:bg-theme-hover transition-colors text-xs font-mono cursor-pointer"
             title={t('settings.language')}
           >
             <Globe size={14} />
@@ -265,7 +315,7 @@ export const TopBar: React.FC<Props> = ({
           {/* Keyboard Shortcuts Modal */}
           <button
             onClick={onToggleShortcutsModal}
-            className="p-1.5 rounded-md hover:text-theme-text hover:bg-theme-hover transition-colors"
+            className="p-1.5 rounded-md hover:text-theme-text hover:bg-theme-hover transition-colors cursor-pointer"
             title={t('shortcuts.title')}
           >
             <HelpCircle size={15} />

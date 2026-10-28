@@ -3,6 +3,11 @@
     "title": "UDo",
     "tagline": "The way u do"
   },
+  "window": {
+    "minimize": "Minimizar",
+    "maximize": "Maximizar",
+    "closeToTray": "Ocultar a la bandeja"
+  },
   "nav": {
     "subjects": "PROYECTOS",
     "addSubject": "Nuevo Proyecto",
@@ -143,11 +148,16 @@
   },
   "focusTimer": {
     "title": "Sprint de Enfoque",
+    "preset90s": "1m 30s",
+    "preset5m": "5 min",
     "preset15": "15 min",
     "preset25": "25 min (Pomodoro)",
     "preset45": "45 min",
     "custom": "Personalizado",
     "customMinutes": "min",
+    "customSeconds": "seg",
+    "accumulated": "Tiempo Total de Enfoque",
+    "accumulatedShort": "enfocados",
     "start": "Iniciar Sprint",
     "pause": "Pausar",
     "resume": "Reanudar",
@@ -159,7 +169,8 @@
   },
   "audio": {
     "mute": "Silenciar efectos de sonido",
-    "unmute": "Activar efectos de sonido"
+    "unmute": "Activar efectos de sonido",
+    "volume": "Volumen"
   },
   "shortcuts": {
     "title": "Atajos de Teclado",

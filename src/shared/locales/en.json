@@ -3,6 +3,11 @@
     "title": "UDo",
     "tagline": "The way u do"
   },
+  "window": {
+    "minimize": "Minimize",
+    "maximize": "Maximize",
+    "closeToTray": "Hide to System Tray"
+  },
   "nav": {
     "subjects": "PROJECTS",
     "addSubject": "New Project",
@@ -143,11 +148,16 @@
   },
   "focusTimer": {
     "title": "Focus Sprint",
+    "preset90s": "1m 30s",
+    "preset5m": "5 min",
     "preset15": "15 min",
     "preset25": "25 min (Pomodoro)",
     "preset45": "45 min",
     "custom": "Custom",
     "customMinutes": "min",
+    "customSeconds": "sec",
+    "accumulated": "Total Focus Time",
+    "accumulatedShort": "focused",
     "start": "Start Focus Sprint",
     "pause": "Pause",
     "resume": "Resume",
@@ -159,7 +169,8 @@
   },
   "audio": {
     "mute": "Mute Sound Effects",
-    "unmute": "Enable Sound Effects"
+    "unmute": "Enable Sound Effects",
+    "volume": "Volume"
   },
   "shortcuts": {
     "title": "Keyboard Shortcuts",
