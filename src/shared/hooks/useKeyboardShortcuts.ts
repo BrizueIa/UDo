@@ -4,6 +4,7 @@ export type ColumnIndex = 1 | 2 | 3;
 
 interface ShortcutHandlers {
   onToggleSearchPalette: () => void;
+  onToggleQuickAdd?: () => void;
   onToggleWidgetMode: () => void;
   onToggleZenMode: () => void;
   onToggleShortcutsModal: () => void;
@@ -21,6 +22,7 @@ interface ShortcutHandlers {
 
 export function useKeyboardShortcuts({
   onToggleSearchPalette,
+  onToggleQuickAdd,
   onToggleWidgetMode,
   onToggleZenMode,
   onToggleShortcutsModal,
@@ -46,6 +48,13 @@ export function useKeyboardShortcuts({
       // Esc: Global escape handler (FR-08)
       if (e.key === 'Escape') {
         onEscape();
+        return;
+      }
+
+      // Ctrl + Alt + Space: Quick Add Spotlight (FR-12)
+      if (e.ctrlKey && e.altKey && (e.code === 'Space' || e.key === ' ')) {
+        e.preventDefault();
+        onToggleQuickAdd?.();
         return;
       }
 
@@ -192,6 +201,7 @@ export function useKeyboardShortcuts({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [
     onToggleSearchPalette,
+    onToggleQuickAdd,
     onToggleWidgetMode,
     onToggleZenMode,
     onToggleShortcutsModal,
