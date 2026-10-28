@@ -25,6 +25,18 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
 
   const [history, setHistory] = useState<ImageData[]>([]);
   const [redoStack, setRedoStack] = useState<ImageData[]>([]);
+  const historyRef = useRef<ImageData[]>([]);
+  const redoStackRef = useRef<ImageData[]>([]);
+
+  const updateHistory = (newHistory: ImageData[]) => {
+    historyRef.current = newHistory;
+    setHistory(newHistory);
+  };
+
+  const updateRedoStack = (newRedo: ImageData[]) => {
+    redoStackRef.current = newRedo;
+    setRedoStack(newRedo);
+  };
 
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
@@ -53,8 +65,9 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
       canvas.height = 600;
       ctx.fillStyle = '#181825';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-      setHistory([ctx.getImageData(0, 0, canvas.width, canvas.height)]);
-      setRedoStack([]);
+      const initial = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      updateHistory([initial]);
+      updateRedoStack([]);
       return;
     }
 
@@ -65,52 +78,58 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
       canvas.width = img.width || 800;
       canvas.height = img.height || 600;
       ctx.drawImage(img, 0, 0);
-      setHistory([ctx.getImageData(0, 0, canvas.width, canvas.height)]);
-      setRedoStack([]);
+      const initial = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      updateHistory([initial]);
+      updateRedoStack([]);
     };
   }, [sketch, isOpen]);
 
   const handleUndo = useCallback(() => {
-    if (history.length <= 1) return;
+    const h = historyRef.current;
+    if (h.length <= 1) return;
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
 
-    const current = history[history.length - 1];
-    const newHistory = history.slice(0, -1);
+    const current = h[h.length - 1];
+    const newHistory = h.slice(0, -1);
     const prevState = newHistory[newHistory.length - 1];
 
-    setRedoStack((prev) => [current, ...prev]);
-    setHistory(newHistory);
+    updateRedoStack([current, ...redoStackRef.current]);
+    updateHistory(newHistory);
     ctx.putImageData(prevState, 0, 0);
-  }, [history]);
+  }, []);
 
   const handleRedo = useCallback(() => {
-    if (redoStack.length === 0) return;
+    const r = redoStackRef.current;
+    if (r.length === 0) return;
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext('2d');
     if (!canvas || !ctx) return;
 
-    const nextState = redoStack[0];
-    const newRedoStack = redoStack.slice(1);
+    const nextState = r[0];
+    const newRedoStack = r.slice(1);
 
-    setRedoStack(newRedoStack);
-    setHistory((prev) => [...prev, nextState]);
+    updateRedoStack(newRedoStack);
+    updateHistory([...historyRef.current, nextState]);
     ctx.putImageData(nextState, 0, 0);
-  }, [redoStack]);
+  }, []);
 
   // Keyboard shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+Shift+Z, Esc)
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'z') {
+      const isCtrl = e.ctrlKey || e.metaKey;
+      const isZ = e.code === 'KeyZ' || e.key.toLowerCase() === 'z';
+      const isY = e.code === 'KeyY' || e.key.toLowerCase() === 'y';
+
+      if (isCtrl && !e.shiftKey && isZ) {
         e.preventDefault();
+        e.stopPropagation();
         handleUndo();
-      } else if (
-        (e.ctrlKey && e.key.toLowerCase() === 'y') ||
-        (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'z')
-      ) {
+      } else if ((isCtrl && isY) || (isCtrl && e.shiftKey && isZ)) {
         e.preventDefault();
+        e.stopPropagation();
         handleRedo();
       } else if (e.key === 'Escape') {
         if (cropSelection) {
@@ -120,8 +139,8 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
         }
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [isOpen, handleUndo, handleRedo, cropSelection, onClose]);
 
   const getCanvasCoords = (e: React.MouseEvent<HTMLCanvasElement>) => {
@@ -235,8 +254,8 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
       ctx.fill();
     }
 
-    setHistory((prev) => [...prev, ctx.getImageData(0, 0, canvas.width, canvas.height)]);
-    setRedoStack([]);
+    updateHistory([...historyRef.current, ctx.getImageData(0, 0, canvas.width, canvas.height)]);
+    updateRedoStack([]);
   };
 
   const handleApplyCrop = () => {
@@ -253,8 +272,8 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
     canvas.height = h;
     ctx.putImageData(cropped, 0, 0);
 
-    setHistory((prev) => [...prev, ctx.getImageData(0, 0, canvas.width, canvas.height)]);
-    setRedoStack([]);
+    updateHistory([...historyRef.current, ctx.getImageData(0, 0, canvas.width, canvas.height)]);
+    updateRedoStack([]);
     setCropSelection(null);
     setActiveTool('pen');
   };
