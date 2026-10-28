@@ -1,17 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { SketchItem } from '../../../shared/types';
-import {
-  X,
-  RotateCw,
-  ZoomIn,
-  ZoomOut,
-  Pen,
-  Highlighter,
-  ArrowRight,
-  Square,
-  Undo2,
-  Save,
-} from 'lucide-react';
+import { CanvasToolbar, CanvasTool } from './CanvasToolbar';
+import { CanvasCropOverlay, CropRect } from './CanvasCropOverlay';
 
 interface Props {
   sketch: SketchItem;
@@ -20,75 +10,166 @@ interface Props {
   onSave: (updatedSketch: SketchItem) => void;
 }
 
-type Tool = 'pen' | 'highlighter' | 'arrow' | 'rectangle';
-
 export const ImageAnnotatorModal: React.FC<Props> = ({
   sketch,
   isOpen,
   onClose,
   onSave,
 }) => {
-  if (!isOpen) return null;
-
+  const [title, setTitle] = useState(sketch.title || '');
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(0);
-  const [activeTool, setActiveTool] = useState<Tool>('pen');
-  const [selectedColor, setSelectedColor] = useState('#ef4444'); // Default red
-  const [history, setHistory] = useState<ImageData[]>([]);
+  const [activeTool, setActiveTool] = useState<CanvasTool>('pen');
+  const [selectedColor, setSelectedColor] = useState('#ef4444');
+  const [showGrid, setShowGrid] = useState(!sketch.dataUrl);
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [history, setHistory] = useState<ImageData[]>([]);
+  const [redoStack, setRedoStack] = useState<ImageData[]>([]);
+
   const [isDrawing, setIsDrawing] = useState(false);
   const [startPos, setStartPos] = useState<{ x: number; y: number } | null>(null);
 
-  const colors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#ffffff'];
+  // Interactive Crop State
+  const [cropSelection, setCropSelection] = useState<CropRect | null>(null);
+  const [isCropping, setIsCropping] = useState(false);
 
-  // Initialize canvas with sketch image
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const colors = ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#ec4899', '#8b5cf6', '#ffffff'];
+
   useEffect(() => {
+    setTitle(sketch.title || '');
+  }, [sketch.title]);
+
+  // Initialize canvas with sketch image or blank whiteboard
+  useEffect(() => {
+    if (!isOpen) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
+
+    if (!sketch.dataUrl) {
+      canvas.width = 900;
+      canvas.height = 600;
+      ctx.fillStyle = '#181825';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      setHistory([ctx.getImageData(0, 0, canvas.width, canvas.height)]);
+      setRedoStack([]);
+      return;
+    }
 
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.src = sketch.dataUrl;
     img.onload = () => {
-      canvas.width = img.width || 600;
-      canvas.height = img.height || 450;
+      canvas.width = img.width || 800;
+      canvas.height = img.height || 600;
       ctx.drawImage(img, 0, 0);
       setHistory([ctx.getImageData(0, 0, canvas.width, canvas.height)]);
+      setRedoStack([]);
     };
-  }, [sketch]);
+  }, [sketch, isOpen]);
+
+  const handleUndo = useCallback(() => {
+    if (history.length <= 1) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+
+    const current = history[history.length - 1];
+    const newHistory = history.slice(0, -1);
+    const prevState = newHistory[newHistory.length - 1];
+
+    setRedoStack((prev) => [current, ...prev]);
+    setHistory(newHistory);
+    ctx.putImageData(prevState, 0, 0);
+  }, [history]);
+
+  const handleRedo = useCallback(() => {
+    if (redoStack.length === 0) return;
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d');
+    if (!canvas || !ctx) return;
+
+    const nextState = redoStack[0];
+    const newRedoStack = redoStack.slice(1);
+
+    setRedoStack(newRedoStack);
+    setHistory((prev) => [...prev, nextState]);
+    ctx.putImageData(nextState, 0, 0);
+  }, [redoStack]);
+
+  // Keyboard shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+Shift+Z, Esc)
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault();
+        handleUndo();
+      } else if (
+        (e.ctrlKey && e.key.toLowerCase() === 'y') ||
+        (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'z')
+      ) {
+        e.preventDefault();
+        handleRedo();
+      } else if (e.key === 'Escape') {
+        if (cropSelection) {
+          setCropSelection(null);
+        } else {
+          onClose();
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, handleUndo, handleRedo, cropSelection, onClose]);
+
+  const getCanvasCoords = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - rect.left) / zoom,
+      y: (e.clientY - rect.top) / zoom,
+    };
+  };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / zoom;
-    const y = (e.clientY - rect.top) / zoom;
-
-    setIsDrawing(true);
+    const { x, y } = getCanvasCoords(e);
     setStartPos({ x, y });
 
-    const ctx = canvas.getContext('2d');
+    if (activeTool === 'crop') {
+      setIsCropping(true);
+      setCropSelection(null);
+      return;
+    }
+
+    setIsDrawing(true);
+    const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
 
-    if (activeTool === 'pen' || activeTool === 'highlighter') {
+    if (activeTool === 'pen' || activeTool === 'highlighter' || activeTool === 'eraser') {
       ctx.beginPath();
       ctx.moveTo(x, y);
     }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing) return;
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    const { x, y } = getCanvasCoords(e);
 
-    const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / zoom;
-    const y = (e.clientY - rect.top) / zoom;
+    if (isCropping && startPos) {
+      setCropSelection({
+        x: Math.max(0, Math.min(startPos.x, x)),
+        y: Math.max(0, Math.min(startPos.y, y)),
+        w: Math.abs(x - startPos.x),
+        h: Math.abs(y - startPos.y),
+      });
+      return;
+    }
+
+    if (!isDrawing || !canvasRef.current) return;
+    const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
 
     if (activeTool === 'pen') {
       ctx.strokeStyle = selectedColor;
@@ -97,15 +178,31 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
       ctx.lineTo(x, y);
       ctx.stroke();
     } else if (activeTool === 'highlighter') {
-      ctx.strokeStyle = `${selectedColor}66`; // 40% alpha
+      ctx.strokeStyle = `${selectedColor}55`;
       ctx.lineWidth = 14;
       ctx.lineCap = 'round';
       ctx.lineTo(x, y);
       ctx.stroke();
+    } else if (activeTool === 'eraser') {
+      ctx.save();
+      ctx.strokeStyle = '#181825';
+      ctx.lineWidth = 22;
+      ctx.lineCap = 'round';
+      ctx.lineTo(x, y);
+      ctx.stroke();
+      ctx.restore();
     }
   };
 
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (isCropping) {
+      setIsCropping(false);
+      if (cropSelection && (cropSelection.w < 15 || cropSelection.h < 15)) {
+        setCropSelection(null);
+      }
+      return;
+    }
+
     if (!isDrawing) return;
     setIsDrawing(false);
     const canvas = canvasRef.current;
@@ -113,16 +210,13 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const endX = (e.clientX - rect.left) / zoom;
-    const endY = (e.clientY - rect.top) / zoom;
+    const { x: endX, y: endY } = getCanvasCoords(e);
 
     if (activeTool === 'rectangle') {
       ctx.strokeStyle = selectedColor;
       ctx.lineWidth = 3;
       ctx.strokeRect(startPos.x, startPos.y, endX - startPos.x, endY - startPos.y);
     } else if (activeTool === 'arrow') {
-      // Draw arrow line
       ctx.strokeStyle = selectedColor;
       ctx.fillStyle = selectedColor;
       ctx.lineWidth = 3;
@@ -131,207 +225,134 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
       ctx.lineTo(endX, endY);
       ctx.stroke();
 
-      // Draw arrowhead
       const headlen = 12;
       const angle = Math.atan2(endY - startPos.y, endX - startPos.x);
       ctx.beginPath();
       ctx.moveTo(endX, endY);
-      ctx.lineTo(
-        endX - headlen * Math.cos(angle - Math.PI / 6),
-        endY - headlen * Math.sin(angle - Math.PI / 6)
-      );
-      ctx.lineTo(
-        endX - headlen * Math.cos(angle + Math.PI / 6),
-        endY - headlen * Math.sin(angle + Math.PI / 6)
-      );
+      ctx.lineTo(endX - headlen * Math.cos(angle - Math.PI / 6), endY - headlen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(endX - headlen * Math.cos(angle + Math.PI / 6), endY - headlen * Math.sin(angle + Math.PI / 6));
       ctx.closePath();
       ctx.fill();
     }
 
-    // Save snapshot to history
     setHistory((prev) => [...prev, ctx.getImageData(0, 0, canvas.width, canvas.height)]);
+    setRedoStack([]);
   };
 
-  const handleUndo = () => {
-    if (history.length <= 1) return;
+  const handleApplyCrop = () => {
+    if (!cropSelection || !canvasRef.current) return;
     const canvas = canvasRef.current;
-    if (!canvas) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    const newHistory = history.slice(0, -1);
-    const previousState = newHistory[newHistory.length - 1];
-    ctx.putImageData(previousState, 0, 0);
-    setHistory(newHistory);
+    const { x, y, w, h } = cropSelection;
+    if (w < 10 || h < 10) return;
+
+    const cropped = ctx.getImageData(x, y, w, h);
+    canvas.width = w;
+    canvas.height = h;
+    ctx.putImageData(cropped, 0, 0);
+
+    setHistory((prev) => [...prev, ctx.getImageData(0, 0, canvas.width, canvas.height)]);
+    setRedoStack([]);
+    setCropSelection(null);
+    setActiveTool('pen');
+  };
+
+  const handleExportPng = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const a = document.createElement('a');
+    a.href = canvas.toDataURL('image/png');
+    const safeTitle = (title.trim() || 'whiteboard-drawing').toLowerCase().replace(/[^a-z0-9_-]/g, '-');
+    a.download = `${safeTitle}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const handleSave = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const dataUrl = canvas.toDataURL('image/png');
     onSave({
       ...sketch,
-      dataUrl,
+      title: title.trim() || sketch.title,
+      dataUrl: canvas.toDataURL('image/png'),
     });
     onClose();
   };
 
+  const handleWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    const zoomDelta = e.deltaY < 0 ? 0.1 : -0.1;
+    setZoom((z) => Math.min(3, Math.max(0.3, Number((z + zoomDelta).toFixed(2)))));
+  };
+
+  if (!isOpen) return null;
+
   return (
     <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col select-none animate-in fade-in duration-150">
-      {/* Top Toolbar */}
-      <div className="h-14 bg-theme-sidebar border-b border-theme-border flex items-center justify-between px-6">
-        <div className="flex items-center space-x-2">
-          <span className="text-sm font-semibold text-theme-text">{sketch.title}</span>
-        </div>
-
-        {/* Tools center ribbon */}
-        <div className="flex items-center space-x-1.5 bg-theme-card/80 p-1 rounded-xl border border-theme-border">
-          {/* Zoom controls */}
-          <button
-            onClick={() => setZoom((z) => Math.max(0.5, z - 0.2))}
-            className="p-1.5 rounded-lg text-theme-muted hover:text-theme-text hover:bg-theme-hover"
-            title="Zoom Out"
-          >
-            <ZoomOut size={16} />
-          </button>
-          <span className="text-xs font-mono text-theme-muted px-1.5">{Math.round(zoom * 100)}%</span>
-          <button
-            onClick={() => setZoom((z) => Math.min(3, z + 0.2))}
-            className="p-1.5 rounded-lg text-theme-muted hover:text-theme-text hover:bg-theme-hover"
-            title="Zoom In"
-          >
-            <ZoomIn size={16} />
-          </button>
-
-          <div className="w-[1px] h-4 bg-theme-border mx-1" />
-
-          {/* Rotate */}
-          <button
-            onClick={() => setRotation((r) => (r + 90) % 360)}
-            className="p-1.5 rounded-lg text-theme-muted hover:text-theme-text hover:bg-theme-hover"
-            title="Rotate 90°"
-          >
-            <RotateCw size={16} />
-          </button>
-
-          <div className="w-[1px] h-4 bg-theme-border mx-1" />
-
-          {/* Pen */}
-          <button
-            onClick={() => setActiveTool('pen')}
-            className={`p-1.5 rounded-lg transition-colors ${
-              activeTool === 'pen'
-                ? 'bg-theme-accent text-white'
-                : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover'
-            }`}
-            title="Freehand Pen"
-          >
-            <Pen size={16} />
-          </button>
-
-          {/* Highlighter */}
-          <button
-            onClick={() => setActiveTool('highlighter')}
-            className={`p-1.5 rounded-lg transition-colors ${
-              activeTool === 'highlighter'
-                ? 'bg-theme-accent text-white'
-                : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover'
-            }`}
-            title="Highlighter"
-          >
-            <Highlighter size={16} />
-          </button>
-
-          {/* Arrow */}
-          <button
-            onClick={() => setActiveTool('arrow')}
-            className={`p-1.5 rounded-lg transition-colors ${
-              activeTool === 'arrow'
-                ? 'bg-theme-accent text-white'
-                : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover'
-            }`}
-            title="Callout Arrow"
-          >
-            <ArrowRight size={16} />
-          </button>
-
-          {/* Rectangle */}
-          <button
-            onClick={() => setActiveTool('rectangle')}
-            className={`p-1.5 rounded-lg transition-colors ${
-              activeTool === 'rectangle'
-                ? 'bg-theme-accent text-white'
-                : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover'
-            }`}
-            title="Bounding Box"
-          >
-            <Square size={16} />
-          </button>
-
-          <div className="w-[1px] h-4 bg-theme-border mx-1" />
-
-          {/* Color palette */}
-          <div className="flex items-center space-x-1 px-1">
-            {colors.map((c) => (
-              <button
-                key={c}
-                onClick={() => setSelectedColor(c)}
-                className={`w-4 h-4 rounded-full transition-transform ${
-                  selectedColor === c ? 'scale-125 ring-2 ring-white/60' : 'hover:scale-110'
-                }`}
-                style={{ backgroundColor: c }}
-              />
-            ))}
-          </div>
-
-          <div className="w-[1px] h-4 bg-theme-border mx-1" />
-
-          {/* Undo */}
-          <button
-            onClick={handleUndo}
-            disabled={history.length <= 1}
-            className="p-1.5 rounded-lg text-theme-muted hover:text-theme-text hover:bg-theme-hover disabled:opacity-40"
-            title="Undo (Ctrl+Z)"
-          >
-            <Undo2 size={16} />
-          </button>
-        </div>
-
-        {/* Right actions: Save & Close */}
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={handleSave}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-colors"
-          >
-            <Save size={14} />
-            <span>Save Annotations</span>
-          </button>
-
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-theme-muted hover:text-theme-text hover:bg-theme-hover transition-colors"
-          >
-            <X size={18} />
-          </button>
-        </div>
-      </div>
+      <CanvasToolbar
+        title={title}
+        onTitleChange={setTitle}
+        zoom={zoom}
+        onZoomIn={() => setZoom((z) => Math.min(3, Number((z + 0.2).toFixed(2))))}
+        onZoomOut={() => setZoom((z) => Math.max(0.3, Number((z - 0.2).toFixed(2))))}
+        onRotate={() => setRotation((r) => (r + 90) % 360)}
+        activeTool={activeTool}
+        onSelectTool={(tool) => {
+          setActiveTool(tool);
+          if (tool !== 'crop') setCropSelection(null);
+        }}
+        selectedColor={selectedColor}
+        onSelectColor={setSelectedColor}
+        colors={colors}
+        showGrid={showGrid}
+        onToggleGrid={() => setShowGrid((g) => !g)}
+        canUndo={history.length > 1}
+        canRedo={redoStack.length > 0}
+        onUndo={handleUndo}
+        onRedo={handleRedo}
+        onExportPng={handleExportPng}
+        onSave={handleSave}
+        onClose={onClose}
+      />
 
       {/* Canvas Viewport */}
-      <div className="flex-1 overflow-auto flex items-center justify-center p-8">
+      <div
+        onWheel={handleWheel}
+        className="flex-1 overflow-auto flex items-center justify-center p-8 relative"
+        style={
+          showGrid
+            ? {
+                backgroundSize: '24px 24px',
+                backgroundImage: 'radial-gradient(circle, rgba(255, 255, 255, 0.12) 1.5px, transparent 1.5px)',
+              }
+            : undefined
+        }
+      >
         <div
           style={{
             transform: `scale(${zoom}) rotate(${rotation}deg)`,
             transformOrigin: 'center center',
-            transition: 'transform 0.15s ease-out',
+            transition: 'transform 0.1s ease-out',
           }}
-          className="shadow-2xl rounded-lg overflow-hidden border border-theme-border/50"
+          className="relative shadow-2xl rounded-lg overflow-hidden border border-theme-border/50"
         >
           <canvas
             ref={canvasRef}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
-            className="cursor-crosshair bg-neutral-900"
+            className={`bg-[#181825] ${
+              activeTool === 'crop' ? 'cursor-crosshair' : activeTool === 'eraser' ? 'cursor-cell' : 'cursor-crosshair'
+            }`}
+          />
+          <CanvasCropOverlay
+            cropSelection={cropSelection}
+            isCropping={isCropping}
+            onApplyCrop={handleApplyCrop}
+            onCancelCrop={() => setCropSelection(null)}
           />
         </div>
       </div>

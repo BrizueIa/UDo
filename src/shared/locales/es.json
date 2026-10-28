@@ -79,6 +79,26 @@
     "linkTitle": "Título del enlace",
     "linkUrl": "URL (https://...)"
   },
+  "canvas": {
+    "titlePlaceholder": "Título del dibujo...",
+    "zoomIn": "Acercar",
+    "zoomOut": "Alejar",
+    "rotate": "Rotar 90°",
+    "pen": "Pluma libre",
+    "highlighter": "Resaltador",
+    "arrow": "Flecha indicadora",
+    "rectangle": "Caja delimitadora",
+    "eraser": "Borrador",
+    "crop": "Recorte interactivo",
+    "grid": "Alternar cuadrícula",
+    "undo": "Deshacer (Ctrl+Z)",
+    "redo": "Rehacer (Ctrl+Y)",
+    "exportPng": "Exportar PNG",
+    "save": "Guardar Boceto",
+    "close": "Cerrar",
+    "applyCrop": "Aplicar recorte",
+    "cancelCrop": "Cancelar"
+  },
   "palette": {
     "noResults": "No se encontraron notas para \"{{query}}\"",
     "noNotes": "No hay notas disponibles",

@@ -288,7 +288,7 @@ export const App: React.FC = () => {
               onOpenWhiteboard={() => {
                 setActiveSketch({
                   id: `sketch-${Date.now()}`,
-                  title: 'New Canvas Drawing',
+                  title: t('note.whiteboardDrawing'),
                   dataUrl: '',
                   createdAt: new Date().toISOString(),
                 });
@@ -320,11 +320,13 @@ export const App: React.FC = () => {
           isOpen={!!activeSketch}
           onClose={() => setActiveSketch(null)}
           onSave={(updatedSketch) => {
+            const exists = currentNote.sketches.some((s) => s.id === updatedSketch.id);
+            const newSketches = exists
+              ? currentNote.sketches.map((s) => (s.id === updatedSketch.id ? updatedSketch : s))
+              : [...currentNote.sketches, updatedSketch];
             handleUpdateNote({
               ...currentNote,
-              sketches: currentNote.sketches.map((s) =>
-                s.id === updatedSketch.id ? updatedSketch : s
-              ),
+              sketches: newSketches,
             });
             setActiveSketch(null);
           }}

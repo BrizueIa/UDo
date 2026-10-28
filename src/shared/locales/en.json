@@ -79,6 +79,26 @@
     "linkTitle": "Link title",
     "linkUrl": "URL (https://...)"
   },
+  "canvas": {
+    "titlePlaceholder": "Drawing title...",
+    "zoomIn": "Zoom In",
+    "zoomOut": "Zoom Out",
+    "rotate": "Rotate 90°",
+    "pen": "Freehand Pen",
+    "highlighter": "Highlighter",
+    "arrow": "Callout Arrow",
+    "rectangle": "Bounding Box",
+    "eraser": "Eraser",
+    "crop": "Interactive Crop",
+    "grid": "Toggle Grid",
+    "undo": "Undo (Ctrl+Z)",
+    "redo": "Redo (Ctrl+Y)",
+    "exportPng": "Export PNG",
+    "save": "Save Canvas",
+    "close": "Close",
+    "applyCrop": "Apply Crop",
+    "cancelCrop": "Cancel"
+  },
   "palette": {
     "noResults": "No matching notes found for \"{{query}}\"",
     "noNotes": "No notes available",
