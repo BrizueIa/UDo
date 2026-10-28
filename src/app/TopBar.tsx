@@ -4,7 +4,7 @@ import { TrafficLights } from '../shared/ui/TrafficLights';
 import { ThemeSelectorMenu } from '../shared/ui/ThemeSelectorMenu';
 import { api, WindowEnvironment } from '../shared/api/ipc';
 import { playTaskCompleteSound } from '../shared/utils/soundEffects';
-import { Search, Globe, HelpCircle, Layers, X, Volume2, VolumeX, Timer, Play, Pause } from 'lucide-react';
+import { Search, Globe, HelpCircle, Layers, X, Volume2, VolumeX, Timer, Play, Pause, PanelLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { FocusTimerState } from '../shared/hooks/useFocusTimer';
@@ -34,6 +34,8 @@ interface Props {
   onToggleShortcutsModal: () => void;
   onToggleWidgetMode: () => void;
   onToggleAudioMute: () => void;
+  isZenMode?: boolean;
+  onToggleZenMode?: () => void;
   onOpenTimerModal?: () => void;
 }
 
@@ -50,6 +52,7 @@ export const TopBar: React.FC<Props> = ({
   timer,
   isAudioMuted,
   audioVolume,
+  isZenMode = false,
   onVolumeChange,
   onSearchChange,
   onOpenSearchPalette,
@@ -62,6 +65,7 @@ export const TopBar: React.FC<Props> = ({
   onToggleShortcutsModal,
   onToggleWidgetMode,
   onToggleAudioMute,
+  onToggleZenMode,
   onOpenTimerModal,
 }) => {
   const { t, i18n } = useTranslation();
@@ -135,6 +139,21 @@ export const TopBar: React.FC<Props> = ({
         )}
 
         <div className="flex items-center space-x-2">
+          {onToggleZenMode && (
+            <button
+              type="button"
+              onClick={onToggleZenMode}
+              className={`p-1 rounded-md transition-colors cursor-pointer ${
+                !isZenMode
+                  ? 'text-theme-muted hover:text-theme-text hover:bg-theme-card'
+                  : 'text-theme-accent bg-theme-accent/20 hover:bg-theme-accent/30'
+              }`}
+              title={t('nav.toggleSidebars')}
+            >
+              <PanelLeft size={14} />
+            </button>
+          )}
+
           <span className="w-2.5 h-2.5 rounded-full bg-theme-accent shadow-sm" />
           <h1 className="text-xs font-bold tracking-tight text-theme-text font-sans">
             {t('app.title')}

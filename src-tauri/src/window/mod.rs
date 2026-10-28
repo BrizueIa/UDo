@@ -275,10 +275,10 @@ pub fn set_widget_size(app: AppHandle, size: String) -> Result<(), String> {
             || std::env::var("DESKTOP_SESSION").unwrap_or_default().to_lowercase().contains("omarchy");
 
         let pid = std::process::id();
-        let (width, height) = if size == "expanded" || size == "medium" {
-            (360.0, 290.0)
+        let (width, height, move_pos) = if size == "expanded" || size == "medium" {
+            (370.0, 310.0, "74% 6%")
         } else {
-            (240.0, 52.0)
+            (240.0, 52.0, "80% 6%")
         };
 
         window
@@ -289,7 +289,7 @@ pub fn set_widget_size(app: AppHandle, size: String) -> Result<(), String> {
             let _ = std::process::Command::new("hyprctl")
                 .args([
                     "--batch",
-                    &format!("dispatch setfloating pid:{pid} ; dispatch resizewindowpixel exact {width} {height},pid:{pid}"),
+                    &format!("dispatch setfloating pid:{pid} ; dispatch resizewindowpixel exact {width} {height},pid:{pid} ; dispatch movewindowpixel exact {move_pos},pid:{pid}"),
                 ])
                 .spawn();
         }

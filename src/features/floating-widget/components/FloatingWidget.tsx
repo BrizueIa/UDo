@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { NoteItem, FolderItem } from '../../../shared/types';
+import { NoteItem, FolderItem, SubjectItem } from '../../../shared/types';
 import { FocusTimerState } from '../../../shared/hooks/useFocusTimer';
 import {
   Circle,
@@ -17,57 +17,95 @@ import { api } from '../../../shared/api/ipc';
 
 interface Props {
   notes: NoteItem[];
+  subjects: SubjectItem[];
   folders: FolderItem[];
-  defaultFolderId: string;
+  selectedSubjectId: string;
+  selectedFolderId: string;
   timer?: FocusTimerState;
+  onSelectSubject: (id: string) => void;
+  onSelectFolder: (id: string) => void;
   onToggleComplete: (id: string) => void;
   onQuickAddNote: (title: string, folderId: string) => void;
-  onUpdateNote?: (note: NoteItem) => void;
+  onOpenNoteInFullApp: (noteId: string, subjectId: string, folderId: string) => void;
   onRestoreFullApp: () => void;
 }
 
 export const FloatingWidget: React.FC<Props> = ({
   notes,
+  subjects,
   folders,
-  defaultFolderId,
+  selectedSubjectId,
+  selectedFolderId,
   timer,
+  onSelectSubject,
+  onSelectFolder,
   onToggleComplete,
   onQuickAddNote,
+  onOpenNoteInFullApp,
   onRestoreFullApp,
 }) => {
   const { t } = useTranslation();
   const [isExpanded, setIsExpanded] = useState(false);
   const [quickInput, setQuickInput] = useState('');
-  const [selectedFolderId, setSelectedFolderId] = useState<string>(
-    defaultFolderId || (folders[0] ? folders[0].id : '')
-  );
+  const [activeSubjectId, setActiveSubjectId] = useState(selectedSubjectId || subjects[0]?.id || '');
+  const [activeFolderId, setActiveFolderId] = useState(selectedFolderId || folders[0]?.id || '');
+
+  const [showSubjectMenu, setShowSubjectMenu] = useState(false);
   const [showFolderMenu, setShowFolderMenu] = useState(false);
+
+  const subjectMenuRef = useRef<HTMLDivElement>(null);
   const folderMenuRef = useRef<HTMLDivElement>(null);
 
-  const pendingNotes = notes.filter((n) => !n.isCompleted);
-  const activeFolder = folders.find((f) => f.id === selectedFolderId) || folders[0];
+  const currentSubject = subjects.find((s) => s.id === activeSubjectId) || subjects[0];
+  const projectFolders = folders.filter((f) => f.subjectId === activeSubjectId);
+  const currentFolder = projectFolders.find((f) => f.id === activeFolderId) || projectFolders[0] || folders[0];
+
+  // Filter notes strictly by selected folder
+  const folderPendingNotes = currentFolder
+    ? notes.filter((n) => !n.isCompleted && n.folderId === currentFolder.id)
+    : [];
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
+      if (subjectMenuRef.current && !subjectMenuRef.current.contains(e.target as Node)) {
+        setShowSubjectMenu(false);
+      }
       if (folderMenuRef.current && !folderMenuRef.current.contains(e.target as Node)) {
         setShowFolderMenu(false);
       }
     };
-    if (showFolderMenu) {
+    if (showSubjectMenu || showFolderMenu) {
       document.addEventListener('mousedown', handleClickOutside);
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showFolderMenu]);
+  }, [showSubjectMenu, showFolderMenu]);
 
   const handleToggleExpand = (next: boolean) => {
     setIsExpanded(next);
     api.setWidgetSize(next ? 'expanded' : 'compact');
   };
 
+  const handleSelectSubject = (id: string) => {
+    setActiveSubjectId(id);
+    onSelectSubject(id);
+    setShowSubjectMenu(false);
+    const firstF = folders.find((f) => f.subjectId === id);
+    if (firstF) {
+      setActiveFolderId(firstF.id);
+      onSelectFolder(firstF.id);
+    }
+  };
+
+  const handleSelectFolder = (id: string) => {
+    setActiveFolderId(id);
+    onSelectFolder(id);
+    setShowFolderMenu(false);
+  };
+
   const handleQuickAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!quickInput.trim()) return;
-    onQuickAddNote(quickInput.trim(), selectedFolderId);
+    if (!quickInput.trim() || !currentFolder) return;
+    onQuickAddNote(quickInput.trim(), currentFolder.id);
     setQuickInput('');
   };
 
@@ -78,7 +116,6 @@ export const FloatingWidget: React.FC<Props> = ({
         data-tauri-drag-region
         className="w-full h-full flex items-center justify-between px-3 py-1.5 bg-theme-sidebar/95 border border-white/[0.1] rounded-2xl shadow-2xl select-none cursor-move"
       >
-        {/* Left: Logo & App Brand */}
         <div
           data-tauri-drag-region
           onClick={() => handleToggleExpand(true)}
@@ -89,7 +126,6 @@ export const FloatingWidget: React.FC<Props> = ({
             {t('app.title')}
           </span>
 
-          {/* Timer status or Pending count */}
           {timer && (timer.isRunning || timer.isPaused) ? (
             <span className="flex items-center space-x-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-[10px]">
               <Timer size={10} className={timer.isRunning ? 'animate-pulse' : ''} />
@@ -97,12 +133,11 @@ export const FloatingWidget: React.FC<Props> = ({
             </span>
           ) : (
             <span className="px-1.5 py-0.5 rounded-full bg-theme-accent/20 text-theme-accent font-mono text-[10px] font-semibold">
-              {pendingNotes.length}
+              {folderPendingNotes.length}
             </span>
           )}
         </div>
 
-        {/* Right: Expand & Restore Actions */}
         <div className="flex items-center space-x-1" data-tauri-drag-region="false">
           <button
             type="button"
@@ -125,7 +160,7 @@ export const FloatingWidget: React.FC<Props> = ({
     );
   }
 
-  // State 2: Expanded Quick Workstation Panel (360x290)
+  // State 2: Expanded Quick Workstation Panel (370x310)
   return (
     <div className="w-full h-full flex flex-col bg-theme-sidebar border border-white/[0.1] rounded-2xl shadow-2xl select-none overflow-hidden">
       {/* Draggable Header */}
@@ -139,11 +174,10 @@ export const FloatingWidget: React.FC<Props> = ({
             {t('widget.title')}
           </span>
           <span className="px-1.5 py-0.5 rounded-full bg-theme-accent/20 text-theme-accent font-mono text-[10px] font-semibold">
-            {pendingNotes.length}
+            {folderPendingNotes.length}
           </span>
         </div>
 
-        {/* Header Controls */}
         <div className="flex items-center space-x-1" data-tauri-drag-region="false">
           {timer && (timer.isRunning || timer.isPaused) && (
             <button
@@ -177,54 +211,88 @@ export const FloatingWidget: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Folder Picker & Audio Note Placeholder Bar */}
-      <div className="px-3 py-1.5 bg-theme-card/30 border-b border-white/[0.04] flex items-center justify-between text-xs">
-        {/* Folder Dropdown */}
-        <div className="relative" ref={folderMenuRef}>
-          <button
-            type="button"
-            onClick={() => setShowFolderMenu(!showFolderMenu)}
-            className="flex items-center space-x-1 px-2 py-0.5 rounded-md bg-theme-card border border-white/[0.06] hover:bg-theme-hover text-theme-text transition-colors cursor-pointer text-[11px]"
-            title={t('widget.chooseFolder')}
-          >
-            <FolderIcon size={11} className="text-amber-400" />
-            <span className="truncate max-w-[130px]">
-              {activeFolder ? activeFolder.name : t('widget.chooseFolder')}
-            </span>
-            <ChevronDown size={10} className="text-theme-muted" />
-          </button>
+      {/* Project Selector & Folder Selector Bar */}
+      <div className="px-2.5 py-1.5 bg-theme-card/30 border-b border-white/[0.04] flex items-center justify-between text-xs space-x-1.5">
+        <div className="flex items-center space-x-1.5 flex-1 min-w-0">
+          {/* Project Dropdown */}
+          <div className="relative shrink-0" ref={subjectMenuRef}>
+            <button
+              type="button"
+              onClick={() => setShowSubjectMenu(!showSubjectMenu)}
+              className="flex items-center space-x-1 px-2 py-0.5 rounded-md bg-theme-card border border-white/[0.06] hover:bg-theme-hover text-theme-text transition-colors cursor-pointer text-[11px]"
+              title={t('widget.chooseProject')}
+            >
+              <span
+                className="w-2 h-2 rounded-full shrink-0"
+                style={{ backgroundColor: currentSubject?.color || '#3b82f6' }}
+              />
+              <span className="truncate max-w-[85px] font-medium">{currentSubject?.name}</span>
+              <ChevronDown size={10} className="text-theme-muted" />
+            </button>
 
-          {showFolderMenu && (
-            <div className="absolute top-full left-0 mt-1 w-44 bg-theme-card border border-white/[0.08] rounded-xl shadow-2xl py-1 z-30 max-h-36 overflow-y-auto">
-              {folders.map((f) => (
-                <button
-                  key={f.id}
-                  type="button"
-                  onClick={() => {
-                    setSelectedFolderId(f.id);
-                    setShowFolderMenu(false);
-                  }}
-                  className={`w-full text-left px-2.5 py-1 text-[11px] flex items-center justify-between hover:bg-theme-hover transition-colors ${
-                    f.id === selectedFolderId ? 'text-theme-accent font-semibold' : 'text-theme-text'
-                  }`}
-                >
-                  <span className="truncate">{f.name}</span>
-                  {f.id === selectedFolderId && <Check size={11} />}
-                </button>
-              ))}
-            </div>
-          )}
+            {showSubjectMenu && (
+              <div className="absolute top-full left-0 mt-1 w-40 bg-theme-card border border-white/[0.08] rounded-xl shadow-2xl py-1 z-40 max-h-40 overflow-y-auto">
+                {subjects.map((s) => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => handleSelectSubject(s.id)}
+                    className={`w-full text-left px-2.5 py-1 text-[11px] flex items-center justify-between hover:bg-theme-hover transition-colors ${
+                      s.id === activeSubjectId ? 'text-theme-accent font-semibold' : 'text-theme-text'
+                    }`}
+                  >
+                    <div className="flex items-center space-x-1.5 truncate">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
+                      <span className="truncate">{s.name}</span>
+                    </div>
+                    {s.id === activeSubjectId && <Check size={11} />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Folder Dropdown */}
+          <div className="relative flex-1 min-w-0" ref={folderMenuRef}>
+            <button
+              type="button"
+              onClick={() => setShowFolderMenu(!showFolderMenu)}
+              className="w-full flex items-center space-x-1 px-2 py-0.5 rounded-md bg-theme-card border border-white/[0.06] hover:bg-theme-hover text-theme-text transition-colors cursor-pointer text-[11px]"
+              title={t('widget.chooseFolder')}
+            >
+              <FolderIcon size={11} className="text-amber-400 shrink-0" />
+              <span className="truncate flex-1 text-left">{currentFolder ? currentFolder.name : t('widget.chooseFolder')}</span>
+              <ChevronDown size={10} className="text-theme-muted shrink-0" />
+            </button>
+
+            {showFolderMenu && (
+              <div className="absolute top-full left-0 mt-1 w-44 bg-theme-card border border-white/[0.08] rounded-xl shadow-2xl py-1 z-40 max-h-40 overflow-y-auto">
+                {projectFolders.map((f) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => handleSelectFolder(f.id)}
+                    className={`w-full text-left px-2.5 py-1 text-[11px] flex items-center justify-between hover:bg-theme-hover transition-colors ${
+                      f.id === activeFolderId ? 'text-theme-accent font-semibold' : 'text-theme-text'
+                    }`}
+                  >
+                    <span className="truncate">{f.name}</span>
+                    {f.id === activeFolderId && <Check size={11} />}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Audio Note Placeholder Button */}
         <button
           type="button"
           onClick={() => {}}
-          className="flex items-center space-x-1 px-2 py-0.5 rounded-md bg-theme-card/60 hover:bg-theme-hover text-theme-muted hover:text-theme-accent transition-colors text-[11px] cursor-pointer"
+          className="p-1 rounded-md bg-theme-card/60 hover:bg-theme-hover text-theme-muted hover:text-theme-accent transition-colors cursor-pointer shrink-0"
           title={t('widget.recordAudio')}
         >
-          <Mic size={11} />
-          <span>{t('widget.recordAudio')}</span>
+          <Mic size={12} />
         </button>
       </div>
 
@@ -241,9 +309,9 @@ export const FloatingWidget: React.FC<Props> = ({
           />
           <button
             type="submit"
-            disabled={!quickInput.trim()}
+            disabled={!quickInput.trim() || !currentFolder}
             className={`p-1 rounded-md transition-colors ${
-              quickInput.trim()
+              quickInput.trim() && currentFolder
                 ? 'bg-theme-accent text-white hover:bg-theme-accent-hover cursor-pointer'
                 : 'bg-theme-card text-theme-muted/40 cursor-not-allowed'
             }`}
@@ -253,27 +321,41 @@ export const FloatingWidget: React.FC<Props> = ({
         </form>
       </div>
 
-      {/* Pending Tasks List */}
+      {/* Pending Tasks List strictly filtered by selected folder */}
       <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5">
-        {pendingNotes.length === 0 ? (
+        {folderPendingNotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center py-6 text-xs text-theme-muted">
             <span className="text-base mb-1">🎉</span>
             <span>{t('widget.noPending')}</span>
           </div>
         ) : (
-          pendingNotes.map((note) => (
+          folderPendingNotes.map((note) => (
             <div
               key={note.id}
-              onClick={() => onToggleComplete(note.id)}
-              className="group flex items-center space-x-2 px-2 py-1 rounded-md hover:bg-theme-hover/60 cursor-pointer transition-colors"
+              className="group flex items-center justify-between px-2 py-1 rounded-md hover:bg-theme-hover/60 transition-colors"
             >
+              <div
+                onClick={() => onToggleComplete(note.id)}
+                className="flex items-center space-x-2 flex-1 cursor-pointer truncate mr-1"
+              >
+                <button
+                  type="button"
+                  className="text-theme-muted group-hover:text-theme-accent transition-colors shrink-0"
+                >
+                  <Circle size={12} />
+                </button>
+                <span className="text-xs text-theme-text truncate">{note.title}</span>
+              </div>
+
+              {/* Click to open note in full app with all panels visible */}
               <button
                 type="button"
-                className="text-theme-muted group-hover:text-theme-accent transition-colors shrink-0"
+                onClick={() => onOpenNoteInFullApp(note.id, activeSubjectId, currentFolder.id)}
+                className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-theme-card text-theme-muted hover:text-theme-text transition-all cursor-pointer shrink-0"
+                title={t('widget.expand')}
               >
-                <Circle size={12} />
+                <Maximize2 size={11} />
               </button>
-              <span className="text-xs text-theme-text truncate flex-1">{note.title}</span>
             </div>
           ))
         )}

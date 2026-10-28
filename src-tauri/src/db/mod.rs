@@ -92,13 +92,13 @@ impl DatabaseManager {
             ",
         )?;
 
-        // Rebuild FTS index only when notes table has data but notes_fts index is empty
+        // Rebuild FTS index only when notes count does not match FTS index count
         let notes_count: i64 = conn.query_row("SELECT count(*) FROM notes", [], |r| r.get(0))?;
         if notes_count > 0 {
             let fts_count: i64 = conn
                 .query_row("SELECT count(*) FROM notes_fts_docsize", [], |r| r.get(0))
                 .unwrap_or(0);
-            if fts_count == 0 {
+            if fts_count != notes_count {
                 conn.execute("INSERT INTO notes_fts(notes_fts) VALUES('rebuild');", [])?;
             }
         }

@@ -111,6 +111,9 @@ export const App: React.FC = () => {
     setIsWidgetMode((prev) => {
       const next = typeof explicitVal === 'boolean' ? explicitVal : !prev;
       api.toggleWidgetMode(next);
+      if (!next) {
+        setIsZenMode(false);
+      }
       return next;
     });
   };
@@ -157,6 +160,7 @@ export const App: React.FC = () => {
     else if (activeSketch) setActiveSketch(null);
     else if (activeTagFilter) setActiveTagFilter(null);
     else if (searchQuery) setSearchQuery('');
+    else if (isZenMode) setIsZenMode(false);
   };
 
   const handleToggleNoteCompleteWithSound = (id: string) => {
@@ -222,16 +226,22 @@ export const App: React.FC = () => {
       <div className="h-screen w-screen bg-transparent text-theme-text font-sans antialiased overflow-hidden flex flex-col">
         <FloatingWidget
           notes={notes}
+          subjects={subjects}
           folders={folders}
-          defaultFolderId={selectedFolderId}
+          selectedSubjectId={selectedSubjectId}
+          selectedFolderId={selectedFolderId}
           timer={focusTimer}
+          onSelectSubject={setSelectedSubjectId}
+          onSelectFolder={setSelectedFolderId}
           onToggleComplete={handleToggleNoteCompleteWithSound}
-          onQuickAddNote={(title, folderId) => {
-            const target = folderId || selectedFolderId;
-            handleCreateNote(target, title);
-            playNoteCreatedSound();
+          onQuickAddNote={(t, f) => handleCreateNewNote(f || selectedFolderId, t)}
+          onOpenNoteInFullApp={(noteId, subjectId, folderId) => {
+            setSelectedSubjectId(subjectId);
+            setSelectedFolderId(folderId);
+            setSelectedNoteId(noteId);
+            handleToggleWidgetMode(false);
+            setActiveColumn(3);
           }}
-          onUpdateNote={handleUpdateNote}
           onRestoreFullApp={() => handleToggleWidgetMode(false)}
         />
       </div>
@@ -253,6 +263,7 @@ export const App: React.FC = () => {
         timer={focusTimer}
         isAudioMuted={soundMuted}
         audioVolume={soundVolume}
+        isZenMode={isZenMode}
         onVolumeChange={handleVolumeChange}
         onSearchChange={setSearchQuery}
         onOpenSearchPalette={(q) => {
@@ -268,6 +279,7 @@ export const App: React.FC = () => {
         onToggleShortcutsModal={() => setIsShortcutsModalOpen(true)}
         onToggleWidgetMode={handleToggleWidgetMode}
         onToggleAudioMute={handleToggleAudioMute}
+        onToggleZenMode={() => setIsZenMode((p) => !p)}
         onOpenTimerModal={() => setIsTimerModalOpen(true)}
       />
 
@@ -277,10 +289,7 @@ export const App: React.FC = () => {
             subjects={subjects}
             selectedSubjectId={selectedSubjectId}
             isFocused={activeColumn === 1}
-            onSelectSubject={(id) => {
-              setSelectedSubjectId(id);
-              setActiveColumn(1);
-            }}
+            onSelectSubject={(id) => { setSelectedSubjectId(id); setActiveColumn(1); }}
             onAddSubject={handleAddSubject}
             onUpdateSubject={handleUpdateSubject}
             onDeleteSubject={handleDeleteSubject}
@@ -301,14 +310,8 @@ export const App: React.FC = () => {
             activeTagFilter={activeTagFilter}
             isFocused={activeColumn === 2}
             onClearTagFilter={() => setActiveTagFilter(null)}
-            onSelectFolder={(id) => {
-              setSelectedFolderId(id);
-              setActiveColumn(2);
-            }}
-            onSelectNote={(id) => {
-              setSelectedNoteId(id);
-              setActiveColumn(2);
-            }}
+            onSelectFolder={(id) => { setSelectedFolderId(id); setActiveColumn(2); }}
+            onSelectNote={(id) => { setSelectedNoteId(id); setActiveColumn(2); }}
             onToggleNoteComplete={handleToggleNoteCompleteWithSound}
             onToggleFolderExpand={handleToggleFolderExpand}
             onAddFolder={handleAddFolder}
@@ -342,11 +345,7 @@ export const App: React.FC = () => {
               onOpenFocusTimer={() => setIsTimerModalOpen(true)}
               onUpdateNote={handleUpdateNote}
               onDeleteNote={handleDeleteNote}
-              onSelectNote={(noteId, subjectId) => {
-                setSelectedSubjectId(subjectId);
-                setSelectedNoteId(noteId);
-                setActiveColumn(3);
-              }}
+              onSelectNote={(noteId, subjectId) => { setSelectedSubjectId(subjectId); setSelectedNoteId(noteId); setActiveColumn(3); }}
               onCreateNoteWithTitle={(title) => handleCreateNewNote(selectedFolderId, title)}
               onSelectTagFilter={(tag) => setActiveTagFilter(tag)}
               onOpenSketchAnnotator={(sketch) => setActiveSketch(sketch)}
@@ -382,11 +381,7 @@ export const App: React.FC = () => {
         onCloseSketch={() => setActiveSketch(null)}
         onSaveSketch={handleSaveSketch}
         onCloseSearchPalette={() => setIsSearchPaletteOpen(false)}
-        onSelectNoteFromPalette={(noteId, subjectId) => {
-          setSelectedSubjectId(subjectId);
-          setSelectedNoteId(noteId);
-          setActiveColumn(3);
-        }}
+        onSelectNoteFromPalette={(noteId, subjectId) => { setSelectedSubjectId(subjectId); setSelectedNoteId(noteId); setActiveColumn(3); }}
         onCloseQuickAdd={() => setIsQuickAddOpen(false)}
         onQuickAddSave={handleQuickAddSave}
         onCloseTimerModal={() => setIsTimerModalOpen(false)}

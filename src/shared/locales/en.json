@@ -22,7 +22,8 @@
     "filterPending": "Pending",
     "filterCompleted": "Done",
     "clearSearch": "Clear search",
-    "clearFilter": "Clear filter"
+    "clearFilter": "Clear filter",
+    "toggleSidebars": "Toggle Sidebars (F11)"
   },
   "folders": {
     "addFolder": "New Folder",
@@ -142,6 +143,7 @@
     "expandToPanel": "Expand Quick Panel",
     "recordAudio": "Audio note (Coming soon)",
     "chooseFolder": "Folder",
+    "chooseProject": "Project",
     "tasksTab": "Tasks",
     "noteTab": "Note",
     "selectNoteToView": "Select a note to read or edit",

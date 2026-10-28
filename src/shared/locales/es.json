@@ -22,7 +22,8 @@
     "filterPending": "Pendientes",
     "filterCompleted": "Hecho",
     "clearSearch": "Limpiar búsqueda",
-    "clearFilter": "Limpiar filtro"
+    "clearFilter": "Limpiar filtro",
+    "toggleSidebars": "Mostrar/Ocultar paneles laterales (F11)"
   },
   "folders": {
     "addFolder": "Nueva Carpeta",
@@ -142,6 +143,7 @@
     "expandToPanel": "Expandir panel rápido",
     "recordAudio": "Nota de audio (Próximamente)",
     "chooseFolder": "Carpeta",
+    "chooseProject": "Proyecto",
     "tasksTab": "Tareas",
     "noteTab": "Nota",
     "selectNoteToView": "Selecciona una nota para ver o editar",
