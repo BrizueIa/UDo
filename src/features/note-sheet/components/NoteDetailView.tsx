@@ -7,6 +7,7 @@ import { NoteMetadataBar } from './NoteMetadataBar';
 import { NoteFindBar } from './NoteFindBar';
 import { NoteMediaBar } from './NoteMediaBar';
 import { NoteContentHeader } from './NoteContentHeader';
+import { NoteTemplatePicker } from './NoteTemplatePicker';
 import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { playTaskCompleteSound } from '../../../shared/utils/soundEffects';
@@ -186,6 +187,15 @@ export const NoteDetailView: React.FC<Props> = ({
     onUpdateNote({ ...note, tags: note.tags.filter((t) => t !== tagToRemove), updatedAt: new Date().toISOString() });
   };
 
+  const handleSelectTemplate = (templateContent: string, templateTitle?: string) => {
+    onUpdateNote({
+      ...note,
+      title: (!note.title.trim() || note.title === t('note.titlePlaceholder')) && templateTitle ? templateTitle : note.title,
+      content: templateContent,
+      updatedAt: new Date().toISOString(),
+    });
+  };
+
   const handlePaste = async (e: React.ClipboardEvent) => {
     const sketch = await processImageDropOrPaste(e, t('note.pastedImage'));
     if (sketch) {
@@ -344,7 +354,13 @@ export const NoteDetailView: React.FC<Props> = ({
               }
             }}
             onInsertTask={handleInsertTask}
+            onSelectTemplate={handleSelectTemplate}
           />
+
+          {/* Quick Starter Templates when note content is empty (FR-23) */}
+          {!note.content.trim() && (
+            <NoteTemplatePicker onSelectTemplate={handleSelectTemplate} />
+          )}
 
           {/* Markdown Sheet Preview with Wiki-Links & Match Highlighting (FR-07, FR-22) */}
           <MarkdownSheetPreview

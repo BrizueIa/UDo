@@ -42,6 +42,7 @@
     "pastedImage": "Pasted Image",
     "droppedImage": "Dropped Image",
     "whiteboardDrawing": "Canvas Drawing",
+    "templates": "Templates",
     "sheetContent": "SHEET CONTENT",
     "markdownPlaceholder": "Start writing notes in markdown...",
     "tagPlaceholder": "Add tag...",
@@ -78,6 +79,18 @@
     "save": "Save",
     "linkTitle": "Link title",
     "linkUrl": "URL (https://...)"
+  },
+  "templates": {
+    "title": "Templates",
+    "starterPrompt": "Start with a template or start typing below:",
+    "blank": "Blank Note",
+    "blankDesc": "Clean slate for unrestricted notes",
+    "design": "Design / 3D Project",
+    "designDesc": "Specs, print settings, milestones & references",
+    "meeting": "Meeting Notes",
+    "meetingDesc": "Participants, agenda, discussions & action items",
+    "checklist": "Daily Checklist",
+    "checklistDesc": "Priorities, tasks & daily focus goals"
   },
   "canvas": {
     "titlePlaceholder": "Drawing title...",

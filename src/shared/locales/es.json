@@ -42,6 +42,7 @@
     "pastedImage": "Imagen pegada",
     "droppedImage": "Imagen adjunta",
     "whiteboardDrawing": "Dibujo en Pizarrón",
+    "templates": "Plantillas",
     "sheetContent": "CONTENIDO DE LA HOJA",
     "markdownPlaceholder": "Empieza a escribir notas en markdown...",
     "tagPlaceholder": "Añadir etiqueta...",
@@ -78,6 +79,18 @@
     "save": "Guardar",
     "linkTitle": "Título del enlace",
     "linkUrl": "URL (https://...)"
+  },
+  "templates": {
+    "title": "Plantillas",
+    "starterPrompt": "Comienza con una plantilla o escribe abajo:",
+    "blank": "Nota en Blanco",
+    "blankDesc": "Lienzo limpio para notas libres",
+    "design": "Diseño / Proyecto 3D",
+    "designDesc": "Especificaciones, impresión 3D, hitos y recursos",
+    "meeting": "Notas de Reunión",
+    "meetingDesc": "Participantes, agenda, acuerdos y tareas",
+    "checklist": "Lista Diaria",
+    "checklistDesc": "Prioridades, tareas y metas de enfoque"
   },
   "canvas": {
     "titlePlaceholder": "Título del dibujo...",
