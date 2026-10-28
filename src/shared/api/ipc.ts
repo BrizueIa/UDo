@@ -199,7 +199,7 @@ export const api = {
     }
   },
 
-  async setWidgetSize(size: 'compact' | 'medium'): Promise<void> {
+  async setWidgetSize(size: 'compact' | 'expanded' | 'medium'): Promise<void> {
     if (isTauri) {
       try {
         const { invoke } = await import('@tauri-apps/api/core');

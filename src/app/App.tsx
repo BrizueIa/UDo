@@ -219,13 +219,16 @@ export const App: React.FC = () => {
 
   if (isWidgetMode) {
     return (
-      <div className="h-screen w-screen bg-theme-base text-theme-text font-sans antialiased overflow-hidden flex flex-col p-2">
+      <div className="h-screen w-screen bg-transparent text-theme-text font-sans antialiased overflow-hidden flex flex-col">
         <FloatingWidget
           notes={notes}
+          folders={folders}
+          defaultFolderId={selectedFolderId}
           timer={focusTimer}
           onToggleComplete={handleToggleNoteCompleteWithSound}
-          onQuickAddNote={(title) => {
-            handleCreateNote(selectedFolderId, title);
+          onQuickAddNote={(title, folderId) => {
+            const target = folderId || selectedFolderId;
+            handleCreateNote(target, title);
             playNoteCreatedSound();
           }}
           onUpdateNote={handleUpdateNote}

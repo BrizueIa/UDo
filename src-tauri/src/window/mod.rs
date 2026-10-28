@@ -221,15 +221,15 @@ pub fn toggle_widget_mode(app: AppHandle, is_mini: bool) -> Result<(), String> {
         if is_mini {
             window
                 .set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
-                    width: 260.0,
-                    height: 180.0,
+                    width: 180.0,
+                    height: 40.0,
                 })))
                 .ok();
             window.set_always_on_top(true).ok();
             window
                 .set_size(tauri::Size::Logical(tauri::LogicalSize {
-                    width: 320.0,
-                    height: 240.0,
+                    width: 240.0,
+                    height: 52.0,
                 }))
                 .ok();
 
@@ -237,7 +237,7 @@ pub fn toggle_widget_mode(app: AppHandle, is_mini: bool) -> Result<(), String> {
                 let _ = std::process::Command::new("hyprctl")
                     .args([
                         "--batch",
-                        &format!("dispatch setfloating pid:{pid} ; dispatch resizewindowpixel exact 320 240,pid:{pid} ; dispatch centerwindow"),
+                        &format!("dispatch setfloating pid:{pid} ; dispatch resizewindowpixel exact 240 52,pid:{pid} ; dispatch movewindowpixel exact 78% 6%,pid:{pid}"),
                     ])
                     .spawn();
             }
@@ -266,7 +266,7 @@ pub fn toggle_widget_mode(app: AppHandle, is_mini: bool) -> Result<(), String> {
     Ok(())
 }
 
-/// Dynamically resizes floating widget between compact (320x240) and medium note-reading/writing (480x360)
+/// Dynamically resizes floating widget between ultra-compact pill (240x52) and expanded panel (360x290)
 #[tauri::command]
 pub fn set_widget_size(app: AppHandle, size: String) -> Result<(), String> {
     if let Some(window) = app.get_webview_window("main") {
@@ -275,10 +275,10 @@ pub fn set_widget_size(app: AppHandle, size: String) -> Result<(), String> {
             || std::env::var("DESKTOP_SESSION").unwrap_or_default().to_lowercase().contains("omarchy");
 
         let pid = std::process::id();
-        let (width, height) = if size == "medium" {
-            (480.0, 360.0)
+        let (width, height) = if size == "expanded" || size == "medium" {
+            (360.0, 290.0)
         } else {
-            (320.0, 240.0)
+            (240.0, 52.0)
         };
 
         window
