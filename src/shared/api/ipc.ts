@@ -190,4 +190,28 @@ export const api = {
       }
     }
   },
+
+  async sendNativeNotification(title: string, body: string): Promise<void> {
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('send_native_notification', { title, body });
+        return;
+      } catch (err) {
+        console.warn('Tauri native notification failed, falling back to web notification', err);
+      }
+    }
+
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'granted') {
+        new Notification(title, { body });
+      } else if (Notification.permission !== 'denied') {
+        Notification.requestPermission().then((permission) => {
+          if (permission === 'granted') {
+            new Notification(title, { body });
+          }
+        });
+      }
+    }
+  },
 };

@@ -90,6 +90,35 @@
     "noPending": "All caught up! 🎉",
     "expand": "Open Full App"
   },
+  "quickAdd": {
+    "title": "Quick Add",
+    "placeholder": "What needs to be captured? (Enter to save)",
+    "destination": "Destination",
+    "changeDestinationHint": "Click or press Tab / Down Arrow to cycle folders",
+    "noFolders": "No folders available",
+    "keyboardHint": "Tab / ↑↓ to cycle destination",
+    "save": "Save"
+  },
+  "focusTimer": {
+    "title": "Focus Sprint",
+    "preset15": "15 min",
+    "preset25": "25 min (Pomodoro)",
+    "preset45": "45 min",
+    "custom": "Custom",
+    "customMinutes": "min",
+    "start": "Start Focus Sprint",
+    "pause": "Pause",
+    "resume": "Resume",
+    "stop": "Stop Sprint",
+    "running": "Focusing...",
+    "paused": "Sprint Paused",
+    "finishedTitle": "Focus Sprint Complete!",
+    "finishedBody": "Great job! Sprint for \"{{noteTitle}}\" has finished."
+  },
+  "audio": {
+    "mute": "Mute Sound Effects",
+    "unmute": "Enable Sound Effects"
+  },
   "shortcuts": {
     "title": "Keyboard Shortcuts",
     "globalSearch": "Open Global Search & Command Palette",

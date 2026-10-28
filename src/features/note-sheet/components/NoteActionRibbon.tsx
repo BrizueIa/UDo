@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NoteItem, FolderItem } from '../../../shared/types';
-import { CheckSquare, Pin, ChevronDown, Trash2 } from 'lucide-react';
+import { CheckSquare, Pin, ChevronDown, Trash2, Timer } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -8,20 +8,26 @@ interface Props {
   note: NoteItem;
   folderName: string;
   folders: FolderItem[];
+  activeTimerFormatted?: string;
+  isTimerRunning?: boolean;
   onToggleComplete: () => void;
   onTogglePin: () => void;
   onSelectFolder: (folderId: string) => void;
   onDeleteNote: (id: string) => void;
+  onOpenFocusTimer?: () => void;
 }
 
 export const NoteActionRibbon: React.FC<Props> = ({
   note,
   folderName,
   folders,
+  activeTimerFormatted,
+  isTimerRunning,
   onToggleComplete,
   onTogglePin,
   onSelectFolder,
   onDeleteNote,
+  onOpenFocusTimer,
 }) => {
   const { t } = useTranslation();
   const [showFolderPicker, setShowFolderPicker] = useState(false);
@@ -72,6 +78,22 @@ export const NoteActionRibbon: React.FC<Props> = ({
           <Pin size={13} className={note.isPinned ? 'fill-amber-400 rotate-45' : 'rotate-45'} />
           <span>{note.isPinned ? t('note.pinned') : t('note.pin')}</span>
         </button>
+
+        {/* Focus Timer Sprint Button (FR-14) */}
+        {onOpenFocusTimer && (
+          <button
+            onClick={onOpenFocusTimer}
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+              isTimerRunning
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm animate-pulse'
+                : 'bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.06]'
+            }`}
+            title={t('focusTimer.title')}
+          >
+            <Timer size={13} className={isTimerRunning ? 'text-emerald-400' : ''} />
+            <span className="font-mono">{activeTimerFormatted || t('note.focusTimer')}</span>
+          </button>
+        )}
 
         {/* Folder Destination Picker Dropdown */}
         <div className="relative" ref={folderPickerRef}>

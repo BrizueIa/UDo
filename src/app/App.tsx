@@ -4,21 +4,26 @@ import { useThemeManager } from '../shared/hooks/useThemeManager';
 import { useWorkspaceState } from '../shared/hooks/useWorkspaceState';
 import { useTreeNavigation } from '../shared/hooks/useTreeNavigation';
 import { useKeyboardShortcuts, ColumnIndex } from '../shared/hooks/useKeyboardShortcuts';
+import { useFocusTimer } from '../shared/hooks/useFocusTimer';
+import { useTrayEvents } from '../shared/hooks/useTrayEvents';
+import { api } from '../shared/api/ipc';
+import { playTaskCompleteSound, isAudioMuted, toggleAudioMute } from '../shared/utils/soundEffects';
 import { TopBar } from './TopBar';
 import { SubjectsSidebar } from '../features/subjects/components/SubjectsSidebar';
 import { FoldersList } from '../features/folders/components/FoldersList';
 import { NoteDetailView } from '../features/note-sheet/components/NoteDetailView';
+import { EmptyNoteView } from '../features/note-sheet/components/EmptyNoteView';
 import { FloatingWidget } from '../features/floating-widget/components/FloatingWidget';
 import { ImageAnnotatorModal } from '../features/canvas-editor/components/ImageAnnotatorModal';
 import { CommandPalette } from '../features/search-palette/components/CommandPalette';
+import { QuickAddModal } from '../features/search-palette/components/QuickAddModal';
+import { FocusTimerPopover } from '../features/focus-timer/components/FocusTimerPopover';
 import { ShortcutsModal } from '../shared/ui/ShortcutsModal';
-import { Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export const App: React.FC = () => {
   const { t, i18n } = useTranslation();
 
-  // State slices from workspace hook
   const {
     subjects,
     folders,
@@ -50,18 +55,39 @@ export const App: React.FC = () => {
   } = useWorkspaceState();
 
   const [filter, setFilter] = useState<ViewFilter>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [searchPaletteInitialQuery, setSearchPaletteInitialQuery] = useState<string>('');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchPaletteInitialQuery, setSearchPaletteInitialQuery] = useState('');
   const [activeColumn, setActiveColumn] = useState<ColumnIndex>(2);
 
-  // Modals & Mode Toggles
   const [isWidgetMode, setIsWidgetMode] = useState(false);
   const [isZenMode, setIsZenMode] = useState(false);
   const [isSearchPaletteOpen, setIsSearchPaletteOpen] = useState(false);
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
+  const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
+  const [isTimerModalOpen, setIsTimerModalOpen] = useState(false);
   const [activeSketch, setActiveSketch] = useState<SketchItem | null>(null);
+  const [soundMuted, setSoundMuted] = useState(() => isAudioMuted());
 
-  // Theme Manager Hook
+  const focusTimer = useFocusTimer();
+
+  const handleToggleAudioMute = () => {
+    setSoundMuted(toggleAudioMute());
+  };
+
+  const handleToggleWidgetMode = (explicitVal?: boolean) => {
+    setIsWidgetMode((prev) => {
+      const next = typeof explicitVal === 'boolean' ? explicitVal : !prev;
+      api.toggleWidgetMode(next);
+      return next;
+    });
+  };
+
+  // Listen to background system tray events (FR-09)
+  useTrayEvents({
+    onToggleWidget: () => handleToggleWidgetMode(),
+    onQuickAdd: () => setIsQuickAddOpen(true),
+  });
+
   const {
     currentTheme,
     setCurrentTheme,
@@ -72,56 +98,56 @@ export const App: React.FC = () => {
     handleDeleteCustomTheme,
   } = useThemeManager();
 
-  // Tree Navigation Hook in Column 2 (folders & notes)
-  const {
-    handleVerticalNavigate,
-    handleHorizontalNavigate,
-    handleEnterTreeItem,
-  } = useTreeNavigation({
-    activeColumn,
-    subjects,
-    selectedSubjectId,
-    currentSubjectFolders,
-    notes,
-    searchQuery,
-    filter,
-    activeTagFilter,
-    selectedFolderId,
-    selectedNoteId,
-    setSelectedSubjectId,
-    setSelectedFolderId,
-    setSelectedNoteId,
-    handleToggleFolderExpand,
-    setActiveColumn,
-  });
+  const { handleVerticalNavigate, handleHorizontalNavigate, handleEnterTreeItem } =
+    useTreeNavigation({
+      activeColumn,
+      subjects,
+      selectedSubjectId,
+      currentSubjectFolders,
+      notes,
+      searchQuery,
+      filter,
+      activeTagFilter,
+      selectedFolderId,
+      selectedNoteId,
+      setSelectedSubjectId,
+      setSelectedFolderId,
+      setSelectedNoteId,
+      handleToggleFolderExpand,
+      setActiveColumn,
+    });
 
-  const handleOpenSearchPalette = (initialQuery?: string) => {
-    setSearchPaletteInitialQuery(initialQuery || '');
-    setIsSearchPaletteOpen(true);
-  };
-
-  // Global Escape handler (FR-08)
   const handleEscape = () => {
-    if (isSearchPaletteOpen) {
-      setIsSearchPaletteOpen(false);
-    } else if (isShortcutsModalOpen) {
-      setIsShortcutsModalOpen(false);
-    } else if (activeSketch) {
-      setActiveSketch(null);
-    } else if (activeTagFilter) {
-      setActiveTagFilter(null);
-    } else if (searchQuery) {
-      setSearchQuery('');
-    }
+    if (isQuickAddOpen) setIsQuickAddOpen(false);
+    else if (isTimerModalOpen) setIsTimerModalOpen(false);
+    else if (isSearchPaletteOpen) setIsSearchPaletteOpen(false);
+    else if (isShortcutsModalOpen) setIsShortcutsModalOpen(false);
+    else if (activeSketch) setActiveSketch(null);
+    else if (activeTagFilter) setActiveTagFilter(null);
+    else if (searchQuery) setSearchQuery('');
   };
 
-  // Keyboard Shortcuts Hook (FR-08)
+  const handleToggleNoteCompleteWithSound = (id: string) => {
+    const target = notes.find((n) => n.id === id);
+    if (target && !target.isCompleted) playTaskCompleteSound();
+    handleToggleNoteComplete(id);
+  };
+
+  const handleQuickAddSave = (title: string, folderId: string, subjectId: string) => {
+    setSelectedSubjectId(subjectId);
+    setSelectedFolderId(folderId);
+    handleCreateNote(folderId, title);
+    playTaskCompleteSound();
+    setActiveColumn(3);
+  };
+
   useKeyboardShortcuts({
     onToggleSearchPalette: () => {
       setSearchPaletteInitialQuery(searchQuery);
       setIsSearchPaletteOpen((prev) => !prev);
     },
-    onToggleWidgetMode: () => setIsWidgetMode((prev) => !prev),
+    onToggleQuickAdd: () => setIsQuickAddOpen((prev) => !prev),
+    onToggleWidgetMode: handleToggleWidgetMode,
     onToggleZenMode: () => setIsZenMode((prev) => !prev),
     onToggleShortcutsModal: () => setIsShortcutsModalOpen((prev) => !prev),
     onCreateNote: () => {
@@ -131,45 +157,39 @@ export const App: React.FC = () => {
     onCreateFolder: () =>
       handleAddFolder(`${t('folders.addFolder')} ${currentSubjectFolders.length + 1}`),
     onToggleCurrentNoteComplete: () => {
-      if (selectedNoteId) {
-        handleToggleNoteComplete(selectedNoteId);
-      }
+      if (selectedNoteId) handleToggleNoteCompleteWithSound(selectedNoteId);
     },
     onFocusMarkdownEditor: () => setActiveColumn(3),
     onSetActiveColumn: setActiveColumn,
-    onCycleColumn: (direction) => {
-      setActiveColumn((prev) =>
-        direction === 'next'
-          ? ((prev % 3 + 1) as ColumnIndex)
-          : (((prev - 2 + 3) % 3 + 1) as ColumnIndex)
-      );
-    },
+    onCycleColumn: (dir) =>
+      setActiveColumn((p) =>
+        dir === 'next' ? ((p % 3 + 1) as ColumnIndex) : (((p - 2 + 3) % 3 + 1) as ColumnIndex)
+      ),
     onNavigateVertical: handleVerticalNavigate,
     onNavigateHorizontal: handleHorizontalNavigate,
     onEnterTreeItem: handleEnterTreeItem,
     onEscape: handleEscape,
   });
 
-  // Filter Counts
-  const pendingCount = notes.filter((n) => !n.isCompleted).length;
-  const completedCount = notes.filter((n) => n.isCompleted).length;
-  const totalCount = notes.length;
-
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-theme-base text-theme-text font-sans antialiased">
-      {/* Frameless Window Top Navigation Bar */}
       <TopBar
         currentSubjectName={currentSubject?.name}
         searchQuery={searchQuery}
         filter={filter}
-        pendingCount={pendingCount}
-        completedCount={completedCount}
-        totalCount={totalCount}
+        pendingCount={notes.filter((n) => !n.isCompleted).length}
+        completedCount={notes.filter((n) => n.isCompleted).length}
+        totalCount={notes.length}
         currentTheme={currentTheme}
         currentAccent={currentAccent}
         customThemes={customThemes}
+        timer={focusTimer}
+        isAudioMuted={soundMuted}
         onSearchChange={setSearchQuery}
-        onOpenSearchPalette={handleOpenSearchPalette}
+        onOpenSearchPalette={(q) => {
+          setSearchPaletteInitialQuery(q || '');
+          setIsSearchPaletteOpen(true);
+        }}
         onFilterChange={setFilter}
         onSelectTheme={setCurrentTheme}
         onSelectAccent={setCurrentAccent}
@@ -177,12 +197,12 @@ export const App: React.FC = () => {
         onDeleteCustomTheme={handleDeleteCustomTheme}
         onToggleLanguage={() => i18n.changeLanguage(i18n.language.startsWith('es') ? 'en' : 'es')}
         onToggleShortcutsModal={() => setIsShortcutsModalOpen(true)}
-        onToggleWidgetMode={() => setIsWidgetMode((m) => !m)}
+        onToggleWidgetMode={handleToggleWidgetMode}
+        onToggleAudioMute={handleToggleAudioMute}
+        onOpenTimerModal={() => setIsTimerModalOpen(true)}
       />
 
-      {/* Main 3-Column Workspace */}
       <main className="flex-1 flex overflow-hidden">
-        {/* Column 1: Subjects Sidebar */}
         {!isZenMode && (
           <SubjectsSidebar
             subjects={subjects}
@@ -199,7 +219,6 @@ export const App: React.FC = () => {
           />
         )}
 
-        {/* Column 2: Folders & Tasks List */}
         {!isZenMode && (
           <FoldersList
             currentSubject={currentSubject}
@@ -220,7 +239,7 @@ export const App: React.FC = () => {
               setSelectedNoteId(id);
               setActiveColumn(2);
             }}
-            onToggleNoteComplete={handleToggleNoteComplete}
+            onToggleNoteComplete={handleToggleNoteCompleteWithSound}
             onToggleFolderExpand={handleToggleFolderExpand}
             onAddFolder={handleAddFolder}
             onUpdateFolder={handleUpdateFolder}
@@ -232,7 +251,6 @@ export const App: React.FC = () => {
           />
         )}
 
-        {/* Column 3: Note Detail View */}
         <div
           onClick={() => setActiveColumn(3)}
           className={`flex-1 flex overflow-hidden transition-all ${
@@ -246,6 +264,14 @@ export const App: React.FC = () => {
               folderName={currentFolder?.name || 'Notes'}
               folders={currentSubjectFolders}
               activeTagFilter={activeTagFilter}
+              activeTimerFormatted={
+                (focusTimer.isRunning || focusTimer.isPaused) &&
+                focusTimer.noteId === currentNote.id
+                  ? focusTimer.formattedTime
+                  : undefined
+              }
+              isTimerRunning={focusTimer.isRunning && focusTimer.noteId === currentNote.id}
+              onOpenFocusTimer={() => setIsTimerModalOpen(true)}
               onUpdateNote={handleUpdateNote}
               onDeleteNote={handleDeleteNote}
               onSelectNote={(noteId, subjectId) => {
@@ -260,45 +286,34 @@ export const App: React.FC = () => {
               onSelectTagFilter={(tag) => setActiveTagFilter(tag)}
               onOpenSketchAnnotator={(sketch) => setActiveSketch(sketch)}
               onOpenWhiteboard={() => {
-                const newSketch: SketchItem = {
+                setActiveSketch({
                   id: `sketch-${Date.now()}`,
                   title: 'New Canvas Drawing',
                   dataUrl: '',
                   createdAt: new Date().toISOString(),
-                };
-                setActiveSketch(newSketch);
+                });
               }}
             />
           ) : (
-            <div className="flex-1 flex flex-col items-center justify-center text-sm text-theme-muted p-8 text-center space-y-3">
-              <p className="text-sm font-medium">{t('folders.noNotes')}</p>
-              <button
-                type="button"
-                onClick={() => {
-                  handleCreateNote(selectedFolderId);
-                  setActiveColumn(3);
-                }}
-                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-theme-accent text-white text-xs font-semibold hover:bg-theme-accent-hover transition-colors shadow-sm cursor-pointer"
-              >
-                <Plus size={13} />
-                <span>{t('folders.addNote')} (Ctrl+N)</span>
-              </button>
-            </div>
+            <EmptyNoteView
+              onCreateNote={() => {
+                handleCreateNote(selectedFolderId);
+                setActiveColumn(3);
+              }}
+            />
           )}
         </div>
       </main>
 
-      {/* Always-on-Top Floating Widget Mode */}
       {isWidgetMode && (
         <FloatingWidget
           notes={notes}
-          onToggleComplete={handleToggleNoteComplete}
+          onToggleComplete={handleToggleNoteCompleteWithSound}
           onQuickAddNote={(title) => handleCreateNote(selectedFolderId, title)}
-          onRestoreFullApp={() => setIsWidgetMode(false)}
+          onRestoreFullApp={() => handleToggleWidgetMode(false)}
         />
       )}
 
-      {/* Image Annotator & Canvas Modal */}
       {activeSketch && currentNote && (
         <ImageAnnotatorModal
           sketch={activeSketch}
@@ -316,7 +331,6 @@ export const App: React.FC = () => {
         />
       )}
 
-      {/* Command Palette (Ctrl+K or /) (FR-05) */}
       <CommandPalette
         isOpen={isSearchPaletteOpen}
         initialQuery={searchPaletteInitialQuery}
@@ -331,7 +345,26 @@ export const App: React.FC = () => {
         }}
       />
 
-      {/* Shortcuts Modal (?) */}
+      <QuickAddModal
+        isOpen={isQuickAddOpen}
+        subjects={subjects}
+        folders={folders}
+        defaultSubjectId={selectedSubjectId}
+        defaultFolderId={selectedFolderId}
+        onClose={() => setIsQuickAddOpen(false)}
+        onSave={handleQuickAddSave}
+      />
+
+      {currentNote && (
+        <FocusTimerPopover
+          isOpen={isTimerModalOpen}
+          noteId={currentNote.id}
+          noteTitle={currentNote.title}
+          timer={focusTimer}
+          onClose={() => setIsTimerModalOpen(false)}
+        />
+      )}
+
       <ShortcutsModal
         isOpen={isShortcutsModalOpen}
         onClose={() => setIsShortcutsModalOpen(false)}

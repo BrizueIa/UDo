@@ -2,9 +2,10 @@ import React from 'react';
 import { ViewFilter, ThemeId, AccentColor, CustomThemeDefinition } from '../shared/types';
 import { TrafficLights } from '../shared/ui/TrafficLights';
 import { ThemeSelectorMenu } from '../shared/ui/ThemeSelectorMenu';
-import { Search, Globe, HelpCircle, Layers, X } from 'lucide-react';
+import { Search, Globe, HelpCircle, Layers, X, Volume2, VolumeX, Timer, Play, Pause } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
+import { FocusTimerState } from '../shared/hooks/useFocusTimer';
 
 interface Props {
   currentSubjectName?: string;
@@ -16,6 +17,8 @@ interface Props {
   currentTheme: ThemeId;
   currentAccent: AccentColor;
   customThemes: CustomThemeDefinition[];
+  timer?: FocusTimerState;
+  isAudioMuted: boolean;
   onSearchChange: (q: string) => void;
   onOpenSearchPalette: (initialQuery?: string) => void;
   onFilterChange: (f: ViewFilter) => void;
@@ -26,6 +29,8 @@ interface Props {
   onToggleLanguage: () => void;
   onToggleShortcutsModal: () => void;
   onToggleWidgetMode: () => void;
+  onToggleAudioMute: () => void;
+  onOpenTimerModal?: () => void;
 }
 
 export const TopBar: React.FC<Props> = ({
@@ -38,6 +43,8 @@ export const TopBar: React.FC<Props> = ({
   currentTheme,
   currentAccent,
   customThemes,
+  timer,
+  isAudioMuted,
   onSearchChange,
   onOpenSearchPalette,
   onFilterChange,
@@ -48,6 +55,8 @@ export const TopBar: React.FC<Props> = ({
   onToggleLanguage,
   onToggleShortcutsModal,
   onToggleWidgetMode,
+  onToggleAudioMute,
+  onOpenTimerModal,
 }) => {
   const { t, i18n } = useTranslation();
   const searchInputRef = React.useRef<HTMLInputElement>(null);
@@ -144,6 +153,43 @@ export const TopBar: React.FC<Props> = ({
 
       {/* Right: Filter Pills + Quick Tools */}
       <div className="flex items-center space-x-3">
+        {/* Active Focus Sprint Timer (FR-14) */}
+        {timer && (timer.isRunning || timer.isPaused) && (
+          <div
+            onClick={onOpenTimerModal}
+            className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold cursor-pointer border transition-colors shadow-sm ${
+              timer.isPaused
+                ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+            }`}
+            title={
+              timer.noteTitle
+                ? `${timer.noteTitle} (${
+                    timer.isPaused ? t('focusTimer.paused') : t('focusTimer.running')
+                  })`
+                : t('focusTimer.title')
+            }
+          >
+            <Timer size={13} className={timer.isPaused ? '' : 'animate-pulse text-emerald-400'} />
+            <span>{timer.formattedTime}</span>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (timer.isPaused) {
+                  timer.resumeSprint();
+                } else {
+                  timer.pauseSprint();
+                }
+              }}
+              className="p-0.5 rounded hover:bg-white/10 transition-colors ml-0.5"
+              title={timer.isPaused ? t('focusTimer.resume') : t('focusTimer.pause')}
+            >
+              {timer.isPaused ? <Play size={10} className="fill-current" /> : <Pause size={10} />}
+            </button>
+          </div>
+        )}
+
         {/* Animated Filter Pills */}
         <div className="flex items-center bg-theme-column/80 p-0.5 rounded-lg border border-white/[0.05] text-xs font-medium">
           {filterTabs.map((tab) => {
@@ -178,6 +224,19 @@ export const TopBar: React.FC<Props> = ({
             title={t('shortcuts.toggleWidget')}
           >
             <Layers size={15} />
+          </button>
+
+          {/* Audio Feedback Mute / Unmute (FR-15) */}
+          <button
+            onClick={onToggleAudioMute}
+            className={`p-1.5 rounded-md transition-colors ${
+              isAudioMuted
+                ? 'text-theme-muted/60 hover:text-theme-text hover:bg-theme-hover'
+                : 'text-theme-accent hover:text-theme-accent-hover hover:bg-theme-hover'
+            }`}
+            title={isAudioMuted ? t('audio.unmute') : t('audio.mute')}
+          >
+            {isAudioMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
           </button>
 
           {/* Extracted Theme & VS Code Selector Menu */}

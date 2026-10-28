@@ -90,6 +90,35 @@
     "noPending": "¡Todo al día! 🎉",
     "expand": "Abrir App Completa"
   },
+  "quickAdd": {
+    "title": "Captura Rápida",
+    "placeholder": "¿Qué necesitas registrar? (Enter para guardar)",
+    "destination": "Destino",
+    "changeDestinationHint": "Haz clic o presiona Tab / Flecha Abajo para alternar carpetas",
+    "noFolders": "No hay carpetas disponibles",
+    "keyboardHint": "Tab / ↑↓ para alternar destino",
+    "save": "Guardar"
+  },
+  "focusTimer": {
+    "title": "Sprint de Enfoque",
+    "preset15": "15 min",
+    "preset25": "25 min (Pomodoro)",
+    "preset45": "45 min",
+    "custom": "Personalizado",
+    "customMinutes": "min",
+    "start": "Iniciar Sprint",
+    "pause": "Pausar",
+    "resume": "Reanudar",
+    "stop": "Detener Sprint",
+    "running": "Concentrándose...",
+    "paused": "Sprint en Pausa",
+    "finishedTitle": "¡Sprint de Enfoque Terminado!",
+    "finishedBody": "¡Buen trabajo! El sprint para \"{{noteTitle}}\" ha terminado."
+  },
+  "audio": {
+    "mute": "Silenciar efectos de sonido",
+    "unmute": "Activar efectos de sonido"
+  },
   "shortcuts": {
     "title": "Atajos de Teclado",
     "globalSearch": "Abrir Búsqueda Global y Paleta de Comandos",

@@ -9,6 +9,7 @@ import { NoteMediaBar } from './NoteMediaBar';
 import { NoteContentHeader } from './NoteContentHeader';
 import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { playTaskCompleteSound } from '../../../shared/utils/soundEffects';
 
 interface Props {
   note: NoteItem;
@@ -16,6 +17,9 @@ interface Props {
   folderName: string;
   folders: FolderItem[];
   activeTagFilter?: string | null;
+  activeTimerFormatted?: string;
+  isTimerRunning?: boolean;
+  onOpenFocusTimer?: () => void;
   onUpdateNote: (note: NoteItem) => void;
   onDeleteNote: (id: string) => void;
   onSelectNote: (noteId: string, subjectId: string) => void;
@@ -31,6 +35,9 @@ export const NoteDetailView: React.FC<Props> = ({
   folderName,
   folders,
   activeTagFilter,
+  activeTimerFormatted,
+  isTimerRunning,
+  onOpenFocusTimer,
   onUpdateNote,
   onDeleteNote,
   onSelectNote,
@@ -92,9 +99,13 @@ export const NoteDetailView: React.FC<Props> = ({
   };
 
   const handleToggleComplete = () => {
+    const nextState = !note.isCompleted;
+    if (nextState) {
+      playTaskCompleteSound();
+    }
     onUpdateNote({
       ...note,
-      isCompleted: !note.isCompleted,
+      isCompleted: nextState,
       updatedAt: new Date().toISOString(),
     });
   };
@@ -148,6 +159,9 @@ export const NoteDetailView: React.FC<Props> = ({
     if (match) {
       const isCurrentlyChecked = match[2].toLowerCase() === 'x';
       const newChar = isCurrentlyChecked ? ' ' : 'x';
+      if (!isCurrentlyChecked) {
+        playTaskCompleteSound();
+      }
       lines[targetLineIdx] = `${match[1]}${newChar}${match[3]}${match[4]}`;
       onUpdateNote({
         ...note,
@@ -218,10 +232,13 @@ export const NoteDetailView: React.FC<Props> = ({
         note={note}
         folderName={folderName}
         folders={folders}
+        activeTimerFormatted={activeTimerFormatted}
+        isTimerRunning={isTimerRunning}
         onToggleComplete={handleToggleComplete}
         onTogglePin={handleTogglePin}
         onSelectFolder={handleSelectFolder}
         onDeleteNote={onDeleteNote}
+        onOpenFocusTimer={onOpenFocusTimer}
       />
 
       {/* Main Content Area */}
