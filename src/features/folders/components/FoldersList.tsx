@@ -2,20 +2,23 @@ import React, { useState } from 'react';
 import { FolderItem, NoteItem, SubjectItem, ViewFilter } from '../../../shared/types';
 import { FolderItemRow } from './FolderItemRow';
 import { NoteItemRow } from './NoteItemRow';
-import { FolderPlus, Check, X, Hash } from 'lucide-react';
+import { FolderPlus, Check, X, Hash, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
+import { normalizeDiacritics } from '../../../shared/utils/diacritics';
 
 interface Props {
   currentSubject?: SubjectItem;
   folders: FolderItem[];
   notes: NoteItem[];
+  selectedFolderId?: string;
   selectedNoteId: string;
   filter: ViewFilter;
   searchQuery?: string;
   activeTagFilter?: string | null;
   isFocused?: boolean;
   onClearTagFilter?: () => void;
+  onSelectFolder: (id: string) => void;
   onSelectNote: (id: string) => void;
   onToggleNoteComplete: (id: string) => void;
   onToggleFolderExpand: (id: string) => void;
@@ -29,12 +32,14 @@ export const FoldersList: React.FC<Props> = ({
   currentSubject,
   folders,
   notes,
+  selectedFolderId,
   selectedNoteId,
   filter,
   searchQuery = '',
   activeTagFilter,
   isFocused = false,
   onClearTagFilter,
+  onSelectFolder,
   onSelectNote,
   onToggleNoteComplete,
   onToggleFolderExpand,
@@ -49,25 +54,30 @@ export const FoldersList: React.FC<Props> = ({
   const [isCreating, setIsCreating] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
 
-  // Filter notes according to the top filter pills, search query, and activeTagFilter
+  // Filter notes according to status, diacritic-insensitive search, and active tag
   const filterNotes = (folderNotes: NoteItem[]) => {
-    const query = searchQuery.trim().toLowerCase();
+    const query = normalizeDiacritics(searchQuery.trim());
+    const normActiveTag = activeTagFilter ? normalizeDiacritics(activeTagFilter) : null;
+
     return folderNotes
       .filter((n) => {
         // Status pill filter
         if (filter === 'pending' && n.isCompleted) return false;
         if (filter === 'completed' && !n.isCompleted) return false;
 
-        // Active transversal tag filter (FR-21)
-        if (activeTagFilter && !n.tags.includes(activeTagFilter)) {
+        // Active transversal tag filter (diacritic-insensitive)
+        if (
+          normActiveTag &&
+          !n.tags.some((tag) => normalizeDiacritics(tag) === normActiveTag)
+        ) {
           return false;
         }
 
-        // Scoped search query filter
+        // Scoped search query filter (diacritic-insensitive)
         if (query) {
-          const matchTitle = n.title.toLowerCase().includes(query);
-          const matchContent = n.content.toLowerCase().includes(query);
-          const matchTags = n.tags.some((tag) => tag.toLowerCase().includes(query));
+          const matchTitle = normalizeDiacritics(n.title).includes(query);
+          const matchContent = normalizeDiacritics(n.content).includes(query);
+          const matchTags = n.tags.some((tag) => normalizeDiacritics(tag).includes(query));
           if (!matchTitle && !matchContent && !matchTags) return false;
         }
 
@@ -90,7 +100,9 @@ export const FoldersList: React.FC<Props> = ({
     ? notes.filter(
         (n) =>
           folders.some((f) => f.id === n.folderId) &&
-          n.tags.includes(activeTagFilter)
+          n.tags.some(
+            (tag) => normalizeDiacritics(tag) === normalizeDiacritics(activeTagFilter)
+          )
       ).length
     : 0;
 
@@ -190,12 +202,15 @@ export const FoldersList: React.FC<Props> = ({
           folders.map((folder) => {
             const folderNotes = notes.filter((n) => n.folderId === folder.id);
             const visibleNotes = filterNotes(folderNotes);
+            const isFolderSelected = selectedFolderId === folder.id;
 
             return (
               <div key={folder.id} className="space-y-1">
                 <FolderItemRow
                   folder={folder}
                   noteCount={folderNotes.length}
+                  isSelected={isFolderSelected}
+                  onSelectFolder={() => onSelectFolder(folder.id)}
                   onToggleExpand={() => onToggleFolderExpand(folder.id)}
                   onAddNote={() => onAddNote(folder.id)}
                   onUpdateFolder={onUpdateFolder}
@@ -213,8 +228,16 @@ export const FoldersList: React.FC<Props> = ({
                       className="overflow-hidden pl-3 space-y-0.5 border-l border-theme-border/40 ml-4"
                     >
                       {visibleNotes.length === 0 ? (
-                        <div className="text-[11px] text-theme-muted/60 py-1 pl-1">
-                          {t('folders.noNotes')}
+                        <div
+                          onClick={() => onAddNote(folder.id)}
+                          className="flex items-center justify-between text-[11px] text-theme-muted/70 hover:text-theme-accent py-1.5 px-2 rounded-lg hover:bg-theme-hover/40 cursor-pointer transition-colors group"
+                          title={`${t('folders.addNote')} (Ctrl+N)`}
+                        >
+                          <span>{t('folders.noNotes')}</span>
+                          <span className="text-[10px] text-theme-accent opacity-0 group-hover:opacity-100 flex items-center space-x-1 transition-opacity">
+                            <Plus size={11} />
+                            <span>{t('folders.addNote')}</span>
+                          </span>
                         </div>
                       ) : (
                         visibleNotes.map((note) => (
@@ -222,7 +245,10 @@ export const FoldersList: React.FC<Props> = ({
                             key={note.id}
                             note={note}
                             isSelected={note.id === selectedNoteId}
-                            onSelect={() => onSelectNote(note.id)}
+                            onSelect={() => {
+                              onSelectFolder(folder.id);
+                              onSelectNote(note.id);
+                            }}
                             onToggleComplete={() => onToggleNoteComplete(note.id)}
                           />
                         ))

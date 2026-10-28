@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ViewFilter, SketchItem } from '../shared/types';
 import { useThemeManager } from '../shared/hooks/useThemeManager';
 import { useWorkspaceState } from '../shared/hooks/useWorkspaceState';
+import { useTreeNavigation } from '../shared/hooks/useTreeNavigation';
 import { useKeyboardShortcuts, ColumnIndex } from '../shared/hooks/useKeyboardShortcuts';
 import { TopBar } from './TopBar';
 import { SubjectsSidebar } from '../features/subjects/components/SubjectsSidebar';
@@ -11,17 +12,19 @@ import { FloatingWidget } from '../features/floating-widget/components/FloatingW
 import { ImageAnnotatorModal } from '../features/canvas-editor/components/ImageAnnotatorModal';
 import { CommandPalette } from '../features/search-palette/components/CommandPalette';
 import { ShortcutsModal } from '../shared/ui/ShortcutsModal';
+import { Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export const App: React.FC = () => {
   const { t, i18n } = useTranslation();
 
-  // State slices
+  // State slices from workspace hook
   const {
     subjects,
     folders,
     notes,
     selectedSubjectId,
+    selectedFolderId,
     selectedNoteId,
     activeTagFilter,
     currentSubject,
@@ -29,6 +32,7 @@ export const App: React.FC = () => {
     currentNote,
     currentFolder,
     setSelectedSubjectId,
+    setSelectedFolderId,
     setSelectedNoteId,
     setActiveTagFilter,
     handleUpdateNote,
@@ -57,7 +61,7 @@ export const App: React.FC = () => {
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [activeSketch, setActiveSketch] = useState<SketchItem | null>(null);
 
-  // Modular Theme Manager Hook
+  // Theme Manager Hook
   const {
     currentTheme,
     setCurrentTheme,
@@ -68,39 +72,32 @@ export const App: React.FC = () => {
     handleDeleteCustomTheme,
   } = useThemeManager();
 
+  // Tree Navigation Hook in Column 2 (folders & notes)
+  const {
+    handleVerticalNavigate,
+    handleHorizontalNavigate,
+    handleEnterTreeItem,
+  } = useTreeNavigation({
+    activeColumn,
+    subjects,
+    selectedSubjectId,
+    currentSubjectFolders,
+    notes,
+    searchQuery,
+    filter,
+    activeTagFilter,
+    selectedFolderId,
+    selectedNoteId,
+    setSelectedSubjectId,
+    setSelectedFolderId,
+    setSelectedNoteId,
+    handleToggleFolderExpand,
+    setActiveColumn,
+  });
+
   const handleOpenSearchPalette = (initialQuery?: string) => {
     setSearchPaletteInitialQuery(initialQuery || '');
     setIsSearchPaletteOpen(true);
-  };
-
-  // Keyboard vertical navigation (j/k or ArrowDown/ArrowUp) (FR-08)
-  const handleVerticalNavigate = (direction: 'up' | 'down') => {
-    if (activeColumn === 1) {
-      const curIdx = subjects.findIndex((s) => s.id === selectedSubjectId);
-      const nextIdx =
-        direction === 'down'
-          ? Math.min(subjects.length - 1, curIdx + 1)
-          : Math.max(0, curIdx - 1);
-      if (subjects[nextIdx]) {
-        setSelectedSubjectId(subjects[nextIdx].id);
-      }
-    } else if (activeColumn === 2) {
-      const visibleNotes = notes.filter((n) => {
-        if (!currentSubjectFolders.some((f) => f.id === n.folderId)) return false;
-        if (filter === 'pending' && n.isCompleted) return false;
-        if (filter === 'completed' && !n.isCompleted) return false;
-        if (activeTagFilter && !n.tags.includes(activeTagFilter)) return false;
-        return true;
-      });
-      const curIdx = visibleNotes.findIndex((n) => n.id === selectedNoteId);
-      const nextIdx =
-        direction === 'down'
-          ? Math.min(visibleNotes.length - 1, curIdx + 1)
-          : Math.max(0, curIdx - 1);
-      if (visibleNotes[nextIdx]) {
-        setSelectedNoteId(visibleNotes[nextIdx].id);
-      }
-    }
   };
 
   // Global Escape handler (FR-08)
@@ -128,7 +125,7 @@ export const App: React.FC = () => {
     onToggleZenMode: () => setIsZenMode((prev) => !prev),
     onToggleShortcutsModal: () => setIsShortcutsModalOpen((prev) => !prev),
     onCreateNote: () => {
-      handleCreateNote();
+      handleCreateNote(selectedFolderId);
       setActiveColumn(3);
     },
     onCreateFolder: () =>
@@ -148,6 +145,8 @@ export const App: React.FC = () => {
       );
     },
     onNavigateVertical: handleVerticalNavigate,
+    onNavigateHorizontal: handleHorizontalNavigate,
+    onEnterTreeItem: handleEnterTreeItem,
     onEscape: handleEscape,
   });
 
@@ -206,12 +205,17 @@ export const App: React.FC = () => {
             currentSubject={currentSubject}
             folders={currentSubjectFolders}
             notes={notes}
+            selectedFolderId={selectedFolderId}
             selectedNoteId={selectedNoteId}
             filter={filter}
             searchQuery={searchQuery}
             activeTagFilter={activeTagFilter}
             isFocused={activeColumn === 2}
             onClearTagFilter={() => setActiveTagFilter(null)}
+            onSelectFolder={(id) => {
+              setSelectedFolderId(id);
+              setActiveColumn(2);
+            }}
             onSelectNote={(id) => {
               setSelectedNoteId(id);
               setActiveColumn(2);
@@ -247,9 +251,10 @@ export const App: React.FC = () => {
               onSelectNote={(noteId, subjectId) => {
                 setSelectedSubjectId(subjectId);
                 setSelectedNoteId(noteId);
+                setActiveColumn(3);
               }}
               onCreateNoteWithTitle={(title) => {
-                handleCreateNote(undefined, title);
+                handleCreateNote(selectedFolderId, title);
                 setActiveColumn(3);
               }}
               onSelectTagFilter={(tag) => setActiveTagFilter(tag)}
@@ -265,8 +270,19 @@ export const App: React.FC = () => {
               }}
             />
           ) : (
-            <div className="flex-1 flex items-center justify-center text-sm text-theme-muted">
-              {t('folders.empty')}
+            <div className="flex-1 flex flex-col items-center justify-center text-sm text-theme-muted p-8 text-center space-y-3">
+              <p className="text-sm font-medium">{t('folders.noNotes')}</p>
+              <button
+                type="button"
+                onClick={() => {
+                  handleCreateNote(selectedFolderId);
+                  setActiveColumn(3);
+                }}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-theme-accent text-white text-xs font-semibold hover:bg-theme-accent-hover transition-colors shadow-sm cursor-pointer"
+              >
+                <Plus size={13} />
+                <span>{t('folders.addNote')} (Ctrl+N)</span>
+              </button>
             </div>
           )}
         </div>
@@ -277,7 +293,7 @@ export const App: React.FC = () => {
         <FloatingWidget
           notes={notes}
           onToggleComplete={handleToggleNoteComplete}
-          onQuickAddNote={(title) => handleCreateNote(undefined, title)}
+          onQuickAddNote={(title) => handleCreateNote(selectedFolderId, title)}
           onRestoreFullApp={() => setIsWidgetMode(false)}
         />
       )}

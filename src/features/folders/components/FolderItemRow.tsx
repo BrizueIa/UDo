@@ -14,6 +14,8 @@ import { useTranslation } from 'react-i18next';
 interface Props {
   folder: FolderItem;
   noteCount: number;
+  isSelected?: boolean;
+  onSelectFolder?: () => void;
   onToggleExpand: () => void;
   onAddNote: () => void;
   onUpdateFolder: (folder: FolderItem) => void;
@@ -23,6 +25,8 @@ interface Props {
 export const FolderItemRow: React.FC<Props> = ({
   folder,
   noteCount,
+  isSelected = false,
+  onSelectFolder,
   onToggleExpand,
   onAddNote,
   onUpdateFolder,
@@ -76,9 +80,21 @@ export const FolderItemRow: React.FC<Props> = ({
   }
 
   return (
-    <div className="group flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-theme-hover/50 text-theme-text transition-colors">
+    <div
+      onClick={onSelectFolder}
+      className={`group flex items-center justify-between px-2 py-1.5 rounded-md cursor-pointer transition-colors ${
+        isSelected
+          ? 'bg-theme-card border border-theme-accent/50 text-theme-text font-semibold shadow-xs'
+          : 'hover:bg-theme-hover/50 text-theme-text border border-transparent'
+      }`}
+    >
       <button
-        onClick={onToggleExpand}
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelectFolder?.();
+          onToggleExpand();
+        }}
         className="flex items-center space-x-1.5 flex-1 min-w-0 text-left"
       >
         <span className="text-theme-muted">
@@ -92,12 +108,17 @@ export const FolderItemRow: React.FC<Props> = ({
         </span>
       </button>
 
-      {/* Folder Actions (visible on hover) */}
-      <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-0.5 transition-opacity">
+      {/* Folder Actions (visible on hover or when selected) */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className={`flex items-center space-x-0.5 transition-opacity ${
+          isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        }`}
+      >
         <button
           onClick={onAddNote}
-          className="p-1 text-theme-muted hover:text-theme-text rounded"
-          title={t('folders.addNote')}
+          className="p-1 text-theme-muted hover:text-theme-accent rounded"
+          title={`${t('folders.addNote')} (Ctrl+N)`}
         >
           <Plus size={13} />
         </button>

@@ -8,6 +8,7 @@ export function useWorkspaceState() {
   const [notes, setNotes] = useState<NoteItem[]>([]);
 
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>('');
+  const [selectedFolderId, setSelectedFolderId] = useState<string>('');
   const [selectedNoteId, setSelectedNoteId] = useState<string>('');
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
 
@@ -18,6 +19,10 @@ export function useWorkspaceState() {
       setNotes(data.notes);
       if (data.subjects.length > 0) {
         setSelectedSubjectId(data.subjects[0].id);
+        const firstSubjectFolders = data.folders.filter((f) => f.subjectId === data.subjects[0].id);
+        if (firstSubjectFolders.length > 0) {
+          setSelectedFolderId(firstSubjectFolders[0].id);
+        }
       }
       if (data.notes.length > 0) {
         setSelectedNoteId(data.notes[0].id);
@@ -28,7 +33,7 @@ export function useWorkspaceState() {
   const currentSubject = subjects.find((s) => s.id === selectedSubjectId);
   const currentSubjectFolders = folders.filter((f) => f.subjectId === selectedSubjectId);
   const currentNote = notes.find((n) => n.id === selectedNoteId);
-  const currentFolder = folders.find((f) => f.id === currentNote?.folderId);
+  const currentFolder = folders.find((f) => f.id === (currentNote?.folderId || selectedFolderId));
 
   const handleUpdateNote = (updatedNote: NoteItem) => {
     setNotes((prev) => prev.map((n) => (n.id === updatedNote.id ? updatedNote : n)));
@@ -62,10 +67,11 @@ export function useWorkspaceState() {
   };
 
   const handleCreateNote = (targetFolderId?: string, initialTitle: string = '') => {
-    let folderId = targetFolderId;
+    let folderId = targetFolderId || selectedFolderId;
     let subjectId = selectedSubjectId;
 
-    if (!folderId) {
+    const folderExists = currentSubjectFolders.some((f) => f.id === folderId);
+    if (!folderExists) {
       const defaultFolder = currentSubjectFolders[0] || folders[0];
       if (defaultFolder) {
         folderId = defaultFolder.id;
@@ -74,6 +80,18 @@ export function useWorkspaceState() {
         return;
       }
     }
+
+    // Auto-expand folder if collapsed so new note is visible
+    setFolders((prev) =>
+      prev.map((f) => {
+        if (f.id === folderId && !f.isExpanded) {
+          const updated = { ...f, isExpanded: true };
+          api.saveFolder(updated);
+          return updated;
+        }
+        return f;
+      })
+    );
 
     const newNote: NoteItem = {
       id: `note-${Date.now()}`,
@@ -92,6 +110,7 @@ export function useWorkspaceState() {
 
     setNotes((prev) => [newNote, ...prev]);
     setSelectedNoteId(newNote.id);
+    setSelectedFolderId(folderId);
     setSelectedSubjectId(subjectId);
     api.saveNote(newNote);
   };
@@ -106,6 +125,7 @@ export function useWorkspaceState() {
       order: currentSubjectFolders.length,
     };
     setFolders((prev) => [...prev, newFolder]);
+    setSelectedFolderId(newFolder.id);
     api.saveFolder(newFolder);
   };
 
@@ -117,6 +137,10 @@ export function useWorkspaceState() {
   const handleDeleteFolder = (id: string) => {
     setFolders((prev) => prev.filter((f) => f.id !== id));
     setNotes((prev) => prev.filter((n) => n.folderId !== id));
+    if (selectedFolderId === id) {
+      const remainingFolders = currentSubjectFolders.filter((f) => f.id !== id);
+      setSelectedFolderId(remainingFolders[0]?.id || '');
+    }
     api.deleteFolder(id);
   };
 
@@ -171,6 +195,7 @@ export function useWorkspaceState() {
     folders,
     notes,
     selectedSubjectId,
+    selectedFolderId,
     selectedNoteId,
     activeTagFilter,
     currentSubject,
@@ -178,6 +203,7 @@ export function useWorkspaceState() {
     currentNote,
     currentFolder,
     setSelectedSubjectId,
+    setSelectedFolderId,
     setSelectedNoteId,
     setActiveTagFilter,
     handleUpdateNote,

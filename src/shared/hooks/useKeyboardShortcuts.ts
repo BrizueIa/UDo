@@ -14,6 +14,8 @@ interface ShortcutHandlers {
   onSetActiveColumn: (col: ColumnIndex) => void;
   onCycleColumn: (direction: 'next' | 'prev') => void;
   onNavigateVertical: (direction: 'up' | 'down') => void;
+  onNavigateHorizontal?: (direction: 'left' | 'right') => void;
+  onEnterTreeItem?: () => void;
   onEscape: () => void;
 }
 
@@ -29,6 +31,8 @@ export function useKeyboardShortcuts({
   onSetActiveColumn,
   onCycleColumn,
   onNavigateVertical,
+  onNavigateHorizontal,
+  onEnterTreeItem,
   onEscape,
 }: ShortcutHandlers) {
   useEffect(() => {
@@ -52,7 +56,7 @@ export function useKeyboardShortcuts({
         return;
       }
 
-      // Ctrl + N: New note (FR-08)
+      // Ctrl + N: New note in current folder (FR-08)
       if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'n') {
         e.preventDefault();
         onCreateNote();
@@ -144,6 +148,32 @@ export function useKeyboardShortcuts({
           return;
         }
 
+        // Enter: Open / toggle tree item or focus
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          onEnterTreeItem?.();
+          return;
+        }
+
+        // ArrowRight / l / ArrowLeft / h: Expand / collapse folder in tree
+        if (e.key === 'ArrowRight' || e.key.toLowerCase() === 'l') {
+          e.preventDefault();
+          onNavigateHorizontal?.('right');
+          return;
+        }
+        if (e.key === 'ArrowLeft' || e.key.toLowerCase() === 'h') {
+          e.preventDefault();
+          onNavigateHorizontal?.('left');
+          return;
+        }
+
+        // n: Create note in selected folder when navigating
+        if (e.key.toLowerCase() === 'n') {
+          e.preventDefault();
+          onCreateNote();
+          return;
+        }
+
         // j / k or ↓ / ↑: Navigate items in active column (FR-08)
         if (e.key.toLowerCase() === 'j' || e.key === 'ArrowDown') {
           e.preventDefault();
@@ -172,6 +202,8 @@ export function useKeyboardShortcuts({
     onSetActiveColumn,
     onCycleColumn,
     onNavigateVertical,
+    onNavigateHorizontal,
+    onEnterTreeItem,
     onEscape,
   ]);
 }
