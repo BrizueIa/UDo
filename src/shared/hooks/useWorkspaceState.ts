@@ -58,16 +58,10 @@ export function useWorkspaceState() {
   const handleToggleNoteComplete = (id: string) => {
     setNotes((prev) =>
       prev.map((n) => {
-        if (n.id === id) {
-          const updated = {
-            ...n,
-            isCompleted: !n.isCompleted,
-            updatedAt: new Date().toISOString(),
-          };
-          api.saveNote(updated);
-          return updated;
-        }
-        return n;
+        if (n.id !== id) return n;
+        const updated = { ...n, isCompleted: !n.isCompleted, updatedAt: new Date().toISOString() };
+        api.saveNote(updated);
+        return updated;
       })
     );
   };
@@ -201,30 +195,17 @@ export function useWorkspaceState() {
   const handleToggleFolderExpand = (id: string) => {
     setFolders((prev) =>
       prev.map((f) => {
-        if (f.id === id) {
-          const updated = { ...f, isExpanded: !f.isExpanded };
-          api.saveFolder(updated);
-          return updated;
-        }
-        return f;
+        if (f.id !== id) return f;
+        const updated = { ...f, isExpanded: !f.isExpanded };
+        api.saveFolder(updated);
+        return updated;
       })
     );
   };
 
   const handleAddSubject = (name: string, color: string) => {
-    const newSubject: SubjectItem = {
-      id: `sub-${Date.now()}`,
-      name,
-      color,
-      order: subjects.length,
-    };
-    const defaultFolder: FolderItem = {
-      id: `folder-${Date.now()}`,
-      subjectId: newSubject.id,
-      name: 'General',
-      isExpanded: true,
-      order: 0,
-    };
+    const newSubject: SubjectItem = { id: `sub-${Date.now()}`, name, color, order: subjects.length };
+    const defaultFolder: FolderItem = { id: `folder-${Date.now()}`, subjectId: newSubject.id, name: 'General', isExpanded: true, order: 0 };
     setSubjects((prev) => [...prev, newSubject]);
     setFolders((prev) => [...prev, defaultFolder]);
     setSelectedSubjectId(newSubject.id);
@@ -315,6 +296,60 @@ export function useWorkspaceState() {
     setSelectedNoteId(noteId);
   };
 
+  const handleMoveFolderToSubject = (folderId: string, targetSubjectId: string) => {
+    const folder = folders.find((f) => f.id === folderId);
+    if (!folder || folder.subjectId === targetSubjectId) return;
+
+    const updatedFolder = { ...folder, subjectId: targetSubjectId };
+    setFolders((prev) => prev.map((f) => (f.id === folderId ? updatedFolder : f)));
+    api.saveFolder(updatedFolder);
+
+    setNotes((prev) =>
+      prev.map((n) => {
+        if (n.folderId === folderId) {
+          const updatedNote = { ...n, subjectId: targetSubjectId, updatedAt: new Date().toISOString() };
+          api.saveNote(updatedNote);
+          return updatedNote;
+        }
+        return n;
+      })
+    );
+    setSelectedSubjectId(targetSubjectId);
+    setSelectedFolderId(folderId);
+  };
+
+  const handleConvertFolderToSubject = (folderId: string) => {
+    const folder = folders.find((f) => f.id === folderId);
+    if (!folder) return;
+
+    const colors = ['#f97316', '#10b981', '#6366f1', '#ec4899', '#3b82f6', '#eab308', '#8b5cf6', '#14b8a6'];
+    const newSubject: SubjectItem = {
+      id: `sub-${Date.now()}`,
+      name: folder.name,
+      color: colors[subjects.length % colors.length],
+      order: subjects.length,
+    };
+    setSubjects((prev) => [...prev, newSubject]);
+    api.saveSubject(newSubject);
+
+    const updatedFolder = { ...folder, subjectId: newSubject.id };
+    setFolders((prev) => prev.map((f) => (f.id === folderId ? updatedFolder : f)));
+    api.saveFolder(updatedFolder);
+
+    setNotes((prev) =>
+      prev.map((n) => {
+        if (n.folderId === folderId) {
+          const updatedNote = { ...n, subjectId: newSubject.id, updatedAt: new Date().toISOString() };
+          api.saveNote(updatedNote);
+          return updatedNote;
+        }
+        return n;
+      })
+    );
+    setSelectedSubjectId(newSubject.id);
+    setSelectedFolderId(folderId);
+  };
+
   return {
     subjects,
     folders,
@@ -337,6 +372,8 @@ export function useWorkspaceState() {
     handleCreateNote,
     handleMoveNoteToFolder,
     handleMoveNoteToSubject,
+    handleMoveFolderToSubject,
+    handleConvertFolderToSubject,
     handleAddFolder,
     handleUpdateFolder,
     handleDeleteFolder,

@@ -35,6 +35,7 @@ export const App: React.FC = () => {
     setSelectedSubjectId, setSelectedFolderId, setSelectedNoteId, setActiveTagFilter,
     handleUpdateNote, handleToggleNoteComplete, handleDeleteNote, handleCreateNote,
     handleMoveNoteToFolder, handleMoveNoteToSubject,
+    handleMoveFolderToSubject, handleConvertFolderToSubject,
     handleAddFolder, handleUpdateFolder, handleDeleteFolder, handleToggleFolderExpand,
     handleAddSubject, handleUpdateSubject, handleDeleteSubject, getSubjectNoteCount,
   } = useWorkspaceState();
@@ -289,6 +290,8 @@ export const App: React.FC = () => {
             onDeleteSubject={handleDeleteSubject}
             getSubjectNoteCount={getSubjectNoteCount}
             onMoveNoteToSubject={handleMoveNoteToSubject}
+            onMoveFolderToSubject={handleMoveFolderToSubject}
+            onConvertFolderToSubject={handleConvertFolderToSubject}
           />
         )}
 

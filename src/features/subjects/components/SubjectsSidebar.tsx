@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { SubjectItem } from '../../../shared/types';
-import { Plus, Check, X, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Check, X, Pencil, Trash2, FolderPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -25,6 +25,8 @@ interface Props {
   onDeleteSubject: (id: string) => void;
   getSubjectNoteCount: (id: string) => number;
   onMoveNoteToSubject?: (noteId: string, subjectId: string) => void;
+  onMoveFolderToSubject?: (folderId: string, subjectId: string) => void;
+  onConvertFolderToSubject?: (folderId: string) => void;
 }
 
 export const SubjectsSidebar: React.FC<Props> = ({
@@ -37,11 +39,14 @@ export const SubjectsSidebar: React.FC<Props> = ({
   onDeleteSubject,
   getSubjectNoteCount,
   onMoveNoteToSubject,
+  onMoveFolderToSubject,
+  onConvertFolderToSubject,
 }) => {
   const { t } = useTranslation();
 
   // Drag and drop state
   const [dragOverSubjectId, setDragOverSubjectId] = useState<string | null>(null);
+  const [isDropToNewProject, setIsDropToNewProject] = useState(false);
 
   // New Subject State
   const [isCreating, setIsCreating] = useState(false);
@@ -66,9 +71,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
 
   const handleSaveCreate = () => {
     const trimmed = newName.trim();
-    if (trimmed) {
-      onAddSubject(trimmed, newColor);
-    }
+    if (trimmed) onAddSubject(trimmed, newColor);
     setIsCreating(false);
     setNewName('');
   };
@@ -84,13 +87,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
   const handleSaveEdit = (subject: SubjectItem, e?: React.FormEvent) => {
     if (e) e.preventDefault();
     const trimmed = editName.trim();
-    if (trimmed) {
-      onUpdateSubject({
-        ...subject,
-        name: trimmed,
-        color: editColor,
-      });
-    }
+    if (trimmed) onUpdateSubject({ ...subject, name: trimmed, color: editColor });
     setEditingSubjectId(null);
   };
 
@@ -243,7 +240,11 @@ export const SubjectsSidebar: React.FC<Props> = ({
               key={subject.id}
               onClick={() => onSelectSubject(subject.id)}
               onDragOver={(e) => {
-                if (e.dataTransfer.types.includes('application/udo-note-id') || e.dataTransfer.types.includes('text/plain')) {
+                if (
+                  e.dataTransfer.types.includes('application/udo-note-id') ||
+                  e.dataTransfer.types.includes('application/udo-folder-id') ||
+                  e.dataTransfer.types.includes('text/plain')
+                ) {
                   e.preventDefault();
                   e.dataTransfer.dropEffect = 'move';
                   if (dragOverSubjectId !== subject.id) setDragOverSubjectId(subject.id);
@@ -255,8 +256,12 @@ export const SubjectsSidebar: React.FC<Props> = ({
               onDrop={(e) => {
                 e.preventDefault();
                 setDragOverSubjectId(null);
-                const noteId = e.dataTransfer.getData('application/udo-note-id') || e.dataTransfer.getData('text/plain');
-                if (noteId && onMoveNoteToSubject) {
+                const folderId = e.dataTransfer.getData('application/udo-folder-id');
+                const noteId = e.dataTransfer.getData('application/udo-note-id') || (!folderId ? e.dataTransfer.getData('text/plain') : '');
+
+                if (folderId && onMoveFolderToSubject) {
+                  onMoveFolderToSubject(folderId, subject.id);
+                } else if (noteId && onMoveNoteToSubject) {
                   onMoveNoteToSubject(noteId, subject.id);
                 }
               }}
@@ -345,6 +350,36 @@ export const SubjectsSidebar: React.FC<Props> = ({
             </motion.div>
           );
         })}
+      </div>
+
+      {/* Bottom Drop Zone: Convert dragged folder to new project */}
+      <div
+        onDragOver={(e) => {
+          if (e.dataTransfer.types.includes('application/udo-folder-id') || e.dataTransfer.types.includes('text/plain')) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            setIsDropToNewProject(true);
+          }
+        }}
+        onDragLeave={() => setIsDropToNewProject(false)}
+        onDrop={(e) => {
+          e.preventDefault();
+          setIsDropToNewProject(false);
+          const folderId = e.dataTransfer.getData('application/udo-folder-id');
+          if (folderId && onConvertFolderToSubject) {
+            onConvertFolderToSubject(folderId);
+          }
+        }}
+        className={`mx-2 mb-2 p-2 rounded-xl border-2 border-dashed transition-all text-center flex flex-col items-center justify-center space-y-1 ${
+          isDropToNewProject
+            ? 'border-theme-accent bg-theme-accent/20 text-theme-text scale-[1.02] shadow-md'
+            : 'border-theme-border/50 text-theme-muted/60 hover:border-theme-border/80'
+        }`}
+      >
+        <FolderPlus size={14} className={isDropToNewProject ? 'text-theme-accent' : 'text-theme-muted'} />
+        <span className="text-[10px] font-medium leading-tight">
+          {isDropToNewProject ? t('nav.dropFolderToNewProject') : t('nav.convertToProject')}
+        </span>
       </div>
     </aside>
   );

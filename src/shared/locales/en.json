@@ -17,6 +17,8 @@
     "del": "Del",
     "cancel": "Cancel",
     "save": "Save",
+    "dropFolderToNewProject": "Drop here to create new project",
+    "convertToProject": "Drop folder for new project",
     "searchPlaceholder": "Search notes, projects, folders... (Ctrl+K)",
     "filterAll": "All",
     "filterPending": "Pending",

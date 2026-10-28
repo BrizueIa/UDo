@@ -48,6 +48,12 @@ export const FolderItemRow: React.FC<Props> = ({
     }
   };
 
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('application/udo-folder-id', folder.id);
+    e.dataTransfer.setData('text/plain', folder.id);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragOver(false);
@@ -106,11 +112,13 @@ export const FolderItemRow: React.FC<Props> = ({
 
   return (
     <div
+      draggable
+      onDragStart={handleDragStart}
       onClick={onSelectFolder}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`group flex items-center justify-between px-2 py-1.5 rounded-md cursor-pointer transition-all ${
+      className={`group flex items-center justify-between px-2 py-1.5 rounded-md cursor-grab active:cursor-grabbing hover:translate-x-0.5 transition-all select-none ${
         isDragOver
           ? 'bg-theme-accent/25 border-theme-accent ring-2 ring-theme-accent/60 scale-[1.01] shadow-md'
           : isSelected

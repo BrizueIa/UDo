@@ -17,6 +17,8 @@
     "del": "Eliminar",
     "cancel": "Cancelar",
     "save": "Guardar",
+    "dropFolderToNewProject": "Suelta aquí para crear nuevo proyecto",
+    "convertToProject": "Suelta carpeta para nuevo proyecto",
     "searchPlaceholder": "Buscar notas, proyectos, carpetas... (Ctrl+K)",
     "filterAll": "Todo",
     "filterPending": "Pendientes",
