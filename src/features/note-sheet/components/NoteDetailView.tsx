@@ -309,6 +309,7 @@ export const NoteDetailView: React.FC<Props> = ({
           <NoteMetadataBar
             updatedAt={note.updatedAt}
             tags={note.tags}
+            focusMinutes={note.focusMinutes}
             activeTagFilter={activeTagFilter}
             onSelectTagFilter={onSelectTagFilter}
             onRemoveTag={handleRemoveTag}

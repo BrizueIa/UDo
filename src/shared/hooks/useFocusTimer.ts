@@ -6,36 +6,42 @@ import { playTimerCompleteSound } from '../utils/soundEffects';
 export interface FocusTimerState {
   noteId: string | null;
   noteTitle: string | null;
-  durationMinutes: number;
+  totalPlannedSeconds: number;
   remainingSeconds: number;
   isRunning: boolean;
   isPaused: boolean;
   formattedTime: string;
   progressPercent: number;
-  startSprint: (noteId: string, noteTitle: string, minutes: number) => void;
+  startSprint: (noteId: string, noteTitle: string, totalSeconds: number) => void;
   pauseSprint: () => void;
   resumeSprint: () => void;
   stopSprint: () => void;
   resetSprint: () => void;
 }
 
-export function useFocusTimer(): FocusTimerState {
+interface FocusTimerOptions {
+  onSprintCompleted?: (noteId: string, secondsSpent: number) => void;
+}
+
+export function useFocusTimer(options?: FocusTimerOptions): FocusTimerState {
   const { t } = useTranslation();
   const [noteId, setNoteId] = useState<string | null>(null);
   const [noteTitle, setNoteTitle] = useState<string | null>(null);
-  const [durationMinutes, setDurationMinutes] = useState<number>(25);
+  const [totalPlannedSeconds, setTotalPlannedSeconds] = useState<number>(25 * 60);
   const [remainingSeconds, setRemainingSeconds] = useState<number>(25 * 60);
   const [isRunning, setIsRunning] = useState<boolean>(false);
   const [isPaused, setIsPaused] = useState<boolean>(false);
 
   const timerRef = useRef<number | null>(null);
+  const onSprintCompletedRef = useRef(options?.onSprintCompleted);
+  onSprintCompletedRef.current = options?.onSprintCompleted;
 
-  const startSprint = useCallback((id: string, title: string, minutes: number) => {
-    const totalSecs = Math.max(1, Math.round(minutes * 60));
+  const startSprint = useCallback((id: string, title: string, totalSeconds: number) => {
+    const validSecs = Math.max(5, Math.round(totalSeconds));
     setNoteId(id);
     setNoteTitle(title);
-    setDurationMinutes(minutes);
-    setRemainingSeconds(totalSecs);
+    setTotalPlannedSeconds(validSecs);
+    setRemainingSeconds(validSecs);
     setIsRunning(true);
     setIsPaused(false);
   }, []);
@@ -49,10 +55,16 @@ export function useFocusTimer(): FocusTimerState {
   }, []);
 
   const stopSprint = useCallback(() => {
+    if (noteId && isRunning) {
+      const elapsed = totalPlannedSeconds - remainingSeconds;
+      if (elapsed >= 10) {
+        onSprintCompletedRef.current?.(noteId, elapsed);
+      }
+    }
     setIsRunning(false);
     setIsPaused(false);
-    setRemainingSeconds(durationMinutes * 60);
-  }, [durationMinutes]);
+    setRemainingSeconds(totalPlannedSeconds);
+  }, [noteId, isRunning, totalPlannedSeconds, remainingSeconds]);
 
   const resetSprint = useCallback(() => {
     setIsRunning(false);
@@ -60,7 +72,7 @@ export function useFocusTimer(): FocusTimerState {
     setNoteId(null);
     setNoteTitle(null);
     setRemainingSeconds(25 * 60);
-    setDurationMinutes(25);
+    setTotalPlannedSeconds(25 * 60);
   }, []);
 
   // Tick interval
@@ -69,11 +81,15 @@ export function useFocusTimer(): FocusTimerState {
       timerRef.current = window.setInterval(() => {
         setRemainingSeconds((prev) => {
           if (prev <= 1) {
-            // Sprint complete!
             window.clearInterval(timerRef.current!);
             timerRef.current = null;
             setIsRunning(false);
             setIsPaused(false);
+
+            // Record completed time
+            if (noteId) {
+              onSprintCompletedRef.current?.(noteId, totalPlannedSeconds);
+            }
 
             // Audio & Native Notification
             playTimerCompleteSound();
@@ -101,20 +117,21 @@ export function useFocusTimer(): FocusTimerState {
         timerRef.current = null;
       }
     };
-  }, [isRunning, isPaused, noteTitle, t]);
+  }, [isRunning, isPaused, noteId, noteTitle, totalPlannedSeconds, t]);
 
   const mins = Math.floor(remainingSeconds / 60);
   const secs = remainingSeconds % 60;
   const formattedTime = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 
-  const totalSeconds = durationMinutes * 60;
   const progressPercent =
-    totalSeconds > 0 ? Math.round(((totalSeconds - remainingSeconds) / totalSeconds) * 100) : 0;
+    totalPlannedSeconds > 0
+      ? Math.round(((totalPlannedSeconds - remainingSeconds) / totalPlannedSeconds) * 100)
+      : 0;
 
   return {
     noteId,
     noteTitle,
-    durationMinutes,
+    totalPlannedSeconds,
     remainingSeconds,
     isRunning,
     isPaused,

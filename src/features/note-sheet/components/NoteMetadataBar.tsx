@@ -6,6 +6,7 @@ import { formatRelativeTime } from '../../../shared/utils/formatTime';
 interface Props {
   updatedAt: string;
   tags: string[];
+  focusMinutes?: number;
   activeTagFilter?: string | null;
   onSelectTagFilter: (tag: string) => void;
   onRemoveTag: (tag: string) => void;
@@ -15,6 +16,7 @@ interface Props {
 export const NoteMetadataBar: React.FC<Props> = ({
   updatedAt,
   tags,
+  focusMinutes,
   activeTagFilter,
   onSelectTagFilter,
   onRemoveTag,
@@ -45,6 +47,14 @@ export const NoteMetadataBar: React.FC<Props> = ({
           {t('note.modified')}: {formatRelativeTime(updatedAt, i18n.language)}
         </span>
       </span>
+
+      {/* Accumulated Focus Time */}
+      {typeof focusMinutes === 'number' && focusMinutes > 0 && (
+        <span className="flex items-center space-x-1 px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-mono text-[11px]" title={t('focusTimer.accumulated')}>
+          <Clock size={11} />
+          <span>{focusMinutes}m {t('focusTimer.accumulatedShort')}</span>
+        </span>
+      )}
 
       {/* Tags List */}
       <div className="flex flex-wrap items-center gap-1.5">

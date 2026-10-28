@@ -83,7 +83,7 @@ export const NoteActionRibbon: React.FC<Props> = ({
         {onOpenFocusTimer && (
           <button
             onClick={onOpenFocusTimer}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer ${
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer whitespace-nowrap flex-shrink-0 ${
               isTimerRunning
                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm animate-pulse'
                 : 'bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.06]'
