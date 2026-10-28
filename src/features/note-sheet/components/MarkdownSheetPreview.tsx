@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { CheckSquare, Square, FileText, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NoteItem } from '../../../shared/types';
+import { buildDiacriticRegex, normalizeDiacritics } from '../../../shared/utils/diacritics';
 
 interface Props {
   content: string;
@@ -32,7 +33,7 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
 
-  // Calculate total matches in content
+  // Calculate total matches in content (diacritic-insensitive)
   useEffect(() => {
     const q = findQuery.trim();
     if (!q) {
@@ -40,7 +41,7 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
       return;
     }
     try {
-      const regex = new RegExp(q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
+      const regex = buildDiacriticRegex(q, 'gi');
       const matches = content.match(regex);
       onMatchCountCalculated?.(matches ? matches.length : 0);
     } catch {
@@ -63,11 +64,12 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
     if (!q) return rawText;
 
     try {
-      const regex = new RegExp(`(${q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      const regex = buildDiacriticRegex(q, 'gi');
       const segments = rawText.split(regex);
+      const normQ = normalizeDiacritics(q);
 
       return segments.map((segment, segIdx) => {
-        if (segment.toLowerCase() === q.toLowerCase()) {
+        if (segment && normalizeDiacritics(segment) === normQ) {
           const thisIndex = matchCounter++;
           const isCurrent = thisIndex === currentMatchIndex;
           return (

@@ -3,6 +3,7 @@ import { NoteItem, SubjectItem, FolderItem } from '../../../shared/types';
 import { Search, Hash, FileText, CornerDownLeft, ArrowUpDown } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../../shared/api/ipc';
+import { buildDiacriticRegex } from '../../../shared/utils/diacritics';
 
 interface Props {
   isOpen: boolean;
@@ -76,19 +77,24 @@ export const CommandPalette: React.FC<Props> = ({
     }
   };
 
-  // Helper to extract a context snippet if content matches
+  // Helper to extract a context snippet if content matches (diacritic-insensitive)
   const getContentSnippet = (content: string, q: string) => {
-    if (!q) return null;
-    const lowerContent = content.toLowerCase();
-    const lowerQuery = q.toLowerCase();
-    const matchPos = lowerContent.indexOf(lowerQuery);
-    if (matchPos === -1) return null;
+    if (!q.trim()) return null;
+    try {
+      const regex = buildDiacriticRegex(q.trim());
+      const match = regex.exec(content);
+      if (!match) return null;
 
-    const start = Math.max(0, matchPos - 25);
-    const end = Math.min(content.length, matchPos + lowerQuery.length + 35);
-    const prefix = start > 0 ? '...' : '';
-    const suffix = end < content.length ? '...' : '';
-    return `${prefix}${content.substring(start, end).replace(/\n/g, ' ')}${suffix}`;
+      const matchPos = match.index;
+      const matchedLength = match[0].length;
+      const start = Math.max(0, matchPos - 25);
+      const end = Math.min(content.length, matchPos + matchedLength + 35);
+      const prefix = start > 0 ? '...' : '';
+      const suffix = end < content.length ? '...' : '';
+      return `${prefix}${content.substring(start, end).replace(/\n/g, ' ')}${suffix}`;
+    } catch {
+      return null;
+    }
   };
 
   return (

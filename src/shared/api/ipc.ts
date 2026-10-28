@@ -1,5 +1,6 @@
 import { NoteItem, SubjectItem, FolderItem } from '../types';
 import { initialNotes, initialSubjects, initialFolders } from '../data/initialData';
+import { normalizeDiacritics } from '../utils/diacritics';
 
 // Safe check if running inside Tauri runtime
 const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
@@ -60,13 +61,13 @@ export const api = {
       }
     }
     const state = getLocalState();
-    const q = query.trim().toLowerCase();
+    const q = normalizeDiacritics(query.trim());
     if (!q) return [];
     return state.notes.filter((n) => {
       return (
-        n.title.toLowerCase().includes(q) ||
-        n.content.toLowerCase().includes(q) ||
-        n.tags.some((tag) => tag.toLowerCase().includes(q))
+        normalizeDiacritics(n.title).includes(q) ||
+        normalizeDiacritics(n.content).includes(q) ||
+        n.tags.some((tag) => normalizeDiacritics(tag).includes(q))
       );
     });
   },

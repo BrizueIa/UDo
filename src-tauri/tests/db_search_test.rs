@@ -11,6 +11,19 @@ fn test_database_init_and_search() {
     let results = db.search_notes("Diseños").expect("Search failed");
     assert!(!results.is_empty(), "Should find notes matching 'Diseños'");
 
+    // Verify diacritic-insensitive search ("calculo" finds "Cálculo", "diseno" finds "Diseños")
+    let results_calculo = db.search_notes("calculo").expect("Search 'calculo' failed");
+    assert!(
+        results_calculo.iter().any(|n| n.content.contains("Cálculo") || n.title.contains("Cálculo")),
+        "Search for 'calculo' should find note with 'Cálculo'"
+    );
+
+    let results_diseno = db.search_notes("diseno").expect("Search 'diseno' failed");
+    assert!(
+        results_diseno.iter().any(|n| n.title.contains("Diseños") || n.content.contains("Diseños")),
+        "Search for 'diseno' should find note with 'Diseños'"
+    );
+
     // Test saving new note and automatic trigger synchronization with FTS5
     let new_note = NoteItem {
         id: format!("note-test-{}", std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).unwrap().as_millis()),
