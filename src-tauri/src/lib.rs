@@ -52,6 +52,7 @@ pub fn run() {
             window::minimize_window,
             window::toggle_maximize_window,
             window::close_window_to_tray,
+            window::get_window_env,
             services::send_native_notification,
         ])
         .run(tauri::generate_context!())

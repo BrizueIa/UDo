@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ViewFilter, ThemeId, AccentColor, CustomThemeDefinition } from '../shared/types';
 import { TrafficLights } from '../shared/ui/TrafficLights';
 import { ThemeSelectorMenu } from '../shared/ui/ThemeSelectorMenu';
+import { api, WindowEnvironment } from '../shared/api/ipc';
+import { playTaskCompleteSound } from '../shared/utils/soundEffects';
 import { Search, Globe, HelpCircle, Layers, X, Volume2, VolumeX, Timer, Play, Pause } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
@@ -66,6 +68,17 @@ export const TopBar: React.FC<Props> = ({
   const searchInputRef = useRef<HTMLInputElement>(null);
   const volumePopoverRef = useRef<HTMLDivElement>(null);
   const [showVolumePopover, setShowVolumePopover] = useState(false);
+  const [windowEnv, setWindowEnv] = useState<WindowEnvironment>({
+    os: 'linux',
+    desktop: '',
+    controlsSide: 'right',
+    showMinMax: false,
+    isTilingWm: true,
+  });
+
+  useEffect(() => {
+    api.getWindowEnv().then(setWindowEnv).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -112,9 +125,14 @@ export const TopBar: React.FC<Props> = ({
       data-tauri-drag-region
       className="h-12 bg-theme-sidebar border-b border-theme-border flex items-center justify-between px-3 select-none flex-shrink-0 z-20"
     >
-      {/* Left: Window Traffic Lights + App Title + Current Project Badge */}
+      {/* Left: macOS Traffic Lights (if left side) + App Title + Current Project Badge */}
       <div className="flex items-center space-x-3">
-        <TrafficLights />
+        {windowEnv.controlsSide === 'left' && (
+          <TrafficLights
+            showMinMax={windowEnv.showMinMax}
+            styleMode="mac"
+          />
+        )}
 
         <div className="flex items-center space-x-2">
           <span className="w-2.5 h-2.5 rounded-full bg-theme-accent shadow-sm" />
@@ -278,6 +296,8 @@ export const TopBar: React.FC<Props> = ({
                   max="100"
                   value={isAudioMuted ? 0 : Math.round(audioVolume * 100)}
                   onChange={(e) => onVolumeChange(Number(e.target.value) / 100)}
+                  onMouseUp={() => playTaskCompleteSound()}
+                  onTouchEnd={() => playTaskCompleteSound()}
                   aria-label={t('audio.volume')}
                   title={t('audio.volume')}
                   className="w-full accent-theme-accent cursor-pointer h-1.5 bg-theme-base rounded-lg"
@@ -320,6 +340,16 @@ export const TopBar: React.FC<Props> = ({
           >
             <HelpCircle size={15} />
           </button>
+
+          {/* Right: Windows / Linux Window Controls */}
+          {windowEnv.controlsSide === 'right' && (
+            <div className="pl-2 ml-1 border-l border-theme-border/60 flex items-center">
+              <TrafficLights
+                showMinMax={windowEnv.showMinMax}
+                styleMode="native"
+              />
+            </div>
+          )}
         </div>
       </div>
     </header>

@@ -42,7 +42,6 @@ export const FocusTimerPopover: React.FC<Props> = ({
   };
 
   const presets = [
-    { secs: 90, label: t('focusTimer.preset90s') },
     { secs: 5 * 60, label: t('focusTimer.preset5m') },
     { secs: 15 * 60, label: t('focusTimer.preset15') },
     { secs: 25 * 60, label: t('focusTimer.preset25') },

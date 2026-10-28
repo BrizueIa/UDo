@@ -36,6 +36,14 @@ function saveLocalState(state: LocalState) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
 }
 
+export interface WindowEnvironment {
+  os: 'macos' | 'windows' | 'linux';
+  desktop: string;
+  controlsSide: 'left' | 'right';
+  showMinMax: boolean;
+  isTilingWm: boolean;
+}
+
 export const api = {
   isTauri,
 
@@ -222,6 +230,26 @@ export const api = {
         console.warn('Tauri close to tray failed', err);
       }
     }
+  },
+
+  async getWindowEnv(): Promise<WindowEnvironment> {
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        return await invoke<WindowEnvironment>('get_window_env');
+      } catch (err) {
+        console.warn('Tauri getWindowEnv failed', err);
+      }
+    }
+    // Browser fallback
+    const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPod|iPad/.test(navigator.platform);
+    return {
+      os: isMac ? 'macos' : 'linux',
+      desktop: 'web',
+      controlsSide: isMac ? 'left' : 'right',
+      showMinMax: true,
+      isTilingWm: false,
+    };
   },
 
   async sendNativeNotification(title: string, body: string): Promise<void> {

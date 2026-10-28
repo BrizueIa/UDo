@@ -148,7 +148,6 @@
   },
   "focusTimer": {
     "title": "Focus Sprint",
-    "preset90s": "1m 30s",
     "preset5m": "5 min",
     "preset15": "15 min",
     "preset25": "25 min (Pomodoro)",

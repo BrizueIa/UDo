@@ -35,13 +35,13 @@ export function toggleAudioMute(): boolean {
 }
 
 export function getAudioVolume(): number {
-  if (typeof window === 'undefined') return 0.6;
+  if (typeof window === 'undefined') return 0.7;
   const saved = localStorage.getItem(STORAGE_VOLUME_KEY);
   if (saved !== null) {
     const parsed = parseFloat(saved);
     if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) return parsed;
   }
-  return 0.6;
+  return 0.7;
 }
 
 export function setAudioVolume(vol: number): void {
@@ -51,7 +51,7 @@ export function setAudioVolume(vol: number): void {
 }
 
 /**
- * Emits a satisfying, tactile acoustic pop / wooden click upon task/checkbox completion
+ * Emits a crisp, noticeable and rewarding chime + pop upon completing a task or checkbox
  */
 export function playTaskCompleteSound(): void {
   if (isAudioMuted()) return;
@@ -64,40 +64,49 @@ export function playTaskCompleteSound(): void {
 
     const now = ctx.currentTime;
 
-    // 1. High transient click (simulates physical finger/tool impact)
-    const clickOsc = ctx.createOscillator();
-    const clickGain = ctx.createGain();
-    clickOsc.type = 'sine';
-    clickOsc.frequency.setValueAtTime(1100, now);
-    clickOsc.frequency.exponentialRampToValueAtTime(350, now + 0.015);
+    // 1. Initial mechanical transient tap (wood/felt impact)
+    const popOsc = ctx.createOscillator();
+    const popGain = ctx.createGain();
+    popOsc.type = 'triangle';
+    popOsc.frequency.setValueAtTime(800, now);
+    popOsc.frequency.exponentialRampToValueAtTime(180, now + 0.035);
 
-    clickGain.gain.setValueAtTime(0.28 * volume, now);
-    clickGain.gain.exponentialRampToValueAtTime(0.001, now + 0.015);
-    clickOsc.connect(clickGain);
-    clickGain.connect(ctx.destination);
-    clickOsc.start(now);
-    clickOsc.stop(now + 0.015);
+    popGain.gain.setValueAtTime(0.4 * volume, now);
+    popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+    popOsc.connect(popGain);
+    popGain.connect(ctx.destination);
+    popOsc.start(now);
+    popOsc.stop(now + 0.035);
 
-    // 2. Warm resonant wooden body (sine harmonic body tone)
-    const bodyOsc = ctx.createOscillator();
-    const bodyGain = ctx.createGain();
-    bodyOsc.type = 'triangle';
-    bodyOsc.frequency.setValueAtTime(440, now);
-    bodyOsc.frequency.exponentialRampToValueAtTime(260, now + 0.06);
+    // 2. Bright, rewarding two-tone ascending chime (E5 -> B5)
+    const tones = [
+      { freq: 659.25, timeOffset: 0.015, duration: 0.18, gain: 0.38 },
+      { freq: 987.77, timeOffset: 0.065, duration: 0.26, gain: 0.45 },
+    ];
 
-    bodyGain.gain.setValueAtTime(0.35 * volume, now);
-    bodyGain.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
-    bodyOsc.connect(bodyGain);
-    bodyGain.connect(ctx.destination);
-    bodyOsc.start(now);
-    bodyOsc.stop(now + 0.06);
+    tones.forEach((tone) => {
+      const start = now + tone.timeOffset;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(tone.freq, start);
+
+      gain.gain.setValueAtTime(tone.gain * volume, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + tone.duration);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(start);
+      osc.stop(start + tone.duration);
+    });
   } catch {
     // Audio context may be restricted
   }
 }
 
 /**
- * Emits an airy, soft ascending chime upon note creation
+ * Emits a distinct, bright 3-note ascending synth arpeggio upon note creation
  */
 export function playNoteCreatedSound(): void {
   if (isAudioMuted()) return;
@@ -108,21 +117,23 @@ export function playNoteCreatedSound(): void {
     const volume = getAudioVolume();
     if (volume <= 0) return;
 
-    const pitches = [523.25, 783.99]; // C5 -> G5
+    // D5 -> G5 -> B5 (G major ascending triad)
+    const pitches = [587.33, 783.99, 987.77];
     pitches.forEach((freq, idx) => {
-      const now = ctx.currentTime + idx * 0.05;
+      const start = ctx.currentTime + idx * 0.045;
       const osc = ctx.createOscillator();
       const gain = ctx.createGain();
 
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(freq, now);
-      gain.gain.setValueAtTime(0.22 * volume, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, start);
+
+      gain.gain.setValueAtTime(0.35 * volume, start);
+      gain.gain.exponentialRampToValueAtTime(0.001, start + 0.22);
 
       osc.connect(gain);
       gain.connect(ctx.destination);
-      osc.start(now);
-      osc.stop(now + 0.15);
+      osc.start(start);
+      osc.stop(start + 0.22);
     });
   } catch {
     // Audio context may be restricted
@@ -150,7 +161,7 @@ export function playTimerCompleteSound(): void {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(freq, startTime);
 
-      gain.gain.setValueAtTime(0.25 * volume, startTime);
+      gain.gain.setValueAtTime(0.35 * volume, startTime);
       gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.45);
 
       osc.connect(gain);

@@ -50,7 +50,7 @@ export const NoteActionRibbon: React.FC<Props> = ({
   const displayFolders = subjectFolders.length > 0 ? subjectFolders : folders;
 
   return (
-    <div className="flex items-center justify-between px-8 py-3.5 border-b border-theme-border/60 bg-theme-base/80 backdrop-blur sticky top-0 z-10 select-none">
+    <div className="flex items-center justify-between px-8 py-3.5 border-b border-theme-border/60 bg-theme-base sticky top-0 z-10 select-none">
       <div className="flex items-center space-x-2.5">
         {/* Toggle complete button */}
         <button
@@ -82,16 +82,28 @@ export const NoteActionRibbon: React.FC<Props> = ({
         {/* Focus Timer Sprint Button (FR-14) */}
         {onOpenFocusTimer && (
           <button
+            key={isTimerRunning ? 'timer-running' : 'timer-idle'}
             onClick={onOpenFocusTimer}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer whitespace-nowrap flex-shrink-0 ${
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer whitespace-nowrap flex-shrink-0 ${
               isTimerRunning
-                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm animate-pulse'
+                ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm'
                 : 'bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.06]'
             }`}
             title={t('focusTimer.title')}
           >
-            <Timer size={13} className={isTimerRunning ? 'text-emerald-400' : ''} />
-            <span className="font-mono">{activeTimerFormatted || t('note.focusTimer')}</span>
+            {isTimerRunning ? (
+              <span className="relative flex h-2 w-2 mr-0.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
+              </span>
+            ) : (
+              <Timer size={13} />
+            )}
+            <span className="font-mono">
+              {isTimerRunning && activeTimerFormatted
+                ? `${t('note.focusTimer')} · ${activeTimerFormatted}`
+                : t('note.focusTimer')}
+            </span>
           </button>
         )}
 

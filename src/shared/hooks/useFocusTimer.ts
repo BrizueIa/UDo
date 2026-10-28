@@ -33,11 +33,13 @@ export function useFocusTimer(options?: FocusTimerOptions): FocusTimerState {
   const [isPaused, setIsPaused] = useState<boolean>(false);
 
   const timerRef = useRef<number | null>(null);
+  const hasFinishedRef = useRef(false);
   const onSprintCompletedRef = useRef(options?.onSprintCompleted);
   onSprintCompletedRef.current = options?.onSprintCompleted;
 
   const startSprint = useCallback((id: string, title: string, totalSeconds: number) => {
     const validSecs = Math.max(5, Math.round(totalSeconds));
+    hasFinishedRef.current = false;
     setNoteId(id);
     setNoteTitle(title);
     setTotalPlannedSeconds(validSecs);
@@ -61,12 +63,14 @@ export function useFocusTimer(options?: FocusTimerOptions): FocusTimerState {
         onSprintCompletedRef.current?.(noteId, elapsed);
       }
     }
+    hasFinishedRef.current = true;
     setIsRunning(false);
     setIsPaused(false);
     setRemainingSeconds(totalPlannedSeconds);
   }, [noteId, isRunning, totalPlannedSeconds, remainingSeconds]);
 
   const resetSprint = useCallback(() => {
+    hasFinishedRef.current = true;
     setIsRunning(false);
     setIsPaused(false);
     setNoteId(null);
@@ -75,34 +79,11 @@ export function useFocusTimer(options?: FocusTimerOptions): FocusTimerState {
     setTotalPlannedSeconds(25 * 60);
   }, []);
 
-  // Tick interval
+  // Tick interval (pure state countdown)
   useEffect(() => {
     if (isRunning && !isPaused) {
       timerRef.current = window.setInterval(() => {
-        setRemainingSeconds((prev) => {
-          if (prev <= 1) {
-            window.clearInterval(timerRef.current!);
-            timerRef.current = null;
-            setIsRunning(false);
-            setIsPaused(false);
-
-            // Record completed time
-            if (noteId) {
-              onSprintCompletedRef.current?.(noteId, totalPlannedSeconds);
-            }
-
-            // Audio & Native Notification
-            playTimerCompleteSound();
-            const notificationTitle = t('focusTimer.finishedTitle');
-            const notificationBody = t('focusTimer.finishedBody', {
-              noteTitle: noteTitle || t('note.untitled'),
-            });
-            api.sendNativeNotification(notificationTitle, notificationBody);
-
-            return 0;
-          }
-          return prev - 1;
-        });
+        setRemainingSeconds((prev) => (prev > 0 ? prev - 1 : 0));
       }, 1000);
     } else {
       if (timerRef.current !== null) {
@@ -117,7 +98,33 @@ export function useFocusTimer(options?: FocusTimerOptions): FocusTimerState {
         timerRef.current = null;
       }
     };
-  }, [isRunning, isPaused, noteId, noteTitle, totalPlannedSeconds, t]);
+  }, [isRunning, isPaused]);
+
+  // Handle sprint completion side-effects exactly once
+  useEffect(() => {
+    if (isRunning && remainingSeconds === 0 && !hasFinishedRef.current) {
+      hasFinishedRef.current = true;
+      if (timerRef.current !== null) {
+        window.clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      setIsRunning(false);
+      setIsPaused(false);
+
+      // Record completed focus time
+      if (noteId) {
+        onSprintCompletedRef.current?.(noteId, totalPlannedSeconds);
+      }
+
+      // Audio & Native Notification
+      playTimerCompleteSound();
+      const notificationTitle = t('focusTimer.finishedTitle');
+      const notificationBody = t('focusTimer.finishedBody', {
+        noteTitle: noteTitle || t('note.untitled'),
+      });
+      api.sendNativeNotification(notificationTitle, notificationBody);
+    }
+  }, [isRunning, remainingSeconds, noteId, noteTitle, totalPlannedSeconds, t]);
 
   const mins = Math.floor(remainingSeconds / 60);
   const secs = remainingSeconds % 60;

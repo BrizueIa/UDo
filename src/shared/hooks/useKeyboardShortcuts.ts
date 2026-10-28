@@ -51,8 +51,8 @@ export function useKeyboardShortcuts({
         return;
       }
 
-      // Ctrl + Alt + Space: Quick Add Spotlight (FR-12)
-      if (e.ctrlKey && e.altKey && (e.code === 'Space' || e.key === ' ')) {
+      // Ctrl + Space (or Ctrl + Alt + Space): Quick Add Spotlight (FR-12)
+      if (e.ctrlKey && (e.code === 'Space' || e.key === ' ')) {
         e.preventDefault();
         onToggleQuickAdd?.();
         return;

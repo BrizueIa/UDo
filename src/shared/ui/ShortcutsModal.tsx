@@ -23,7 +23,7 @@ export const ShortcutsModal: React.FC<Props> = ({ isOpen, onClose }) => {
     { key: '1  /  2  /  3', descKey: 'shortcuts.jumpColumn' },
     { key: 'j  /  k  (↓  /  ↑)', descKey: 'shortcuts.navigateList' },
     { key: 'Alt + Shift + Space', descKey: 'shortcuts.summonApp' },
-    { key: 'Ctrl + Alt + Space', descKey: 'shortcuts.quickAdd' },
+    { key: 'Ctrl + Space', descKey: 'shortcuts.quickAdd' },
     { key: 'Alt + W', descKey: 'shortcuts.toggleWidget' },
     { key: 'F11', descKey: 'shortcuts.zenMode' },
     { key: '?', descKey: 'shortcuts.showHelp' },
