@@ -65,11 +65,11 @@ Build a high-performance, cross-platform desktop application (Linux primary, Win
 * **FR-05 (Global Search `Ctrl + K`):**
   * Real-time indexed search across all note titles, Markdown body text, tags, and folder names using SQLite FTS5.
   * Grouped results with arrow-key keyboard navigation and instant jump.
-* **FR-06 (Category/Folder Scoped Search `Ctrl + F`):**
-  * Search scoped strictly to the currently selected subject or folder.
-* **FR-07 (In-Note Match Highlighting `Ctrl + Shift + F`):**
+* **FR-06 (In-Note Match Highlighting `Ctrl + F`):**
   * Highlights occurrences within the active note body.
   * Match counter (e.g., `3 of 12`) with `Enter` / `Shift + Enter` (next / previous match) navigation.
+* **FR-07 (Category/Folder Scoped Search `Ctrl + Shift + F`):**
+  * Search scoped strictly to the currently selected subject or folder.
 
 ---
 
@@ -89,8 +89,8 @@ Build a high-performance, cross-platform desktop application (Linux primary, Win
 | `1` / `2` / `3` | Direct jump to Column 1, 2, or 3 | Global |
 | `j` / `k` or `↓` / `↑` | Navigate notes in list | List Column |
 | `Ctrl + E` | Focus Markdown note editor | Note View |
-| `Ctrl + F` | Search within active category | List Column |
-| `Ctrl + Shift + F` | Find matches in current note | Note View |
+| `Ctrl + F` | Find matches in current note | Note View |
+| `Ctrl + Shift + F` | Search within active category | List Column |
 | `F11` | Zen Mode (Toggle distraction-free writing view) | Global |
 | `?` or `Ctrl + /` | Open Keyboard Shortcuts Cheat Sheet modal | Global |
 | `Esc` | Clear search / Close modals / Unfocus fields | Global |

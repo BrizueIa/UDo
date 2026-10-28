@@ -45,7 +45,7 @@
     "addTag": "Añadir Etiqueta",
     "removeTag": "Eliminar etiqueta",
     "filterByTag": "Filtrar por #{{tag}}",
-    "findInNote": "Buscar en nota (Ctrl+Shift+F)",
+    "findInNote": "Buscar en nota (Ctrl+F)",
     "findInNotePlaceholder": "Buscar en nota...",
     "prevMatch": "Coincidencia anterior (Shift+Enter)",
     "nextMatch": "Siguiente coincidencia (Enter)",

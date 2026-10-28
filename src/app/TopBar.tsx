@@ -52,10 +52,10 @@ export const TopBar: React.FC<Props> = ({
   const { t, i18n } = useTranslation();
   const searchInputRef = React.useRef<HTMLInputElement>(null);
 
-  // Global Ctrl + F listener to focus & select active category search bar (FR-06)
+  // Global Ctrl + Shift + F listener to focus & select active category search bar (FR-06)
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'f') {
+      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         searchInputRef.current?.focus();
         searchInputRef.current?.select();

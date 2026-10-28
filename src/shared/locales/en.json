@@ -45,7 +45,7 @@
     "addTag": "Add Tag",
     "removeTag": "Remove tag",
     "filterByTag": "Filter by #{{tag}}",
-    "findInNote": "Find in note (Ctrl+Shift+F)",
+    "findInNote": "Find in note (Ctrl+F)",
     "findInNotePlaceholder": "Find in note...",
     "prevMatch": "Previous match (Shift+Enter)",
     "nextMatch": "Next match (Enter)",

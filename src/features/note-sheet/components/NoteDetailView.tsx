@@ -59,10 +59,10 @@ export const NoteDetailView: React.FC<Props> = ({
   // Textarea Ref for cursor preservation
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Listen for Ctrl+Shift+F (Find in note) and Ctrl+E (Markdown edit mode)
+  // Listen for Ctrl+F (Find in note) and Ctrl+E (Markdown edit mode)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') {
+      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'f') {
         e.preventDefault();
         setIsFindBarOpen(true);
       } else if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'e') {

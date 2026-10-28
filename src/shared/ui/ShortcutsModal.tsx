@@ -13,8 +13,8 @@ export const ShortcutsModal: React.FC<Props> = ({ isOpen, onClose }) => {
 
   const shortcuts = [
     { key: 'Ctrl + K  /  /', descKey: 'shortcuts.globalSearch' },
-    { key: 'Ctrl + F', descKey: 'shortcuts.searchCategory' },
-    { key: 'Ctrl + Shift + F', descKey: 'shortcuts.findInNote' },
+    { key: 'Ctrl + F', descKey: 'shortcuts.findInNote' },
+    { key: 'Ctrl + Shift + F', descKey: 'shortcuts.searchCategory' },
     { key: 'Ctrl + E', descKey: 'shortcuts.focusEditor' },
     { key: 'Ctrl + N', descKey: 'shortcuts.newNote' },
     { key: 'Ctrl + Shift + N', descKey: 'shortcuts.newFolder' },
