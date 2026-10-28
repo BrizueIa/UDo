@@ -11,7 +11,7 @@ import { NoteTemplatePicker } from './NoteTemplatePicker';
 import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { playTaskCompleteSound } from '../../../shared/utils/soundEffects';
-import { processImageDropOrPaste } from '../../../shared/utils/imageClipboard';
+import { useNoteMediaPaste } from '../hooks/useNoteMediaPaste';
 
 interface Props {
   note: NoteItem;
@@ -196,43 +196,16 @@ export const NoteDetailView: React.FC<Props> = ({
     });
   };
 
-  const handlePaste = async (e: React.ClipboardEvent) => {
-    const sketch = await processImageDropOrPaste(e, t('note.pastedImage'));
-    if (sketch) {
-      e.preventDefault();
-      onUpdateNote({
-        ...note,
-        sketches: [...note.sketches, sketch],
-        updatedAt: new Date().toISOString(),
-      });
-      setIsMediaDrawerOpen(true);
-    }
-  };
-
-  const handleDragOver = (e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes('Files')) {
-      e.preventDefault();
-    }
-  };
-
-  const handleDrop = async (e: React.DragEvent) => {
-    const sketch = await processImageDropOrPaste(e, t('note.droppedImage'));
-    if (sketch) {
-      e.preventDefault();
-      onUpdateNote({
-        ...note,
-        sketches: [...note.sketches, sketch],
-        updatedAt: new Date().toISOString(),
-      });
-      setIsMediaDrawerOpen(true);
-    }
-  };
+  const { handleDragOver, handleDrop } = useNoteMediaPaste({
+    note,
+    onUpdateNote,
+    onOpenMediaDrawer: () => setIsMediaDrawerOpen(true),
+  });
 
   const totalMediaCount = note.links.length + note.sketches.length;
 
   return (
     <div
-      onPaste={handlePaste}
       onDragOver={handleDragOver}
       onDrop={handleDrop}
       className="flex-1 bg-theme-base flex flex-col h-full overflow-y-auto"
