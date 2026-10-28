@@ -115,18 +115,21 @@ export function useWorkspaceState() {
     api.saveNote(newNote);
   };
 
-  const handleAddFolder = (name: string) => {
-    if (!selectedSubjectId) return;
+  const handleAddFolder = (name: string, targetSubjectId?: string) => {
+    const subjectId = targetSubjectId || selectedSubjectId;
+    if (!subjectId) return null;
+    const subjFolders = folders.filter((f) => f.subjectId === subjectId);
     const newFolder: FolderItem = {
       id: `folder-${Date.now()}`,
-      subjectId: selectedSubjectId,
+      subjectId,
       name,
       isExpanded: true,
-      order: currentSubjectFolders.length,
+      order: subjFolders.length,
     };
     setFolders((prev) => [...prev, newFolder]);
     setSelectedFolderId(newFolder.id);
     api.saveFolder(newFolder);
+    return newFolder;
   };
 
   const handleUpdateFolder = (updatedFolder: FolderItem) => {

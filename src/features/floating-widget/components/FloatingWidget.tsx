@@ -25,7 +25,7 @@ interface Props {
   onSelectSubject: (id: string) => void;
   onSelectFolder: (id: string) => void;
   onToggleComplete: (id: string) => void;
-  onQuickAddNote: (title: string, folderId: string) => void;
+  onQuickAddNote: (title: string, folderId: string, subjectId?: string) => void;
   onOpenNoteInFullApp: (noteId: string, subjectId: string, folderId: string) => void;
   onRestoreFullApp: () => void;
 }
@@ -57,8 +57,14 @@ export const FloatingWidget: React.FC<Props> = ({
   const folderMenuRef = useRef<HTMLDivElement>(null);
 
   const currentSubject = subjects.find((s) => s.id === activeSubjectId) || subjects[0];
-  const projectFolders = folders.filter((f) => f.subjectId === activeSubjectId);
-  const currentFolder = projectFolders.find((f) => f.id === activeFolderId) || projectFolders[0] || folders[0];
+  const projectFolders = folders.filter((f) => f.subjectId === (currentSubject?.id || activeSubjectId));
+  const currentFolder = projectFolders.find((f) => f.id === activeFolderId) || projectFolders[0];
+
+  useEffect(() => {
+    if (activeFolderId && !projectFolders.some((f) => f.id === activeFolderId)) {
+      setActiveFolderId(projectFolders[0]?.id || '');
+    }
+  }, [projectFolders, activeFolderId]);
 
   // Filter notes strictly by selected folder
   const folderPendingNotes = currentFolder
@@ -90,8 +96,8 @@ export const FloatingWidget: React.FC<Props> = ({
     onSelectSubject(id);
     setShowSubjectMenu(false);
     const firstF = folders.find((f) => f.subjectId === id);
+    setActiveFolderId(firstF ? firstF.id : '');
     if (firstF) {
-      setActiveFolderId(firstF.id);
       onSelectFolder(firstF.id);
     }
   };
@@ -104,8 +110,8 @@ export const FloatingWidget: React.FC<Props> = ({
 
   const handleQuickAdd = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!quickInput.trim() || !currentFolder) return;
-    onQuickAddNote(quickInput.trim(), currentFolder.id);
+    if (!quickInput.trim()) return;
+    onQuickAddNote(quickInput.trim(), currentFolder ? currentFolder.id : '', activeSubjectId);
     setQuickInput('');
   };
 
@@ -261,25 +267,35 @@ export const FloatingWidget: React.FC<Props> = ({
               title={t('widget.chooseFolder')}
             >
               <FolderIcon size={11} className="text-amber-400 shrink-0" />
-              <span className="truncate flex-1 text-left">{currentFolder ? currentFolder.name : t('widget.chooseFolder')}</span>
+              <span className="truncate flex-1 text-left">
+                {currentFolder
+                  ? currentFolder.name
+                  : (projectFolders.length === 0 ? t('widget.noFolders') : t('widget.chooseFolder'))}
+              </span>
               <ChevronDown size={10} className="text-theme-muted shrink-0" />
             </button>
 
             {showFolderMenu && (
               <div className="absolute top-full left-0 mt-1 w-44 bg-theme-card border border-white/[0.08] rounded-xl shadow-2xl py-1 z-40 max-h-40 overflow-y-auto">
-                {projectFolders.map((f) => (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => handleSelectFolder(f.id)}
-                    className={`w-full text-left px-2.5 py-1 text-[11px] flex items-center justify-between hover:bg-theme-hover transition-colors ${
-                      f.id === activeFolderId ? 'text-theme-accent font-semibold' : 'text-theme-text'
-                    }`}
-                  >
-                    <span className="truncate">{f.name}</span>
-                    {f.id === activeFolderId && <Check size={11} />}
-                  </button>
-                ))}
+                {projectFolders.length === 0 ? (
+                  <div className="px-2.5 py-2 text-[11px] text-theme-muted text-center">
+                    {t('folders.empty')}
+                  </div>
+                ) : (
+                  projectFolders.map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => handleSelectFolder(f.id)}
+                      className={`w-full text-left px-2.5 py-1 text-[11px] flex items-center justify-between hover:bg-theme-hover transition-colors ${
+                        f.id === activeFolderId ? 'text-theme-accent font-semibold' : 'text-theme-text'
+                      }`}
+                    >
+                      <span className="truncate">{f.name}</span>
+                      {f.id === activeFolderId && <Check size={11} />}
+                    </button>
+                  ))
+                )}
               </div>
             )}
           </div>
@@ -309,9 +325,9 @@ export const FloatingWidget: React.FC<Props> = ({
           />
           <button
             type="submit"
-            disabled={!quickInput.trim() || !currentFolder}
+            disabled={!quickInput.trim()}
             className={`p-1 rounded-md transition-colors ${
-              quickInput.trim() && currentFolder
+              quickInput.trim()
                 ? 'bg-theme-accent text-white hover:bg-theme-accent-hover cursor-pointer'
                 : 'bg-theme-card text-theme-muted/40 cursor-not-allowed'
             }`}
@@ -323,7 +339,12 @@ export const FloatingWidget: React.FC<Props> = ({
 
       {/* Pending Tasks List strictly filtered by selected folder */}
       <div className="flex-1 overflow-y-auto p-1.5 space-y-0.5">
-        {folderPendingNotes.length === 0 ? (
+        {projectFolders.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-center py-6 text-xs text-theme-muted">
+            <FolderIcon size={20} className="mb-1 text-theme-muted/40" />
+            <span>{t('folders.empty')}</span>
+          </div>
+        ) : folderPendingNotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center py-6 text-xs text-theme-muted">
             <span className="text-base mb-1">🎉</span>
             <span>{t('widget.noPending')}</span>
@@ -350,7 +371,7 @@ export const FloatingWidget: React.FC<Props> = ({
               {/* Click to open note in full app with all panels visible */}
               <button
                 type="button"
-                onClick={() => onOpenNoteInFullApp(note.id, activeSubjectId, currentFolder.id)}
+                onClick={() => onOpenNoteInFullApp(note.id, note.subjectId, note.folderId)}
                 className="opacity-0 group-hover:opacity-100 p-1 rounded hover:bg-theme-card text-theme-muted hover:text-theme-text transition-all cursor-pointer shrink-0"
                 title={t('widget.expand')}
               >

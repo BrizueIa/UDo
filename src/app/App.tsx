@@ -29,35 +29,14 @@ export const App: React.FC = () => {
   const { t, i18n } = useTranslation();
 
   const {
-    subjects,
-    folders,
-    notes,
-    selectedSubjectId,
-    selectedFolderId,
-    selectedNoteId,
-    activeTagFilter,
-    currentSubject,
-    currentSubjectFolders,
-    currentNote,
-    currentFolder,
-    setSelectedSubjectId,
-    setSelectedFolderId,
-    setSelectedNoteId,
-    setActiveTagFilter,
-    handleUpdateNote,
-    handleToggleNoteComplete,
-    handleDeleteNote,
-    handleCreateNote,
-    handleMoveNoteToFolder,
-    handleMoveNoteToSubject,
-    handleAddFolder,
-    handleUpdateFolder,
-    handleDeleteFolder,
-    handleToggleFolderExpand,
-    handleAddSubject,
-    handleUpdateSubject,
-    handleDeleteSubject,
-    getSubjectNoteCount,
+    subjects, folders, notes,
+    selectedSubjectId, selectedFolderId, selectedNoteId, activeTagFilter,
+    currentSubject, currentSubjectFolders, currentNote, currentFolder,
+    setSelectedSubjectId, setSelectedFolderId, setSelectedNoteId, setActiveTagFilter,
+    handleUpdateNote, handleToggleNoteComplete, handleDeleteNote, handleCreateNote,
+    handleMoveNoteToFolder, handleMoveNoteToSubject,
+    handleAddFolder, handleUpdateFolder, handleDeleteFolder, handleToggleFolderExpand,
+    handleAddSubject, handleUpdateSubject, handleDeleteSubject, getSubjectNoteCount,
   } = useWorkspaceState();
 
   const [filter, setFilter] = useState<ViewFilter>('all');
@@ -234,7 +213,21 @@ export const App: React.FC = () => {
           onSelectSubject={setSelectedSubjectId}
           onSelectFolder={setSelectedFolderId}
           onToggleComplete={handleToggleNoteCompleteWithSound}
-          onQuickAddNote={(t, f) => handleCreateNewNote(f || selectedFolderId, t)}
+          onQuickAddNote={(title, folderId, subjectId) => {
+            const targetSubjId = subjectId || selectedSubjectId;
+            let targetFolderId = folderId;
+            if (!targetFolderId) {
+              const existing = folders.find((f) => f.subjectId === targetSubjId);
+              targetFolderId = existing
+                ? existing.id
+                : handleAddFolder(t('folders.addFolder'), targetSubjId)?.id || '';
+            }
+            if (targetFolderId) {
+              handleCreateNewNote(targetFolderId, title);
+              setSelectedSubjectId(targetSubjId);
+              setSelectedFolderId(targetFolderId);
+            }
+          }}
           onOpenNoteInFullApp={(noteId, subjectId, folderId) => {
             setSelectedSubjectId(subjectId);
             setSelectedFolderId(folderId);
