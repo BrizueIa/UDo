@@ -148,11 +148,14 @@ export const App: React.FC = () => {
     handleToggleNoteComplete(id);
   };
 
-  const handleCreateNewNote = useCallback((folderId = selectedFolderId, title?: string) => {
-    handleCreateNote(folderId, title);
-    playNoteCreatedSound();
-    setActiveColumn(3);
-  }, [selectedFolderId, handleCreateNote]);
+  const handleCreateNewNote = useCallback(
+    (folderId = selectedFolderId, title?: string, subjectId?: string) => {
+      handleCreateNote(folderId, title, subjectId);
+      playNoteCreatedSound();
+      setActiveColumn(3);
+    },
+    [selectedFolderId, handleCreateNote]
+  );
 
   const handleSaveSketch = useCallback((updatedSketch: SketchItem) => {
     if (!currentNote) return;
@@ -170,7 +173,7 @@ export const App: React.FC = () => {
   const handleQuickAddSave = (title: string, folderId: string, subjectId: string) => {
     setSelectedSubjectId(subjectId);
     setSelectedFolderId(folderId);
-    handleCreateNewNote(folderId, title);
+    handleCreateNewNote(folderId, title, subjectId);
   };
 
   useKeyboardShortcuts({
@@ -222,11 +225,9 @@ export const App: React.FC = () => {
                 ? existing.id
                 : handleAddFolder(t('folders.addFolder'), targetSubjId)?.id || '';
             }
-            if (targetFolderId) {
-              handleCreateNewNote(targetFolderId, title);
-              setSelectedSubjectId(targetSubjId);
-              setSelectedFolderId(targetFolderId);
-            }
+            handleCreateNewNote(targetFolderId, title, targetSubjId);
+            if (targetSubjId) setSelectedSubjectId(targetSubjId);
+            if (targetFolderId) setSelectedFolderId(targetFolderId);
           }}
           onOpenNoteInFullApp={(noteId, subjectId, folderId) => {
             setSelectedSubjectId(subjectId);

@@ -14,12 +14,27 @@ export function useWorkspaceState() {
 
   useEffect(() => {
     api.getInitialData().then((data) => {
+      const updatedFolders = [...data.folders];
+      data.subjects.forEach((subj) => {
+        const hasFolder = updatedFolders.some((f) => f.subjectId === subj.id);
+        if (!hasFolder) {
+          const autoFolder: FolderItem = {
+            id: `folder-${Date.now()}-${subj.id}`,
+            subjectId: subj.id,
+            name: 'General',
+            isExpanded: true,
+            order: 0,
+          };
+          updatedFolders.push(autoFolder);
+          api.saveFolder(autoFolder);
+        }
+      });
       setSubjects(data.subjects);
-      setFolders(data.folders);
+      setFolders(updatedFolders);
       setNotes(data.notes);
       if (data.subjects.length > 0) {
         setSelectedSubjectId(data.subjects[0].id);
-        const firstSubjectFolders = data.folders.filter((f) => f.subjectId === data.subjects[0].id);
+        const firstSubjectFolders = updatedFolders.filter((f) => f.subjectId === data.subjects[0].id);
         if (firstSubjectFolders.length > 0) {
           setSelectedFolderId(firstSubjectFolders[0].id);
         }
@@ -66,16 +81,34 @@ export function useWorkspaceState() {
     }
   };
 
-  const handleCreateNote = (targetFolderId?: string, initialTitle: string = '') => {
+  const handleCreateNote = (
+    targetFolderId?: string,
+    initialTitle: string = '',
+    targetSubjectId?: string
+  ) => {
     let folderId = targetFolderId || selectedFolderId;
-    let subjectId = selectedSubjectId;
+    let subjectId = targetSubjectId || selectedSubjectId;
 
-    const folderExists = currentSubjectFolders.some((f) => f.id === folderId);
-    if (!folderExists) {
-      const defaultFolder = currentSubjectFolders[0] || folders[0];
-      if (defaultFolder) {
-        folderId = defaultFolder.id;
-        subjectId = defaultFolder.subjectId;
+    if (folderId && !targetSubjectId) {
+      const knownFolder = folders.find((f) => f.id === folderId);
+      if (knownFolder) subjectId = knownFolder.subjectId;
+    }
+
+    if (!folderId) {
+      const subjFolders = folders.filter((f) => f.subjectId === subjectId);
+      if (subjFolders.length > 0) {
+        folderId = subjFolders[0].id;
+      } else if (subjectId) {
+        const autoFolder: FolderItem = {
+          id: `folder-${Date.now()}`,
+          subjectId,
+          name: 'General',
+          isExpanded: true,
+          order: 0,
+        };
+        setFolders((prev) => [...prev, autoFolder]);
+        api.saveFolder(autoFolder);
+        folderId = autoFolder.id;
       } else {
         return;
       }
@@ -138,13 +171,31 @@ export function useWorkspaceState() {
   };
 
   const handleDeleteFolder = (id: string) => {
-    setFolders((prev) => prev.filter((f) => f.id !== id));
+    const deleted = folders.find((f) => f.id === id);
+    const remainingFolders = folders.filter((f) => f.id !== id);
     setNotes((prev) => prev.filter((n) => n.folderId !== id));
-    if (selectedFolderId === id) {
-      const remainingFolders = currentSubjectFolders.filter((f) => f.id !== id);
-      setSelectedFolderId(remainingFolders[0]?.id || '');
-    }
     api.deleteFolder(id);
+
+    if (deleted) {
+      const subjectHasRemaining = remainingFolders.some((f) => f.subjectId === deleted.subjectId);
+      if (!subjectHasRemaining) {
+        const autoFolder: FolderItem = {
+          id: `folder-${Date.now()}`,
+          subjectId: deleted.subjectId,
+          name: 'General',
+          isExpanded: true,
+          order: 0,
+        };
+        remainingFolders.push(autoFolder);
+        api.saveFolder(autoFolder);
+      }
+    }
+
+    setFolders(remainingFolders);
+    if (selectedFolderId === id) {
+      const activeSubjFolders = remainingFolders.filter((f) => f.subjectId === selectedSubjectId);
+      setSelectedFolderId(activeSubjFolders[0]?.id || '');
+    }
   };
 
   const handleToggleFolderExpand = (id: string) => {
@@ -167,9 +218,19 @@ export function useWorkspaceState() {
       color,
       order: subjects.length,
     };
+    const defaultFolder: FolderItem = {
+      id: `folder-${Date.now()}`,
+      subjectId: newSubject.id,
+      name: 'General',
+      isExpanded: true,
+      order: 0,
+    };
     setSubjects((prev) => [...prev, newSubject]);
+    setFolders((prev) => [...prev, defaultFolder]);
     setSelectedSubjectId(newSubject.id);
+    setSelectedFolderId(defaultFolder.id);
     api.saveSubject(newSubject);
+    api.saveFolder(defaultFolder);
   };
 
   const handleUpdateSubject = (updatedSubject: SubjectItem) => {
