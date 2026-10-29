@@ -1,8 +1,9 @@
 import React, { useEffect } from 'react';
 import { CheckSquare, Square, FileText, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { NoteItem } from '../../../shared/types';
+import { NoteItem, SketchItem } from '../../../shared/types';
 import { buildDiacriticRegex, normalizeDiacritics } from '../../../shared/utils/diacritics';
+import { hasClipboardImageContent, processImageDropOrPaste } from '../../../shared/utils/imageClipboard';
 
 interface Props {
   content: string;
@@ -16,6 +17,9 @@ interface Props {
   onSelectNote: (noteId: string, subjectId: string) => void;
   onCreateNoteWithTitle: (title: string) => void;
   onMatchCountCalculated?: (count: number) => void;
+  onUndoText?: () => void;
+  onRedoText?: () => void;
+  onAttachSketches?: (sketches: SketchItem[]) => void;
 }
 
 export const MarkdownSheetPreview: React.FC<Props> = ({
@@ -30,6 +34,9 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
   onSelectNote,
   onCreateNoteWithTitle,
   onMatchCountCalculated,
+  onUndoText,
+  onRedoText,
+  onAttachSketches,
 }) => {
   const { t } = useTranslation();
 
@@ -307,6 +314,29 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
         ref={textareaRef}
         value={content}
         onChange={(e) => onChangeContent(e.target.value)}
+        onKeyDown={(e) => {
+          const isCtrl = e.ctrlKey || e.metaKey;
+          if (isCtrl && !e.shiftKey && (e.key.toLowerCase() === 'z' || e.code === 'KeyZ')) {
+            e.preventDefault();
+            onUndoText?.();
+          } else if (
+            (isCtrl && (e.key.toLowerCase() === 'y' || e.code === 'KeyY')) ||
+            (isCtrl && e.shiftKey && (e.key.toLowerCase() === 'z' || e.code === 'KeyZ'))
+          ) {
+            e.preventDefault();
+            onRedoText?.();
+          }
+        }}
+        onPaste={async (e) => {
+          if (hasClipboardImageContent(e.clipboardData)) {
+            e.preventDefault();
+            e.stopPropagation();
+            const sketches = await processImageDropOrPaste(e, t('note.pastedImage'));
+            if (sketches.length > 0 && onAttachSketches) {
+              onAttachSketches(sketches);
+            }
+          }
+        }}
         placeholder={t('note.markdownPlaceholder')}
         style={{
           backgroundColor: 'var(--color-bg-sidebar)',

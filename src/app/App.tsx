@@ -352,14 +352,14 @@ export const App: React.FC = () => {
               onCreateNoteWithTitle={(title) => handleCreateNewNote(selectedFolderId, title)}
               onSelectTagFilter={(tag) => setActiveTagFilter(tag)}
               onOpenSketchAnnotator={(sketch) => setActiveSketch(sketch)}
-              onOpenWhiteboard={() => {
-                setActiveSketch({
-                  id: `sketch-${Date.now()}`,
-                  title: t('note.whiteboardDrawing'),
-                  dataUrl: '',
-                  createdAt: new Date().toISOString(),
-                });
-              }}
+              onOpenWhiteboard={() => setActiveSketch({
+                id: `sketch-${Date.now()}`,
+                title: t('note.whiteboardDrawing'),
+                dataUrl: '',
+                createdAt: new Date().toISOString(),
+              })}
+              onWorkspaceUndo={handleWorkspaceUndo}
+              onWorkspaceRedo={handleWorkspaceRedo}
             />
           ) : (
             <EmptyNoteView onCreateNote={() => handleCreateNewNote()} />
