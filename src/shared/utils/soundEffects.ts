@@ -95,7 +95,7 @@ export const setTimerSoundEnabled = (enabled: boolean): void => {
 };
 
 /**
- * Emits a subtle, soft and satisfying creamy mechanical switch tap (Opera GX style typing sound)
+ * Emits a crisp, tactile mechanical switch "tic" (Opera GX / mechanical switch style)
  */
 export function playKeyboardClickSound(
   keyOrForce?: string | boolean,
@@ -115,53 +115,49 @@ export function playKeyboardClickSound(
     const now = ctx.currentTime;
 
     const key = typeof keyOrForce === 'string' ? keyOrForce : '';
-    let startFreq = 330 + Math.random() * 50; // default 330-380Hz
-    let endFreq = 160;
-    let duration = 0.034;
-    let keyGain = 0.19;
+    const isSpace = key === ' ';
+    const isEnter = key === 'Enter';
+    const isBackspace = key === 'Backspace' || key === 'Delete';
 
-    if (key === ' ') {
-      // Spacebar: deeper, rounder thock
-      startFreq = 220 + Math.random() * 25;
-      endFreq = 110;
-      duration = 0.042;
-      keyGain = 0.22;
-    } else if (key === 'Enter') {
-      // Enter: affirmative, slightly lower tone
-      startFreq = 270 + Math.random() * 30;
-      endFreq = 130;
-      duration = 0.038;
-      keyGain = 0.21;
-    } else if (key === 'Backspace' || key === 'Delete') {
-      // Backspace: soft muted tap
-      startFreq = 250 + Math.random() * 25;
-      endFreq = 120;
-      duration = 0.032;
-      keyGain = 0.18;
-    }
+    // Organic tactile pitch variation (±4%)
+    const jitter = 0.96 + Math.random() * 0.08;
+    const duration = isSpace ? 0.038 : 0.028;
+    const keyGain = isSpace ? 0.26 : isEnter ? 0.24 : isBackspace ? 0.20 : 0.22;
 
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const filter = ctx.createBiquadFilter();
+    const masterGain = ctx.createGain();
+    masterGain.gain.setValueAtTime(keyGain * volume, now);
+    masterGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+    masterGain.connect(ctx.destination);
 
-    osc.type = 'triangle';
-    osc.frequency.setValueAtTime(startFreq, now);
-    osc.frequency.exponentialRampToValueAtTime(endFreq, now + duration);
+    // Layer 1: Crisp "tic" tactile switch snap (high-frequency transient)
+    const ticOsc = ctx.createOscillator();
+    const ticGain = ctx.createGain();
+    ticOsc.type = 'triangle';
+    const ticStart = (isSpace ? 1400 : 1850) * jitter;
+    const ticEnd = (isSpace ? 650 : 850) * jitter;
+    ticOsc.frequency.setValueAtTime(ticStart, now);
+    ticOsc.frequency.exponentialRampToValueAtTime(ticEnd, now + 0.012);
+    ticGain.gain.setValueAtTime(0.55, now);
+    ticGain.gain.exponentialRampToValueAtTime(0.001, now + 0.012);
+    ticOsc.connect(ticGain);
+    ticGain.connect(masterGain);
+    ticOsc.start(now);
+    ticOsc.stop(now + 0.012);
 
-    // Warm, creamy lowpass filter cutting out harsh highs (Opera GX style)
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(950, now);
-    filter.Q.setValueAtTime(1.0, now);
-
-    gain.gain.setValueAtTime(keyGain * volume, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(now);
-    osc.stop(now + duration);
+    // Layer 2: Tactile switch bottom-out body
+    const bodyOsc = ctx.createOscillator();
+    const bodyGain = ctx.createGain();
+    bodyOsc.type = 'sine';
+    const bodyStart = (isSpace ? 480 : 720) * jitter;
+    const bodyEnd = (isSpace ? 200 : 300) * jitter;
+    bodyOsc.frequency.setValueAtTime(bodyStart, now);
+    bodyOsc.frequency.exponentialRampToValueAtTime(bodyEnd, now + duration);
+    bodyGain.gain.setValueAtTime(0.45, now);
+    bodyGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    bodyOsc.connect(bodyGain);
+    bodyGain.connect(masterGain);
+    bodyOsc.start(now);
+    bodyOsc.stop(now + duration);
   } catch {
     // Audio context may be restricted
   }
@@ -331,11 +327,7 @@ export function playTimerCompleteSound(force = false): void {
   }
 }
 
-const IGNORED_KEYS = new Set([
-  'Shift', 'Control', 'Alt', 'Meta', 'Escape', 'Tab', 'CapsLock',
-  'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
-  'PageUp', 'PageDown', 'Home', 'End', 'Insert', 'NumLock', 'ScrollLock', 'Pause',
-]);
+const MODIFIERS_ONLY = new Set(['Control', 'Alt', 'Shift', 'Meta', 'CapsLock']);
 
 /**
  * Attaches global window listeners for tactile UI clicks and mechanical keyboard sounds (Opera GX style)
@@ -351,16 +343,9 @@ export function attachGlobalSoundListeners(): () => void {
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
-    const target = e.target as HTMLElement | null;
-    if (!target) return;
-    const isInput =
-      target.tagName === 'INPUT' ||
-      target.tagName === 'TEXTAREA' ||
-      target.isContentEditable ||
-      target.getAttribute('contenteditable') === 'true';
-    if (isInput && !IGNORED_KEYS.has(e.key)) {
-      playKeyboardClickSound(e.key);
-    }
+    // Only ignore standalone modifier keydown so holding Shift/Ctrl alone doesn't trigger premature clicks
+    if (MODIFIERS_ONLY.has(e.key)) return;
+    playKeyboardClickSound(e.key);
   };
 
   window.addEventListener('pointerdown', handlePointerDown, true);
