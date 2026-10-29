@@ -28,6 +28,7 @@ export function useWorkspaceState() {
   const {
     handleMoveNoteToFolder,
     handleReorderOrMoveNote,
+    handleReorderFolder,
     handleMoveNoteToSubject,
     handleMoveFolderToSubject,
     handleConvertFolderToSubject,
@@ -81,7 +82,9 @@ export function useWorkspaceState() {
   }, []);
 
   const currentSubject = subjects.find((s) => s.id === selectedSubjectId);
-  const currentSubjectFolders = folders.filter((f) => f.subjectId === selectedSubjectId);
+  const currentSubjectFolders = folders
+    .filter((f) => f.subjectId === selectedSubjectId)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const currentNote = notes.find((n) => n.id === selectedNoteId);
   const currentFolder = folders.find((f) => f.id === (currentNote?.folderId || selectedFolderId));
 
@@ -336,6 +339,7 @@ export function useWorkspaceState() {
     handleCreateNote,
     handleMoveNoteToFolder,
     handleReorderOrMoveNote,
+    handleReorderFolder,
     handleMoveNoteToSubject,
     handleMoveFolderToSubject,
     handleConvertFolderToSubject,

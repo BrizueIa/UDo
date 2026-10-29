@@ -33,6 +33,11 @@ interface Props {
     targetNoteId?: string,
     position?: 'before' | 'after'
   ) => void;
+  onReorderFolder?: (
+    draggedFolderId: string,
+    targetFolderId: string,
+    position?: 'before' | 'after'
+  ) => void;
 }
 
 export const FoldersList: React.FC<Props> = ({
@@ -56,6 +61,7 @@ export const FoldersList: React.FC<Props> = ({
   onAddNote,
   onMoveNoteToFolder,
   onReorderOrMoveNote,
+  onReorderFolder,
 }) => {
   const { t } = useTranslation();
 
@@ -232,6 +238,7 @@ export const FoldersList: React.FC<Props> = ({
                   onAddNote={() => onAddNote(folder.id)}
                   onUpdateFolder={onUpdateFolder}
                   onDeleteFolder={() => onDeleteFolder(folder.id)}
+                  onReorderFolder={onReorderFolder}
                   onMoveNoteToFolder={(noteId) => {
                     setTimeout(() => {
                       if (onReorderOrMoveNote) {

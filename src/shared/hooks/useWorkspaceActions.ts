@@ -251,9 +251,76 @@ export function useWorkspaceActions({
     }
   };
 
+  const handleReorderFolder = async (
+    draggedFolderId: string,
+    targetFolderId: string,
+    position: 'before' | 'after' = 'after'
+  ) => {
+    try {
+      if (!draggedFolderId || !targetFolderId || draggedFolderId === targetFolderId) return;
+
+      const draggedFolder = folders.find((f) => f.id === draggedFolderId);
+      const targetFolder = folders.find((f) => f.id === targetFolderId);
+      if (!draggedFolder || !targetFolder) return;
+
+      const targetSubjectId = targetFolder.subjectId;
+      recordSnapshot(getSnapshot());
+
+      const remainingFolders = folders.filter((f) => f.id !== draggedFolderId);
+      const targetSubjectFolders = remainingFolders
+        .filter((f) => f.subjectId === targetSubjectId)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+      const otherFolders = remainingFolders.filter((f) => f.subjectId !== targetSubjectId);
+
+      let insertIndex = targetSubjectFolders.length;
+      const targetIdx = targetSubjectFolders.findIndex((f) => f.id === targetFolderId);
+      if (targetIdx !== -1) {
+        insertIndex = position === 'before' ? targetIdx : targetIdx + 1;
+      }
+
+      const updatedDraggedFolder: FolderItem = {
+        ...draggedFolder,
+        subjectId: targetSubjectId,
+      };
+
+      const reorderedFolders = [...targetSubjectFolders];
+      reorderedFolders.splice(insertIndex, 0, updatedDraggedFolder);
+
+      const finalizedSubjectFolders = reorderedFolders.map((f, idx) => ({
+        ...f,
+        order: idx,
+      }));
+
+      if (draggedFolder.subjectId !== targetSubjectId) {
+        setNotes((prev) =>
+          prev.map((n) =>
+            n.folderId === draggedFolderId ? { ...n, subjectId: targetSubjectId } : n
+          )
+        );
+        const folderNotes = notes.filter((n) => n.folderId === draggedFolderId);
+        for (const n of folderNotes) {
+          await api.saveNote({ ...n, subjectId: targetSubjectId }).catch(console.error);
+        }
+      }
+
+      setFolders([...otherFolders, ...finalizedSubjectFolders]);
+      setSelectedFolderId(draggedFolderId);
+      setSelectedSubjectId(targetSubjectId);
+
+      for (const folderToSave of finalizedSubjectFolders) {
+        await api.saveFolder(folderToSave).catch((err) =>
+          console.error('Failed to save folder order:', err)
+        );
+      }
+    } catch (err) {
+      console.error('Error during handleReorderFolder:', err);
+    }
+  };
+
   return {
     handleMoveNoteToFolder,
     handleReorderOrMoveNote,
+    handleReorderFolder,
     handleMoveNoteToSubject,
     handleMoveFolderToSubject,
     handleConvertFolderToSubject,

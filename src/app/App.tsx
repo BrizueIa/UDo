@@ -29,13 +29,12 @@ export const App: React.FC = () => {
   const { t, i18n } = useTranslation();
 
   const {
-    subjects, folders, notes,
-    selectedSubjectId, selectedFolderId, selectedNoteId, activeTagFilter,
+    subjects, folders, notes, selectedSubjectId, selectedFolderId, selectedNoteId, activeTagFilter,
     currentSubject, currentSubjectFolders, currentNote, currentFolder,
     setSelectedSubjectId, setSelectedFolderId, setSelectedNoteId, setActiveTagFilter,
     handleUpdateNote, handleToggleNoteComplete, handleDeleteNote, handleCreateNote,
-    handleMoveNoteToFolder, handleReorderOrMoveNote, handleMoveNoteToSubject,
-    handleMoveFolderToSubject, handleConvertFolderToSubject,
+    handleMoveNoteToFolder, handleReorderOrMoveNote, handleReorderFolder,
+    handleMoveNoteToSubject, handleMoveFolderToSubject, handleConvertFolderToSubject,
     handleAddFolder, handleUpdateFolder, handleDeleteFolder, handleToggleFolderExpand,
     handleAddSubject, handleUpdateSubject, handleDeleteSubject, getSubjectNoteCount,
     handleWorkspaceUndo, handleWorkspaceRedo,
@@ -322,6 +321,7 @@ export const App: React.FC = () => {
             onAddNote={(folderId) => handleCreateNewNote(folderId)}
             onMoveNoteToFolder={handleMoveNoteToFolder}
             onReorderOrMoveNote={handleReorderOrMoveNote}
+            onReorderFolder={handleReorderFolder}
           />
         )}
 

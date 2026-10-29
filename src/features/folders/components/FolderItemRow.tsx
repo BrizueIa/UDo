@@ -21,6 +21,7 @@ interface Props {
   onUpdateFolder: (folder: FolderItem) => void;
   onDeleteFolder: () => void;
   onMoveNoteToFolder?: (noteId: string, folderId: string) => void;
+  onReorderFolder?: (draggedFolderId: string, targetFolderId: string, position: 'before' | 'after') => void;
 }
 
 export const FolderItemRow: React.FC<Props> = ({
@@ -33,18 +34,36 @@ export const FolderItemRow: React.FC<Props> = ({
   onUpdateFolder,
   onDeleteFolder,
   onMoveNoteToFolder,
+  onReorderFolder,
 }) => {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editingName, setEditingName] = useState(folder.name);
   const [isDeleting, setIsDeleting] = useState(false);
-  const [isDragOver, setIsDragOver] = useState(false);
+  const [isDragOverNote, setIsDragOverNote] = useState(false);
+  const [dropPosition, setDropPosition] = useState<'before' | 'after' | null>(null);
 
   const handleDragOver = (e: React.DragEvent) => {
-    if (e.dataTransfer.types.includes('application/udo-note-id') || e.dataTransfer.types.includes('text/plain')) {
+    const isFolder = e.dataTransfer.types.includes('application/udo-folder-id');
+    const isNote = e.dataTransfer.types.includes('application/udo-note-id');
+
+    if (isFolder) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+      setIsDragOverNote(false);
+
+      const rect = e.currentTarget.getBoundingClientRect();
+      const midPoint = rect.top + rect.height / 2;
+      const pos = e.clientY < midPoint ? 'before' : 'after';
+      if (pos !== dropPosition) {
+        setDropPosition(pos);
+      }
+    } else if (isNote || e.dataTransfer.types.includes('text/plain')) {
       e.preventDefault();
       e.dataTransfer.dropEffect = 'move';
-      setIsDragOver(true);
+      setDropPosition(null);
+      setIsDragOverNote(true);
     }
   };
 
@@ -56,12 +75,27 @@ export const FolderItemRow: React.FC<Props> = ({
 
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragOver(false);
+    setIsDragOverNote(false);
+    setDropPosition(null);
   };
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    setIsDragOver(false);
+    e.stopPropagation();
+    setIsDragOverNote(false);
+    const pos = dropPosition || 'after';
+    setDropPosition(null);
+
+    const draggedFolderId = e.dataTransfer.getData('application/udo-folder-id');
+    if (draggedFolderId) {
+      if (draggedFolderId !== folder.id && onReorderFolder) {
+        setTimeout(() => {
+          onReorderFolder(draggedFolderId, folder.id, pos);
+        }, 0);
+      }
+      return;
+    }
+
     const noteId = e.dataTransfer.getData('application/udo-note-id') || e.dataTransfer.getData('text/plain');
     if (noteId && onMoveNoteToFolder) {
       setTimeout(() => {
@@ -120,14 +154,21 @@ export const FolderItemRow: React.FC<Props> = ({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      className={`group flex items-center justify-between px-2 py-1.5 rounded-md cursor-grab active:cursor-grabbing hover:translate-x-0.5 transition-all select-none ${
-        isDragOver
+      className={`group relative flex items-center justify-between px-2 py-1.5 rounded-md cursor-grab active:cursor-grabbing hover:translate-x-0.5 transition-all select-none border ${
+        isDragOverNote
           ? 'bg-theme-accent/25 border-theme-accent ring-2 ring-theme-accent/60 scale-[1.01] shadow-md'
           : isSelected
-          ? 'bg-theme-card border border-theme-accent/50 text-theme-text font-semibold shadow-xs'
-          : 'hover:bg-theme-hover/50 text-theme-text border border-transparent'
+          ? 'bg-theme-card border-theme-accent/50 text-theme-text font-semibold shadow-xs'
+          : 'hover:bg-theme-hover/50 text-theme-text border-transparent'
       }`}
     >
+      {/* Drop position indicator lines for folder reordering */}
+      {dropPosition === 'before' && (
+        <div className="absolute top-0 left-1 right-1 h-0.5 bg-theme-accent rounded-full z-30 shadow-xs" />
+      )}
+      {dropPosition === 'after' && (
+        <div className="absolute bottom-0 left-1 right-1 h-0.5 bg-theme-accent rounded-full z-30 shadow-xs" />
+      )}
       <button
         type="button"
         onClick={(e) => {
