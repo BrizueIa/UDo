@@ -66,55 +66,43 @@ export function setAudioVolume(vol: number): void {
   localStorage.setItem(STORAGE_VOLUME_KEY, clamped.toString());
 }
 
-export function isKeyboardSoundEnabled(): boolean {
-  if (typeof window === 'undefined') return true;
-  const val = localStorage.getItem(STORAGE_KEYBOARD_SOUND_KEY);
-  return val === null || val === 'true';
-}
+export const isKeyboardSoundEnabled = (): boolean =>
+  typeof window !== 'undefined' && localStorage.getItem(STORAGE_KEYBOARD_SOUND_KEY) !== 'false';
 
-export function setKeyboardSoundEnabled(enabled: boolean): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_KEYBOARD_SOUND_KEY, enabled ? 'true' : 'false');
-}
+export const setKeyboardSoundEnabled = (enabled: boolean): void => {
+  if (typeof window !== 'undefined') localStorage.setItem(STORAGE_KEYBOARD_SOUND_KEY, String(enabled));
+};
 
-export function isClickSoundEnabled(): boolean {
-  if (typeof window === 'undefined') return true;
-  const val = localStorage.getItem(STORAGE_CLICK_SOUND_KEY);
-  return val === null || val === 'true';
-}
+export const isClickSoundEnabled = (): boolean =>
+  typeof window !== 'undefined' && localStorage.getItem(STORAGE_CLICK_SOUND_KEY) !== 'false';
 
-export function setClickSoundEnabled(enabled: boolean): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_CLICK_SOUND_KEY, enabled ? 'true' : 'false');
-}
+export const setClickSoundEnabled = (enabled: boolean): void => {
+  if (typeof window !== 'undefined') localStorage.setItem(STORAGE_CLICK_SOUND_KEY, String(enabled));
+};
 
-export function isCompletionSoundEnabled(): boolean {
-  if (typeof window === 'undefined') return true;
-  const val = localStorage.getItem(STORAGE_COMPLETION_SOUND_KEY);
-  return val === null || val === 'true';
-}
+export const isCompletionSoundEnabled = (): boolean =>
+  typeof window !== 'undefined' && localStorage.getItem(STORAGE_COMPLETION_SOUND_KEY) !== 'false';
 
-export function setCompletionSoundEnabled(enabled: boolean): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_COMPLETION_SOUND_KEY, enabled ? 'true' : 'false');
-}
+export const setCompletionSoundEnabled = (enabled: boolean): void => {
+  if (typeof window !== 'undefined') localStorage.setItem(STORAGE_COMPLETION_SOUND_KEY, String(enabled));
+};
 
-export function isTimerSoundEnabled(): boolean {
-  if (typeof window === 'undefined') return true;
-  const val = localStorage.getItem(STORAGE_TIMER_SOUND_KEY);
-  return val === null || val === 'true';
-}
+export const isTimerSoundEnabled = (): boolean =>
+  typeof window !== 'undefined' && localStorage.getItem(STORAGE_TIMER_SOUND_KEY) !== 'false';
 
-export function setTimerSoundEnabled(enabled: boolean): void {
-  if (typeof window === 'undefined') return;
-  localStorage.setItem(STORAGE_TIMER_SOUND_KEY, enabled ? 'true' : 'false');
-}
+export const setTimerSoundEnabled = (enabled: boolean): void => {
+  if (typeof window !== 'undefined') localStorage.setItem(STORAGE_TIMER_SOUND_KEY, String(enabled));
+};
 
 /**
- * Emits a subtle, satisfying mechanical switch click (Opera GX style typing sound)
+ * Emits a subtle, soft and satisfying creamy mechanical switch tap (Opera GX style typing sound)
  */
-export function playKeyboardClickSound(force = false): void {
-  if (!force && (isAudioMuted() || !isKeyboardSoundEnabled())) return;
+export function playKeyboardClickSound(
+  keyOrForce?: string | boolean,
+  force = false
+): void {
+  const isForced = typeof keyOrForce === 'boolean' ? keyOrForce : force;
+  if (!isForced && (isAudioMuted() || !isKeyboardSoundEnabled())) return;
   const ctx = getAudioContext();
   if (!ctx) return;
   if (ctx.state === 'suspended') {
@@ -125,22 +113,47 @@ export function playKeyboardClickSound(force = false): void {
     const volume = getAudioVolume();
     if (volume <= 0) return;
     const now = ctx.currentTime;
-    const duration = 0.048;
+
+    const key = typeof keyOrForce === 'string' ? keyOrForce : '';
+    let startFreq = 330 + Math.random() * 50; // default 330-380Hz
+    let endFreq = 160;
+    let duration = 0.034;
+    let keyGain = 0.19;
+
+    if (key === ' ') {
+      // Spacebar: deeper, rounder thock
+      startFreq = 220 + Math.random() * 25;
+      endFreq = 110;
+      duration = 0.042;
+      keyGain = 0.22;
+    } else if (key === 'Enter') {
+      // Enter: affirmative, slightly lower tone
+      startFreq = 270 + Math.random() * 30;
+      endFreq = 130;
+      duration = 0.038;
+      keyGain = 0.21;
+    } else if (key === 'Backspace' || key === 'Delete') {
+      // Backspace: soft muted tap
+      startFreq = 250 + Math.random() * 25;
+      endFreq = 120;
+      duration = 0.032;
+      keyGain = 0.18;
+    }
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     const filter = ctx.createBiquadFilter();
 
     osc.type = 'triangle';
-    // Slight pitch variation (700-860Hz) for authentic mechanical switch feel
-    const pitch = 700 + Math.random() * 160;
-    osc.frequency.setValueAtTime(pitch, now);
-    osc.frequency.exponentialRampToValueAtTime(110, now + duration);
+    osc.frequency.setValueAtTime(startFreq, now);
+    osc.frequency.exponentialRampToValueAtTime(endFreq, now + duration);
 
+    // Warm, creamy lowpass filter cutting out harsh highs (Opera GX style)
     filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(2600, now);
+    filter.frequency.setValueAtTime(950, now);
+    filter.Q.setValueAtTime(1.0, now);
 
-    gain.gain.setValueAtTime(0.5 * volume, now);
+    gain.gain.setValueAtTime(keyGain * volume, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
     osc.connect(filter);
@@ -169,16 +182,18 @@ export function playUiClickSound(force = false): void {
     const volume = getAudioVolume();
     if (volume <= 0) return;
     const now = ctx.currentTime;
-    const duration = 0.038;
+    const duration = 0.032;
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
     osc.type = 'sine';
-    osc.frequency.setValueAtTime(650, now);
+    // Subtle organic variation (460-510Hz)
+    const pitch = 460 + Math.random() * 50;
+    osc.frequency.setValueAtTime(pitch, now);
     osc.frequency.exponentialRampToValueAtTime(160, now + duration);
 
-    gain.gain.setValueAtTime(0.45 * volume, now);
+    gain.gain.setValueAtTime(0.24 * volume, now);
     gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
     osc.connect(gain);
@@ -316,19 +331,21 @@ export function playTimerCompleteSound(force = false): void {
   }
 }
 
+const IGNORED_KEYS = new Set([
+  'Shift', 'Control', 'Alt', 'Meta', 'Escape', 'Tab', 'CapsLock',
+  'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight',
+  'PageUp', 'PageDown', 'Home', 'End', 'Insert', 'NumLock', 'ScrollLock', 'Pause',
+]);
+
 /**
- * Attaches global window listeners for tactile UI clicks and mechanical keyboard sounds
+ * Attaches global window listeners for tactile UI clicks and mechanical keyboard sounds (Opera GX style)
  */
 export function attachGlobalSoundListeners(): () => void {
   if (typeof window === 'undefined') return () => {};
 
-  const handleClick = (e: MouseEvent) => {
-    const target = e.target as HTMLElement | null;
-    if (!target) return;
-    const clickable = target.closest(
-      'button, [role="button"], a, input, select, .cursor-pointer, .cursor-grab'
-    );
-    if (clickable) {
+  const handlePointerDown = (e: PointerEvent) => {
+    // Primary (left click) or secondary (right click) triggers instant tactile sound on every click
+    if (e.button === 0 || e.button === 2) {
       playUiClickSound();
     }
   };
@@ -341,19 +358,16 @@ export function attachGlobalSoundListeners(): () => void {
       target.tagName === 'TEXTAREA' ||
       target.isContentEditable ||
       target.getAttribute('contenteditable') === 'true';
-    if (
-      isInput &&
-      !['Shift', 'Control', 'Alt', 'Meta', 'Escape', 'Tab', 'CapsLock'].includes(e.key)
-    ) {
-      playKeyboardClickSound();
+    if (isInput && !IGNORED_KEYS.has(e.key)) {
+      playKeyboardClickSound(e.key);
     }
   };
 
-  window.addEventListener('click', handleClick, true);
+  window.addEventListener('pointerdown', handlePointerDown, true);
   window.addEventListener('keydown', handleKeyDown, true);
 
   return () => {
-    window.removeEventListener('click', handleClick, true);
+    window.removeEventListener('pointerdown', handlePointerDown, true);
     window.removeEventListener('keydown', handleKeyDown, true);
   };
 }
