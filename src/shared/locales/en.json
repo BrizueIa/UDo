@@ -98,6 +98,9 @@
   "templates": {
     "title": "Templates",
     "starterPrompt": "Start with a template or start typing below:",
+    "hideStarterPrompt": "Hide starter templates",
+    "showStarterPrompt": "Show starter templates",
+    "restoreDefaults": "Restore default templates",
     "builtinTab": "Built-in",
     "customTab": "My Templates",
     "createTemplate": "New Template",

@@ -98,6 +98,9 @@
   "templates": {
     "title": "Plantillas",
     "starterPrompt": "Comienza con una plantilla o escribe abajo:",
+    "hideStarterPrompt": "Ocultar sugerencias de plantillas",
+    "showStarterPrompt": "Mostrar sugerencias de plantillas",
+    "restoreDefaults": "Restaurar predeterminadas",
     "builtinTab": "Predefinidas",
     "customTab": "Mis Plantillas",
     "createTemplate": "Nueva Plantilla",

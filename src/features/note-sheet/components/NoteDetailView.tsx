@@ -56,6 +56,9 @@ export const NoteDetailView: React.FC<Props> = ({
   const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
   const [isMediaDrawerOpen, setIsMediaDrawerOpen] = useState(true);
+  const [isStarterDismissed, setIsStarterDismissed] = useState(
+    () => localStorage.getItem('udo_hide_starter_templates') === 'true'
+  );
 
   // Editor buffered state for 0ms typing response & find bar (FR-07)
   const {
@@ -317,8 +320,30 @@ export const NoteDetailView: React.FC<Props> = ({
           />
 
           {/* Quick Starter Templates when note content is empty (FR-23) */}
-          {!localContent.trim() && (
-            <NoteTemplatePicker onSelectTemplate={handleSelectTemplate} />
+          {!localContent.trim() && !isStarterDismissed && (
+            <NoteTemplatePicker
+              onSelectTemplate={handleSelectTemplate}
+              onDismiss={() => {
+                setIsStarterDismissed(true);
+                localStorage.setItem('udo_hide_starter_templates', 'true');
+              }}
+            />
+          )}
+
+          {!localContent.trim() && isStarterDismissed && (
+            <div className="flex justify-end pt-1">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsStarterDismissed(false);
+                  localStorage.removeItem('udo_hide_starter_templates');
+                }}
+                className="text-[11px] text-theme-muted hover:text-theme-accent transition-colors flex items-center space-x-1 py-0.5"
+                title={t('templates.showStarterPrompt')}
+              >
+                <span>💡 {t('templates.showStarterPrompt')}</span>
+              </button>
+            </div>
           )}
 
           {/* Markdown Sheet Preview with Wiki-Links & Match Highlighting (FR-07, FR-22) */}
