@@ -2,6 +2,10 @@
 let audioCtx: AudioContext | null = null;
 const STORAGE_MUTE_KEY = 'udo_sound_muted';
 const STORAGE_VOLUME_KEY = 'udo_sound_volume';
+const STORAGE_KEYBOARD_SOUND_KEY = 'udo_sound_keyboard';
+const STORAGE_CLICK_SOUND_KEY = 'udo_sound_click';
+const STORAGE_COMPLETION_SOUND_KEY = 'udo_sound_completion';
+const STORAGE_TIMER_SOUND_KEY = 'udo_sound_timer';
 
 function getAudioContext(): AudioContext | null {
   if (typeof window === 'undefined') return null;
@@ -50,11 +54,127 @@ export function setAudioVolume(vol: number): void {
   localStorage.setItem(STORAGE_VOLUME_KEY, clamped.toString());
 }
 
+export function isKeyboardSoundEnabled(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(STORAGE_KEYBOARD_SOUND_KEY) === 'true';
+}
+
+export function setKeyboardSoundEnabled(enabled: boolean): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_KEYBOARD_SOUND_KEY, enabled ? 'true' : 'false');
+}
+
+export function isClickSoundEnabled(): boolean {
+  if (typeof window === 'undefined') return false;
+  return localStorage.getItem(STORAGE_CLICK_SOUND_KEY) === 'true';
+}
+
+export function setClickSoundEnabled(enabled: boolean): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_CLICK_SOUND_KEY, enabled ? 'true' : 'false');
+}
+
+export function isCompletionSoundEnabled(): boolean {
+  if (typeof window === 'undefined') return true;
+  const val = localStorage.getItem(STORAGE_COMPLETION_SOUND_KEY);
+  return val === null || val === 'true';
+}
+
+export function setCompletionSoundEnabled(enabled: boolean): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_COMPLETION_SOUND_KEY, enabled ? 'true' : 'false');
+}
+
+export function isTimerSoundEnabled(): boolean {
+  if (typeof window === 'undefined') return true;
+  const val = localStorage.getItem(STORAGE_TIMER_SOUND_KEY);
+  return val === null || val === 'true';
+}
+
+export function setTimerSoundEnabled(enabled: boolean): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(STORAGE_TIMER_SOUND_KEY, enabled ? 'true' : 'false');
+}
+
+/**
+ * Emits a subtle, satisfying mechanical switch click (Opera GX style typing sound)
+ */
+export function playKeyboardClickSound(force = false): void {
+  if (!force && (isAudioMuted() || !isKeyboardSoundEnabled())) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  try {
+    const volume = getAudioVolume();
+    if (volume <= 0) return;
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const filter = ctx.createBiquadFilter();
+
+    osc.type = 'triangle';
+    // Slight pitch variation (900-1150Hz) for authentic mechanical switch feel
+    const pitch = 920 + Math.random() * 220;
+    osc.frequency.setValueAtTime(pitch, now);
+    osc.frequency.exponentialRampToValueAtTime(140, now + 0.02);
+
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(1300, now);
+    filter.Q.setValueAtTime(3.5, now);
+
+    gain.gain.setValueAtTime(0.22 * volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.02);
+  } catch {
+    // Audio context may be restricted
+  }
+}
+
+/**
+ * Emits a crisp tactile UI click sound (Opera GX style button click)
+ */
+export function playUiClickSound(force = false): void {
+  if (!force && (isAudioMuted() || !isClickSoundEnabled())) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  try {
+    const volume = getAudioVolume();
+    if (volume <= 0) return;
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(650, now);
+    osc.frequency.exponentialRampToValueAtTime(180, now + 0.018);
+
+    gain.gain.setValueAtTime(0.18 * volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.018);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.018);
+  } catch {
+    // Audio context may be restricted
+  }
+}
+
 /**
  * Emits a crisp, noticeable and rewarding chime + pop upon completing a task or checkbox
  */
-export function playTaskCompleteSound(): void {
-  if (isAudioMuted()) return;
+export function playTaskCompleteSound(force = false): void {
+  if (!force && (isAudioMuted() || !isCompletionSoundEnabled())) return;
   const ctx = getAudioContext();
   if (!ctx) return;
 
@@ -143,8 +263,8 @@ export function playNoteCreatedSound(): void {
 /**
  * Emits a gentle harmonic marimba sequence when a focus timer sprint completes
  */
-export function playTimerCompleteSound(): void {
-  if (isAudioMuted()) return;
+export function playTimerCompleteSound(force = false): void {
+  if (!force && (isAudioMuted() || !isTimerSoundEnabled())) return;
   const ctx = getAudioContext();
   if (!ctx) return;
 

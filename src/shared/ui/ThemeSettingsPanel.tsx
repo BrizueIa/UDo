@@ -113,13 +113,13 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
               : 'text-theme-muted hover:text-theme-text'
           }`}
         >
-          {t('settings.vscodeImporter')}
+          {t('settings.customTab')}
         </button>
       </div>
 
       {/* Tab 1: Presets & Custom Themes */}
       {activeTab === 'presets' && (
-        <div className="space-y-2.5">
+        <div className="space-y-3">
           {/* Category Filter Pills */}
           <div className="flex items-center space-x-1 p-0.5 bg-theme-column/60 rounded-lg text-[11px] font-medium w-full">
             <button
@@ -158,13 +158,15 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
           </div>
 
           {/* Theme List Grid */}
-          <div className="max-h-72 overflow-y-auto space-y-1 pr-1" onMouseLeave={restoreTheme}>
+          <div className="max-h-[360px] overflow-y-auto space-y-3.5 pr-1.5" onMouseLeave={restoreTheme}>
             {(themeCategoryFilter === 'all' || themeCategoryFilter === 'dark') && (
-              <div className="space-y-1">
-                <div className="px-2 py-0.5 text-[10px] font-bold text-theme-muted uppercase tracking-wider">
-                  🌙 {t('settings.darkThemes')}
+              <div className="space-y-1.5">
+                <div className="flex items-center space-x-2 px-1 text-[11px] font-bold text-theme-muted uppercase tracking-wider">
+                  <span>🌙 {t('settings.darkThemes')}</span>
+                  <div className="flex-1 h-px bg-white/[0.06]" />
+                  <span className="text-[10px] font-mono opacity-60">{darkPresets.length}</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {darkPresets.map((th) => {
                     const isSelected = currentTheme === th.id;
                     return (
@@ -177,27 +179,27 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
                         }}
                         onMouseEnter={() => document.documentElement.setAttribute('data-theme', th.id)}
                         onMouseLeave={restoreTheme}
-                        className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                        className={`flex items-center justify-between p-2.5 rounded-xl text-xs transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-theme-card text-theme-text font-semibold border border-theme-accent/40 shadow-xs'
-                            : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover border border-white/[0.04]'
+                            ? 'bg-theme-card text-theme-text font-semibold border border-theme-accent/60 shadow-sm ring-1 ring-theme-accent/20'
+                            : 'bg-theme-card/50 hover:bg-theme-card text-theme-muted hover:text-theme-text border border-white/[0.05] hover:border-theme-accent/30'
                         }`}
                       >
-                        <div className="flex items-center space-x-2 truncate">
-                          <span>{th.icon}</span>
-                          <span className="truncate">{th.name}</span>
+                        <div className="flex items-center space-x-2.5 truncate">
+                          <span className="text-sm shrink-0">{th.icon}</span>
+                          <span className="truncate font-medium">{th.name}</span>
                         </div>
                         <div className="flex items-center space-x-2 shrink-0">
-                          <div className="flex items-center space-x-1">
+                          <div className="flex items-center space-x-1 px-1.5 py-0.5 rounded-md bg-theme-base/60 border border-white/[0.04]">
                             {th.previewColors.map((color, idx) => (
                               <span
                                 key={idx}
-                                className="w-2.5 h-2.5 rounded-full border border-black/20 shadow-xs"
+                                className="w-2.5 h-2.5 rounded-full border border-black/30 shadow-xs"
                                 style={{ backgroundColor: color }}
                               />
                             ))}
                           </div>
-                          {isSelected && <Check size={13} className="text-theme-accent" />}
+                          {isSelected && <Check size={14} className="text-theme-accent shrink-0 ml-1" />}
                         </div>
                       </button>
                     );
@@ -207,11 +209,13 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
             )}
 
             {(themeCategoryFilter === 'all' || themeCategoryFilter === 'light') && (
-              <div className="space-y-1 pt-2">
-                <div className="px-2 py-0.5 text-[10px] font-bold text-theme-muted uppercase tracking-wider">
-                  ☀️ {t('settings.lightThemes')}
+              <div className="space-y-1.5 pt-1">
+                <div className="flex items-center space-x-2 px-1 text-[11px] font-bold text-theme-muted uppercase tracking-wider">
+                  <span>☀️ {t('settings.lightThemes')}</span>
+                  <div className="flex-1 h-px bg-white/[0.06]" />
+                  <span className="text-[10px] font-mono opacity-60">{lightPresets.length}</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {lightPresets.map((th) => {
                     const isSelected = currentTheme === th.id;
                     return (
@@ -224,27 +228,27 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
                         }}
                         onMouseEnter={() => document.documentElement.setAttribute('data-theme', th.id)}
                         onMouseLeave={restoreTheme}
-                        className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
+                        className={`flex items-center justify-between p-2.5 rounded-xl text-xs transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-theme-card text-theme-text font-semibold border border-theme-accent/40 shadow-xs'
-                            : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover border border-white/[0.04]'
+                            ? 'bg-theme-card text-theme-text font-semibold border border-theme-accent/60 shadow-sm ring-1 ring-theme-accent/20'
+                            : 'bg-theme-card/50 hover:bg-theme-card text-theme-muted hover:text-theme-text border border-white/[0.05] hover:border-theme-accent/30'
                         }`}
                       >
-                        <div className="flex items-center space-x-2 truncate">
-                          <span>{th.icon}</span>
-                          <span className="truncate">{th.name}</span>
+                        <div className="flex items-center space-x-2.5 truncate">
+                          <span className="text-sm shrink-0">{th.icon}</span>
+                          <span className="truncate font-medium">{th.name}</span>
                         </div>
                         <div className="flex items-center space-x-2 shrink-0">
-                          <div className="flex items-center space-x-1">
+                          <div className="flex items-center space-x-1 px-1.5 py-0.5 rounded-md bg-theme-base/60 border border-white/[0.04]">
                             {th.previewColors.map((color, idx) => (
                               <span
                                 key={idx}
-                                className="w-2.5 h-2.5 rounded-full border border-black/20 shadow-xs"
+                                className="w-2.5 h-2.5 rounded-full border border-black/30 shadow-xs"
                                 style={{ backgroundColor: color }}
                               />
                             ))}
                           </div>
-                          {isSelected && <Check size={13} className="text-theme-accent" />}
+                          {isSelected && <Check size={14} className="text-theme-accent shrink-0 ml-1" />}
                         </div>
                       </button>
                     );
@@ -254,11 +258,13 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
             )}
 
             {customThemes.length > 0 && (
-              <div className="pt-2 border-t border-theme-border/40 space-y-1">
-                <div className="px-2 py-0.5 text-[10px] font-bold text-theme-muted uppercase tracking-wider">
-                  {t('settings.importedThemes')}
+              <div className="pt-2 border-t border-theme-border/40 space-y-1.5">
+                <div className="flex items-center space-x-2 px-1 text-[11px] font-bold text-theme-muted uppercase tracking-wider">
+                  <span>✨ {t('settings.importedThemes')}</span>
+                  <div className="flex-1 h-px bg-white/[0.06]" />
+                  <span className="text-[10px] font-mono opacity-60">{customThemes.length}</span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {customThemes.map((ct) => {
                     const isSelected = currentTheme === ct.id;
                     return (
@@ -266,10 +272,10 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
                         key={ct.id}
                         onMouseEnter={() => document.documentElement.setAttribute('data-theme', ct.id)}
                         onMouseLeave={restoreTheme}
-                        className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors group ${
+                        className={`flex items-center justify-between p-2.5 rounded-xl text-xs transition-all group ${
                           isSelected
-                            ? 'bg-theme-card text-theme-text font-semibold border border-theme-accent/40 shadow-xs'
-                            : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover border border-white/[0.04]'
+                            ? 'bg-theme-card text-theme-text font-semibold border border-theme-accent/60 shadow-sm ring-1 ring-theme-accent/20'
+                            : 'bg-theme-card/50 hover:bg-theme-card text-theme-muted hover:text-theme-text border border-white/[0.05] hover:border-theme-accent/30'
                         }`}
                       >
                         <button
@@ -278,30 +284,33 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
                             onSelectTheme(ct.id);
                             onCloseMenu?.();
                           }}
-                          className="flex items-center space-x-2 flex-1 text-left truncate cursor-pointer"
+                          className="flex items-center space-x-2.5 flex-1 text-left truncate cursor-pointer"
                         >
-                          <span>✨</span>
-                          <span className="truncate">{ct.name}</span>
+                          <span className="text-sm shrink-0">✨</span>
+                          <span className="truncate font-medium">{ct.name}</span>
                         </button>
-                        <div className="flex items-center space-x-1.5 shrink-0">
-                          <span
-                            className="w-2.5 h-2.5 rounded-full border border-black/20"
-                            style={{ backgroundColor: ct.colors.bgBase }}
-                          />
-                          <span
-                            className="w-2.5 h-2.5 rounded-full border border-black/20"
-                            style={{ backgroundColor: ct.colors.accent }}
-                          />
+                        <div className="flex items-center space-x-2 shrink-0">
+                          <div className="flex items-center space-x-1 px-1.5 py-0.5 rounded-md bg-theme-base/60 border border-white/[0.04]">
+                            <span
+                              className="w-2.5 h-2.5 rounded-full border border-black/30 shadow-xs"
+                              style={{ backgroundColor: ct.colors.bgBase }}
+                            />
+                            <span
+                              className="w-2.5 h-2.5 rounded-full border border-black/30 shadow-xs"
+                              style={{ backgroundColor: ct.colors.accent }}
+                            />
+                          </div>
+                          {isSelected && <Check size={14} className="text-theme-accent shrink-0 ml-1" />}
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               onDeleteCustomTheme(ct.id);
                             }}
-                            className="p-1 opacity-0 group-hover:opacity-100 text-theme-muted hover:text-red-400 cursor-pointer"
+                            className="p-1 opacity-0 group-hover:opacity-100 text-theme-muted hover:text-red-400 cursor-pointer transition-opacity"
                             title={t('settings.deleteCustomTheme')}
                           >
-                            <Trash2 size={11} />
+                            <Trash2 size={12} />
                           </button>
                         </div>
                       </div>

@@ -155,7 +155,7 @@ export const AudioAttachmentCard: React.FC<Props> = ({ attachment, onRemove }) =
           step={0.1}
           value={Math.min(currentTime, duration > 0 ? duration : currentTime)}
           onChange={handleSeek}
-          className="w-full h-1 bg-theme-base rounded-lg accent-theme-accent cursor-pointer"
+          className="w-full audio-seek-slider"
         />
       </div>
 

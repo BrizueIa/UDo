@@ -30,7 +30,7 @@ interface Props {
   onVolumeChange: (vol: number) => void;
   onToggleAudioMute: () => void;
   onOpenShortcuts?: () => void;
-  initialTab?: 'appearance' | 'audio' | 'shortcuts' | 'general';
+  initialTab?: 'appearance' | 'audio' | 'shortcuts' | 'language';
 }
 
 export const SettingsModal: React.FC<Props> = ({
@@ -50,7 +50,7 @@ export const SettingsModal: React.FC<Props> = ({
   initialTab = 'appearance',
 }) => {
   const { t, i18n } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'appearance' | 'audio' | 'shortcuts' | 'general'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'appearance' | 'audio' | 'shortcuts' | 'language'>(initialTab);
 
   useEffect(() => {
     if (isOpen) setActiveTab(initialTab);
@@ -83,7 +83,7 @@ export const SettingsModal: React.FC<Props> = ({
     { id: 'appearance', label: t('settings.appearanceTab'), icon: <Palette size={15} /> },
     { id: 'audio', label: t('settings.audioTab'), icon: <Volume2 size={15} /> },
     { id: 'shortcuts', label: t('settings.shortcutsTab'), icon: <Keyboard size={15} /> },
-    { id: 'general', label: t('settings.generalTab'), icon: <Globe size={15} /> },
+    { id: 'language', label: t('settings.languageTab'), icon: <Globe size={15} /> },
   ] as const;
 
   return (
@@ -93,7 +93,7 @@ export const SettingsModal: React.FC<Props> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl bg-theme-sidebar border border-theme-border rounded-2xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden"
+        className="w-full max-w-3xl bg-theme-sidebar border border-theme-border rounded-2xl shadow-2xl flex flex-col h-[540px] max-h-[88vh] overflow-hidden"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-theme-border">
@@ -165,63 +165,67 @@ export const SettingsModal: React.FC<Props> = ({
               <ShortcutsSettingsTab />
             )}
 
-            {/* 🌐 General / Language Tab */}
-            {activeTab === 'general' && (
+            {/* 🌐 Language Tab */}
+            {activeTab === 'language' && (
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <span className="text-xs font-medium text-theme-text">
-                    {t('settings.selectLanguage')}
-                  </span>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {/* Spanish Option */}
-                    <button
-                      type="button"
-                      onClick={() => i18n.changeLanguage('es')}
-                      className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                        i18n.language.startsWith('es')
-                          ? 'border-theme-accent bg-theme-card text-theme-text shadow-xs'
-                          : 'border-white/[0.06] hover:bg-theme-hover text-theme-muted hover:text-theme-text'
-                      }`}
-                    >
-                      <div className="space-y-0.5">
-                        <div className="flex items-center space-x-2 text-xs font-semibold text-theme-text">
-                          <span className="text-base">🇪🇸</span>
-                          <span>{t('settings.spanish')}</span>
-                        </div>
-                        <p className="text-[11px] text-theme-muted">
-                          {t('settings.spanishDesc')}
-                        </p>
-                      </div>
-                      {i18n.language.startsWith('es') && (
-                        <Check size={14} className="text-theme-accent shrink-0" />
-                      )}
-                    </button>
-
-                    {/* English Option */}
-                    <button
-                      type="button"
-                      onClick={() => i18n.changeLanguage('en')}
-                      className={`flex items-center justify-between p-3 rounded-xl border text-left transition-all cursor-pointer ${
-                        i18n.language.startsWith('en')
-                          ? 'border-theme-accent bg-theme-card text-theme-text shadow-xs'
-                          : 'border-white/[0.06] hover:bg-theme-hover text-theme-muted hover:text-theme-text'
-                      }`}
-                    >
-                      <div className="space-y-0.5">
-                        <div className="flex items-center space-x-2 text-xs font-semibold text-theme-text">
-                          <span className="text-base">🇺🇸</span>
-                          <span>{t('settings.english')}</span>
-                        </div>
-                        <p className="text-[11px] text-theme-muted">
-                          {t('settings.englishDesc')}
-                        </p>
-                      </div>
-                      {i18n.language.startsWith('en') && (
-                        <Check size={14} className="text-theme-accent shrink-0" />
-                      )}
-                    </button>
+                <div className="space-y-1">
+                  <div className="flex items-center space-x-2 text-xs font-semibold text-theme-text">
+                    <Globe size={15} className="text-theme-accent" />
+                    <span>{t('settings.languageTitle')}</span>
                   </div>
+                  <p className="text-xs text-theme-muted">
+                    {t('settings.languageDesc')}
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {/* Spanish Option */}
+                  <button
+                    type="button"
+                    onClick={() => i18n.changeLanguage('es')}
+                    className={`flex items-center justify-between p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      i18n.language.startsWith('es')
+                        ? 'border-theme-accent bg-theme-card text-theme-text shadow-sm ring-1 ring-theme-accent/20'
+                        : 'border-white/[0.06] hover:bg-theme-hover text-theme-muted hover:text-theme-text'
+                    }`}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2 text-xs font-semibold text-theme-text">
+                        <span className="text-base">🇪🇸</span>
+                        <span>{t('settings.spanish')}</span>
+                      </div>
+                      <p className="text-[11px] text-theme-muted">
+                        {t('settings.spanishDesc')}
+                      </p>
+                    </div>
+                    {i18n.language.startsWith('es') && (
+                      <Check size={15} className="text-theme-accent shrink-0 ml-2" />
+                    )}
+                  </button>
+
+                  {/* English Option */}
+                  <button
+                    type="button"
+                    onClick={() => i18n.changeLanguage('en')}
+                    className={`flex items-center justify-between p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      i18n.language.startsWith('en')
+                        ? 'border-theme-accent bg-theme-card text-theme-text shadow-sm ring-1 ring-theme-accent/20'
+                        : 'border-white/[0.06] hover:bg-theme-hover text-theme-muted hover:text-theme-text'
+                    }`}
+                  >
+                    <div className="space-y-1">
+                      <div className="flex items-center space-x-2 text-xs font-semibold text-theme-text">
+                        <span className="text-base">🇺🇸</span>
+                        <span>{t('settings.english')}</span>
+                      </div>
+                      <p className="text-[11px] text-theme-muted">
+                        {t('settings.englishDesc')}
+                      </p>
+                    </div>
+                    {i18n.language.startsWith('en') && (
+                      <Check size={15} className="text-theme-accent shrink-0 ml-2" />
+                    )}
+                  </button>
                 </div>
               </div>
             )}
