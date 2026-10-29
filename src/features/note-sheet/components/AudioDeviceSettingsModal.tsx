@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Mic, Volume2, Play, CheckCircle2, Sliders } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAudioDevices } from '../../../shared/hooks/useAudioDevices';
+import { CustomSelect } from '../../../shared/ui/CustomSelect';
 
 interface Props {
   isOpen: boolean;
@@ -65,18 +66,15 @@ export const AudioDeviceSettingsModal: React.FC<Props> = ({ isOpen, onClose }) =
             <Mic size={14} className="text-red-400" />
             <span>{t('audioSettings.inputDevice')}</span>
           </label>
-          <select
+          <CustomSelect
             value={selectedInputId}
-            onChange={(e) => changeInputDevice(e.target.value)}
-            className="w-full bg-theme-card px-3 py-1.5 rounded-lg border border-theme-border text-xs text-theme-text outline-none focus:border-theme-accent cursor-pointer"
-          >
-            <option value="">{t('audioSettings.defaultInput')}</option>
-            {inputDevices.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
+            onChange={changeInputDevice}
+            placeholder={t('audioSettings.defaultInput')}
+            options={[
+              { value: '', label: t('audioSettings.defaultInput') },
+              ...inputDevices.map((d) => ({ value: d.id, label: d.name })),
+            ]}
+          />
 
           {/* Mic Test Row */}
           <div className="flex items-center justify-between pt-1">
@@ -114,18 +112,15 @@ export const AudioDeviceSettingsModal: React.FC<Props> = ({ isOpen, onClose }) =
             <Volume2 size={14} className="text-theme-accent" />
             <span>{t('audioSettings.outputDevice')}</span>
           </label>
-          <select
+          <CustomSelect
             value={selectedOutputId}
-            onChange={(e) => changeOutputDevice(e.target.value)}
-            className="w-full bg-theme-card px-3 py-1.5 rounded-lg border border-theme-border text-xs text-theme-text outline-none focus:border-theme-accent cursor-pointer"
-          >
-            <option value="">{t('audioSettings.defaultOutput')}</option>
-            {outputDevices.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.name}
-              </option>
-            ))}
-          </select>
+            onChange={changeOutputDevice}
+            placeholder={t('audioSettings.defaultOutput')}
+            options={[
+              { value: '', label: t('audioSettings.defaultOutput') },
+              ...outputDevices.map((d) => ({ value: d.id, label: d.name })),
+            ]}
+          />
 
           <div className="pt-1">
             <button

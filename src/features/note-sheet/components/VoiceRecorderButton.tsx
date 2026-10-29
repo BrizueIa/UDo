@@ -22,6 +22,7 @@ export const VoiceRecorderButton: React.FC<Props> = ({ onAttachmentCreated, onEr
   const streamRef = useRef<MediaStream | null>(null);
   const isCancelledRef = useRef<boolean>(false);
   const isNativeRecordingRef = useRef<boolean>(false);
+  const startTimeRef = useRef<number>(0);
 
   useEffect(() => {
     return () => {
@@ -83,6 +84,11 @@ export const VoiceRecorderButton: React.FC<Props> = ({ onAttachmentCreated, onEr
 
         const savedPath = await attachmentsApi.saveAttachmentFile(fileName, uint8Array);
 
+        // Compute exact duration from start timestamp to avoid WebKitGTK WebM metadata duration bug
+        const measuredDuration = startTimeRef.current
+          ? Math.max(1, Math.round((Date.now() - startTimeRef.current) / 1000))
+          : 1;
+
         onAttachmentCreated({
           id: `audio-${Date.now()}`,
           name: fileName,
@@ -91,16 +97,20 @@ export const VoiceRecorderButton: React.FC<Props> = ({ onAttachmentCreated, onEr
           sizeBytes: audioBlob.size,
           extension: 'webm',
           kind: 'audio',
-          durationSeconds: elapsedSeconds,
+          durationSeconds: measuredDuration,
           createdAt: new Date().toISOString(),
         });
         audioChunksRef.current = [];
       };
 
       recorder.start(250);
+      startTimeRef.current = Date.now();
       setIsRecording(true);
       setElapsedSeconds(0);
-      timerIntervalRef.current = setInterval(() => setElapsedSeconds((p) => p + 1), 1000);
+      timerIntervalRef.current = setInterval(() => {
+        const diff = Math.round((Date.now() - startTimeRef.current) / 1000);
+        setElapsedSeconds(diff);
+      }, 500);
       return;
     } catch (webErr) {
       console.warn('Web getUserMedia failed, attempting native recording fallback...', webErr);
@@ -110,9 +120,13 @@ export const VoiceRecorderButton: React.FC<Props> = ({ onAttachmentCreated, onEr
     const nativeStarted = await attachmentsApi.startNativeRecording(selectedInputId);
     if (nativeStarted) {
       isNativeRecordingRef.current = true;
+      startTimeRef.current = Date.now();
       setIsRecording(true);
       setElapsedSeconds(0);
-      timerIntervalRef.current = setInterval(() => setElapsedSeconds((p) => p + 1), 1000);
+      timerIntervalRef.current = setInterval(() => {
+        const diff = Math.round((Date.now() - startTimeRef.current) / 1000);
+        setElapsedSeconds(diff);
+      }, 500);
       return;
     }
 
@@ -127,6 +141,10 @@ export const VoiceRecorderButton: React.FC<Props> = ({ onAttachmentCreated, onEr
     isCancelledRef.current = false;
     setIsRecording(false);
 
+    const measuredDuration = startTimeRef.current
+      ? Math.max(1, Math.round((Date.now() - startTimeRef.current) / 1000))
+      : 1;
+
     if (isNativeRecordingRef.current) {
       const savedPath = await attachmentsApi.stopNativeRecording();
       if (savedPath) {
@@ -138,7 +156,7 @@ export const VoiceRecorderButton: React.FC<Props> = ({ onAttachmentCreated, onEr
           sizeBytes: 0,
           extension: 'wav',
           kind: 'audio',
-          durationSeconds: elapsedSeconds,
+          durationSeconds: measuredDuration,
           createdAt: new Date().toISOString(),
         });
       }

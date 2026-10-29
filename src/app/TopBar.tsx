@@ -1,15 +1,14 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ViewFilter, ThemeId, AccentColor, CustomThemeDefinition } from '../shared/types';
 import { TrafficLights } from '../shared/ui/TrafficLights';
-import { ThemeSelectorMenu } from '../shared/ui/ThemeSelectorMenu';
-import { VolumePopover } from './VolumePopover';
+import { SettingsModal } from './SettingsModal';
+import { TopBarSearch } from './TopBarSearch';
+import { TopBarFilterTabs } from './TopBarFilterTabs';
 import { api, WindowEnvironment } from '../shared/api/ipc';
 import {
-  Search,
-  Globe,
   HelpCircle,
   Layers,
-  X,
+  Settings,
   Timer,
   Play,
   Pause,
@@ -19,7 +18,6 @@ import {
   Minimize2,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { motion } from 'framer-motion';
 import { FocusTimerState } from '../shared/hooks/useFocusTimer';
 
 interface Props {
@@ -46,7 +44,7 @@ interface Props {
   onSelectAccent: (accent: AccentColor) => void;
   onImportCustomTheme: (theme: CustomThemeDefinition) => void;
   onDeleteCustomTheme: (id: string) => void;
-  onToggleLanguage: () => void;
+  onToggleLanguage?: () => void;
   onToggleShortcutsModal: () => void;
   onToggleWidgetMode: () => void;
   onToggleAudioMute: () => void;
@@ -80,7 +78,6 @@ export const TopBar: React.FC<Props> = ({
   onSelectAccent,
   onImportCustomTheme,
   onDeleteCustomTheme,
-  onToggleLanguage,
   onToggleShortcutsModal,
   onToggleWidgetMode,
   onToggleAudioMute,
@@ -89,8 +86,8 @@ export const TopBar: React.FC<Props> = ({
   onToggleZenMode,
   onOpenTimerModal,
 }) => {
-  const { t, i18n } = useTranslation();
-  const searchInputRef = useRef<HTMLInputElement>(null);
+  const { t } = useTranslation();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [windowEnv, setWindowEnv] = useState<WindowEnvironment>({
     os: 'linux',
     desktop: '',
@@ -103,33 +100,17 @@ export const TopBar: React.FC<Props> = ({
     api.getWindowEnv().then(setWindowEnv).catch(() => {});
   }, []);
 
-  // Global Ctrl + Shift + F listener to focus & select search bar
+  // Global Ctrl + , listener for Settings Modal
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') {
+      if ((e.ctrlKey || e.metaKey) && e.key === ',') {
         e.preventDefault();
-        searchInputRef.current?.focus();
-        searchInputRef.current?.select();
+        setIsSettingsOpen((p) => !p);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
-
-  const filterTabs = [
-    { id: 'all', label: `${t('nav.filterAll')} (${totalCount})` },
-    { id: 'pending', label: `${t('nav.filterPending')} (${pendingCount})` },
-    { id: 'completed', label: `${t('nav.filterCompleted')} (${completedCount})` },
-  ];
-
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Escape') {
-      onSearchChange('');
-      searchInputRef.current?.blur();
-    } else if (e.key === 'Enter') {
-      onOpenSearchPalette(searchQuery);
-    }
-  };
 
   return (
     <header
@@ -205,43 +186,11 @@ export const TopBar: React.FC<Props> = ({
       </div>
 
       {/* Middle: Unified Search Bar */}
-      <div className="flex-1 max-w-md mx-2 min-w-0">
-        <div className="relative flex items-center group">
-          <Search
-            size={14}
-            className="absolute left-3 text-theme-muted group-hover:text-theme-accent transition-colors pointer-events-none"
-          />
-          <input
-            ref={searchInputRef}
-            type="text"
-            value={searchQuery}
-            onChange={(e) => onSearchChange(e.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            placeholder={t('nav.searchPlaceholder')}
-            className="w-full bg-theme-card/70 hover:bg-theme-card focus:bg-theme-card text-xs text-theme-text placeholder-theme-muted pl-8 pr-16 py-1.5 rounded-lg outline-none border border-white/[0.06] hover:border-theme-accent/40 focus:border-theme-accent/60 transition-all shadow-inner"
-          />
-          <div className="absolute right-2.5 flex items-center space-x-1">
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => onSearchChange('')}
-                className="text-theme-muted hover:text-theme-text p-0.5"
-                title={t('nav.clearSearch')}
-              >
-                <X size={12} />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => onOpenSearchPalette(searchQuery)}
-              className="hidden sm:inline-block text-[10px] font-mono px-1.5 py-0.5 rounded bg-theme-hover text-theme-muted border border-white/[0.06] hover:border-theme-accent/40 hover:text-theme-text transition-colors cursor-pointer"
-              title="Ctrl + K"
-            >
-              Ctrl K
-            </button>
-          </div>
-        </div>
-      </div>
+      <TopBarSearch
+        searchQuery={searchQuery}
+        onSearchChange={onSearchChange}
+        onOpenSearchPalette={onOpenSearchPalette}
+      />
 
       {/* Right: Filter Pills + Quick Tools */}
       <div className="flex items-center space-x-2 shrink-0">
@@ -283,34 +232,19 @@ export const TopBar: React.FC<Props> = ({
         )}
 
         {/* Animated Filter Pills */}
-        <div className="hidden lg:flex items-center bg-theme-column/80 p-0.5 rounded-lg border border-white/[0.05] text-xs font-medium">
-          {filterTabs.map((tab) => {
-            const isSelected = filter === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => onFilterChange(tab.id as ViewFilter)}
-                className={`relative px-2.5 py-1 rounded-md transition-colors ${
-                  isSelected ? 'text-white font-semibold' : 'text-theme-muted hover:text-theme-text'
-                }`}
-              >
-                {isSelected && (
-                  <motion.div
-                    layoutId="topbar-active-filter"
-                    className="absolute inset-0 bg-theme-accent rounded-md shadow-sm"
-                    transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-                  />
-                )}
-                <span className="relative z-10 text-[11px]">{tab.label}</span>
-              </button>
-            );
-          })}
-        </div>
+        <TopBarFilterTabs
+          filter={filter}
+          pendingCount={pendingCount}
+          completedCount={completedCount}
+          totalCount={totalCount}
+          onFilterChange={onFilterChange}
+        />
 
         {/* Quick Icon Actions */}
         <div className="flex items-center space-x-1 pl-1 sm:pl-2 border-l border-white/[0.06] text-theme-muted">
           {/* Always-on-top Widget toggle */}
           <button
+            type="button"
             onClick={onToggleWidgetMode}
             className="p-1.5 rounded-md hover:text-theme-text hover:bg-theme-hover transition-colors cursor-pointer"
             title={t('shortcuts.toggleWidget')}
@@ -318,44 +252,24 @@ export const TopBar: React.FC<Props> = ({
             <Layers size={15} />
           </button>
 
-          {/* Audio Feedback Mute & Volume Popover (FR-15) */}
-          <VolumePopover
-            isAudioMuted={isAudioMuted}
-            audioVolume={audioVolume}
-            onVolumeChange={onVolumeChange}
-            onToggleAudioMute={onToggleAudioMute}
-          />
-
-          {/* Theme Selector Menu */}
-          <ThemeSelectorMenu
-            currentTheme={currentTheme}
-            currentAccent={currentAccent}
-            customThemes={customThemes}
-            onSelectTheme={onSelectTheme}
-            onSelectAccent={onSelectAccent}
-            onImportCustomTheme={onImportCustomTheme}
-            onDeleteCustomTheme={onDeleteCustomTheme}
-          />
-
-          {/* Language Switcher */}
-          <button
-            onClick={onToggleLanguage}
-            className="flex items-center space-x-1 p-1.5 rounded-md hover:text-theme-text hover:bg-theme-hover transition-colors text-xs font-mono cursor-pointer"
-            title={t('settings.language')}
-          >
-            <Globe size={14} />
-            <span className="uppercase text-[10px] font-bold">
-              {i18n.language.startsWith('es') ? 'ES' : 'EN'}
-            </span>
-          </button>
-
           {/* Keyboard Shortcuts Modal */}
           <button
+            type="button"
             onClick={onToggleShortcutsModal}
             className="p-1.5 rounded-md hover:text-theme-text hover:bg-theme-hover transition-colors cursor-pointer"
             title={t('shortcuts.title')}
           >
             <HelpCircle size={15} />
+          </button>
+
+          {/* Unified Settings Modal Trigger */}
+          <button
+            type="button"
+            onClick={() => setIsSettingsOpen(true)}
+            className="p-1.5 rounded-md hover:text-theme-text hover:bg-theme-hover transition-colors cursor-pointer"
+            title={`${t('settings.title')} (Ctrl+,)`}
+          >
+            <Settings size={15} />
           </button>
 
           {/* Window Controls (Native) */}
@@ -366,6 +280,24 @@ export const TopBar: React.FC<Props> = ({
           )}
         </div>
       </div>
+
+      {/* Unified Settings Modal */}
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        currentTheme={currentTheme}
+        currentAccent={currentAccent}
+        customThemes={customThemes}
+        onSelectTheme={onSelectTheme}
+        onSelectAccent={onSelectAccent}
+        onImportCustomTheme={onImportCustomTheme}
+        onDeleteCustomTheme={onDeleteCustomTheme}
+        isAudioMuted={isAudioMuted}
+        audioVolume={audioVolume}
+        onVolumeChange={onVolumeChange}
+        onToggleAudioMute={onToggleAudioMute}
+        onOpenShortcuts={onToggleShortcutsModal}
+      />
     </header>
   );
 };

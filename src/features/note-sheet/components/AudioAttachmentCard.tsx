@@ -13,7 +13,12 @@ export const AudioAttachmentCard: React.FC<Props> = ({ attachment, onRemove }) =
   const { t } = useTranslation();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
-  const [duration, setDuration] = useState(attachment.durationSeconds || 0);
+  const [duration, setDuration] = useState<number>(() => {
+    if (attachment.durationSeconds && attachment.durationSeconds > 0 && attachment.durationSeconds < 7200) {
+      return attachment.durationSeconds;
+    }
+    return 0;
+  });
   const [playbackRate, setPlaybackRate] = useState<number>(1);
   const [audioSrc, setAudioSrc] = useState<string>('');
 
@@ -43,7 +48,7 @@ export const AudioAttachmentCard: React.FC<Props> = ({ attachment, onRemove }) =
   }, [audioSrc]);
 
   const formatTime = (secs: number) => {
-    if (isNaN(secs) || secs < 0) return '0:00';
+    if (isNaN(secs) || !isFinite(secs) || secs < 0 || secs > 7200) return '0:00';
     const m = Math.floor(secs / 60);
     const s = Math.floor(secs % 60);
     return `${m}:${s.toString().padStart(2, '0')}`;
@@ -95,15 +100,34 @@ export const AudioAttachmentCard: React.FC<Props> = ({ attachment, onRemove }) =
         <audio
           ref={audioRef}
           src={audioSrc}
-          onTimeUpdate={() => audioRef.current && setCurrentTime(audioRef.current.currentTime)}
+          onTimeUpdate={() => {
+            if (audioRef.current) {
+              const cur = audioRef.current.currentTime;
+              setCurrentTime(cur);
+              if (duration > 7200) {
+                setDuration(Math.max(1, Math.round(cur)));
+              }
+            }
+          }}
           onLoadedMetadata={() => {
-            if (audioRef.current && (!duration || isNaN(duration))) {
-              setDuration(audioRef.current.duration);
+            if (audioRef.current) {
+              const d = audioRef.current.duration;
+              if (attachment.durationSeconds && attachment.durationSeconds > 0 && attachment.durationSeconds < 7200) {
+                setDuration(attachment.durationSeconds);
+                return;
+              }
+              if (isFinite(d) && d > 0 && d < 7200) {
+                setDuration(Math.round(d));
+              }
             }
           }}
           onEnded={() => {
             setIsPlaying(false);
             setCurrentTime(0);
+            if (audioRef.current && (duration === 0 || duration > 7200)) {
+              const end = Math.max(1, Math.round(audioRef.current.currentTime));
+              if (end > 0 && end < 7200) setDuration(end);
+            }
           }}
         />
       )}
@@ -127,9 +151,9 @@ export const AudioAttachmentCard: React.FC<Props> = ({ attachment, onRemove }) =
         <input
           type="range"
           min={0}
-          max={duration || 100}
+          max={duration > 0 && duration < 7200 ? duration : Math.max(1, currentTime)}
           step={0.1}
-          value={currentTime}
+          value={Math.min(currentTime, duration > 0 ? duration : currentTime)}
           onChange={handleSeek}
           className="w-full h-1 bg-theme-base rounded-lg accent-theme-accent cursor-pointer"
         />
