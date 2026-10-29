@@ -211,6 +211,43 @@ export function useMultiSelection({
     [clearSelection]
   );
 
+  // Global click outside selection -> Deselect all (Sprint 7 feedback)
+  useEffect(() => {
+    const handleGlobalMouseDown = (e: MouseEvent) => {
+      if (selectedNoteIds.size === 0 && selectedFolderIds.size === 0) return;
+      if (e.button !== 0 || e.ctrlKey || e.metaKey || e.shiftKey) return;
+
+      const target = e.target as HTMLElement | null;
+      if (!target) return;
+
+      if (
+        target.closest('[data-batch-action-bar]') ||
+        target.closest('[data-context-menu]') ||
+        target.closest('.context-menu') ||
+        target.closest('[role="dialog"]')
+      ) {
+        return;
+      }
+
+      const noteEl = target.closest('[data-note-id]');
+      if (noteEl) {
+        const id = noteEl.getAttribute('data-note-id');
+        if (id && selectedNoteIds.has(id)) return;
+      }
+
+      const folderEl = target.closest('[data-folder-id]');
+      if (folderEl) {
+        const id = folderEl.getAttribute('data-folder-id');
+        if (id && selectedFolderIds.has(id)) return;
+      }
+
+      clearSelection();
+    };
+
+    window.addEventListener('mousedown', handleGlobalMouseDown, true);
+    return () => window.removeEventListener('mousedown', handleGlobalMouseDown, true);
+  }, [selectedNoteIds, selectedFolderIds, clearSelection]);
+
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       const activeEl = document.activeElement;

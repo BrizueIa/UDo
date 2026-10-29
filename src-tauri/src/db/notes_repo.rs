@@ -86,8 +86,40 @@ pub fn search_notes(conn: &Connection, query: &str, include_private: bool) -> Re
         return Ok(notes);
     }
 
-    // 3. Check for dot extensions: .pdf, .png, etc.
-    if trimmed.starts_with('.') && ext_candidate.len() >= 2 {
+    // 3. Category shortcuts: .img/.image, .3d/.cad, .doc, .sheet, .code, .archive
+    if lower == ".img" || lower == ".image" || lower == "image" {
+        let sql = format!("{} AND (attachments_json LIKE '%.png%' OR attachments_json LIKE '%.jpg%' OR attachments_json LIKE '%.jpeg%' OR attachments_json LIKE '%.webp%' OR attachments_json LIKE '%.svg%') ORDER BY is_pinned DESC, updated_at DESC LIMIT 50", base_sql);
+        let mut stmt = conn.prepare(&sql)?;
+        let notes = stmt.query_map(params![inc_priv_int], map_note_row)?.collect::<Result<Vec<_>, _>>()?;
+        return Ok(notes);
+    }
+    if lower == ".3d" || lower == ".cad" || lower == "3d" {
+        let sql = format!("{} AND (attachments_json LIKE '%.stl%' OR attachments_json LIKE '%.3mf%' OR attachments_json LIKE '%.step%' OR attachments_json LIKE '%.stp%' OR attachments_json LIKE '%.blend%' OR attachments_json LIKE '%.obj%' OR attachments_json LIKE '%.gcode%') ORDER BY is_pinned DESC, updated_at DESC LIMIT 50", base_sql);
+        let mut stmt = conn.prepare(&sql)?;
+        let notes = stmt.query_map(params![inc_priv_int], map_note_row)?.collect::<Result<Vec<_>, _>>()?;
+        return Ok(notes);
+    }
+    if lower == ".doc" || lower == ".document" || lower == "doc" {
+        let sql = format!("{} AND (attachments_json LIKE '%.pdf%' OR attachments_json LIKE '%.doc%' OR attachments_json LIKE '%.docx%' OR attachments_json LIKE '%.txt%' OR attachments_json LIKE '%.md%' OR attachments_json LIKE '%.rtf%') ORDER BY is_pinned DESC, updated_at DESC LIMIT 50", base_sql);
+        let mut stmt = conn.prepare(&sql)?;
+        let notes = stmt.query_map(params![inc_priv_int], map_note_row)?.collect::<Result<Vec<_>, _>>()?;
+        return Ok(notes);
+    }
+    if lower == ".sheet" || lower == "sheet" {
+        let sql = format!("{} AND (attachments_json LIKE '%.xls%' OR attachments_json LIKE '%.xlsx%' OR attachments_json LIKE '%.csv%' OR attachments_json LIKE '%.tsv%') ORDER BY is_pinned DESC, updated_at DESC LIMIT 50", base_sql);
+        let mut stmt = conn.prepare(&sql)?;
+        let notes = stmt.query_map(params![inc_priv_int], map_note_row)?.collect::<Result<Vec<_>, _>>()?;
+        return Ok(notes);
+    }
+    if lower == ".code" || lower == "code" {
+        let sql = format!("{} AND (attachments_json LIKE '%.ts%' OR attachments_json LIKE '%.js%' OR attachments_json LIKE '%.rs%' OR attachments_json LIKE '%.py%' OR attachments_json LIKE '%.json%' OR attachments_json LIKE '%.html%' OR attachments_json LIKE '%.css%') ORDER BY is_pinned DESC, updated_at DESC LIMIT 50", base_sql);
+        let mut stmt = conn.prepare(&sql)?;
+        let notes = stmt.query_map(params![inc_priv_int], map_note_row)?.collect::<Result<Vec<_>, _>>()?;
+        return Ok(notes);
+    }
+
+    // 4. Check for dot extensions: e.g. .pdf, .stl, .zip, .png, .rs, etc.
+    if trimmed.starts_with('.') && !ext_candidate.is_empty() {
         let ext_pattern = format!("%\"extension\":\"{}\"%", ext_candidate);
         let dot_ext_pattern = format!("%{}%", trimmed);
         let sql = format!("{} AND (attachments_json LIKE ?2 OR attachments_json LIKE ?3) ORDER BY is_pinned DESC, updated_at DESC LIMIT 50", base_sql);
@@ -225,6 +257,12 @@ pub fn delete_note(conn: &Connection, id: &str) -> Result<()> {
 }
 
 pub fn get_deleted_notes(conn: &Connection, include_private: bool) -> Result<Vec<NoteItem>> {
+    // Auto-delete notes older than 30 days in trash (Sprint 7 feedback)
+    let _ = conn.execute(
+        "DELETE FROM notes WHERE is_deleted = 1 AND datetime(updated_at) < datetime('now', '-30 days')",
+        [],
+    );
+
     let inc_priv_int = if include_private { 1 } else { 0 };
     let mut stmt = conn.prepare(
         "SELECT id, folder_id, subject_id, title, content, is_completed, is_pinned,

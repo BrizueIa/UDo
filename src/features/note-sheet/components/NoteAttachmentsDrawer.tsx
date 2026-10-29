@@ -140,7 +140,7 @@ export const NoteAttachmentsDrawer: React.FC<Props> = ({
 
                       <div className="px-2.5 py-1.5 flex items-center justify-between border-t border-white/[0.04] bg-theme-card/90">
                         <span className="text-xs font-medium text-theme-text truncate" title={sketch.title}>
-                          {sketch.title || 'Boceto'}
+                          {sketch.title || 'Canvas'}
                         </span>
                         <button
                           type="button"

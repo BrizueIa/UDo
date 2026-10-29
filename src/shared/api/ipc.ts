@@ -84,10 +84,28 @@ export const api = {
       }
       if (lowerRaw === '.audio' || lowerRaw === 'audio') {
         return n.attachments?.some(
-          (a) => a.kind === 'audio' || ['mp3', 'wav', 'webm', 'm4a', 'ogg'].includes(a.extension?.toLowerCase())
+          (a) => a.kind === 'audio' || ['mp3', 'wav', 'webm', 'm4a', 'ogg', 'flac', 'aac'].includes(a.extension?.toLowerCase() || '')
         ) ?? false;
       }
-      if (lowerRaw.startsWith('.') && extCandidate.length >= 2) {
+      if (lowerRaw === '.img' || lowerRaw === '.image' || lowerRaw === 'image') {
+        return n.attachments?.some((a) => ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'bmp'].includes(a.extension?.toLowerCase() || '')) ?? false;
+      }
+      if (lowerRaw === '.3d' || lowerRaw === '.cad' || lowerRaw === '3d') {
+        return n.attachments?.some((a) => ['stl', '3mf', 'step', 'stp', 'blend', 'obj', 'gcode'].includes(a.extension?.toLowerCase() || '')) ?? false;
+      }
+      if (lowerRaw === '.doc' || lowerRaw === '.document' || lowerRaw === 'doc') {
+        return n.attachments?.some((a) => ['pdf', 'doc', 'docx', 'txt', 'md', 'rtf'].includes(a.extension?.toLowerCase() || '')) ?? false;
+      }
+      if (lowerRaw === '.sheet' || lowerRaw === 'sheet') {
+        return n.attachments?.some((a) => ['xls', 'xlsx', 'csv', 'tsv'].includes(a.extension?.toLowerCase() || '')) ?? false;
+      }
+      if (lowerRaw === '.code' || lowerRaw === 'code') {
+        return n.attachments?.some((a) => ['ts', 'tsx', 'js', 'jsx', 'rs', 'py', 'json', 'yaml', 'yml', 'toml', 'html', 'css', 'sql'].includes(a.extension?.toLowerCase() || '')) ?? false;
+      }
+      if (lowerRaw === '.archive' || lowerRaw === '.zip' || lowerRaw === 'archive') {
+        return n.attachments?.some((a) => ['zip', 'tar', 'gz', '7z', 'rar'].includes(a.extension?.toLowerCase() || '')) ?? false;
+      }
+      if (lowerRaw.startsWith('.') && extCandidate.length >= 1) {
         return n.attachments?.some(
           (a) =>
             a.extension?.toLowerCase() === extCandidate ||

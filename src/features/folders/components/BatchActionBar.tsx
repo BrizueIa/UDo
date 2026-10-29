@@ -29,6 +29,7 @@ export const BatchActionBar: React.FC<Props> = ({
   return (
     <AnimatePresence>
       <motion.div
+        data-batch-action-bar
         initial={{ opacity: 0, y: 16, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 16, scale: 0.95 }}

@@ -1,5 +1,14 @@
 import { NoteItem, ViewFilter } from '../../../shared/types';
 import { normalizeDiacritics } from '../../../shared/utils/diacritics';
+import {
+  CAD_EXTENSIONS,
+  IMAGE_EXTENSIONS,
+  DOC_EXTENSIONS,
+  SHEET_EXTENSIONS,
+  CODE_EXTENSIONS,
+  ARCHIVE_EXTENSIONS,
+  AUDIO_EXTENSIONS,
+} from '../../../shared/utils/fileAttachments';
 
 interface FilterOptions {
   notes: NoteItem[];
@@ -41,11 +50,35 @@ export function filterAndSortFolderNotes({
 
         if (rawQuery === '.audio' || rawQuery === 'audio') {
           return n.attachments?.some(
-            (a) => a.kind === 'audio' || ['mp3', 'wav', 'webm', 'm4a', 'ogg'].includes(a.extension?.toLowerCase())
+            (a) => a.kind === 'audio' || AUDIO_EXTENSIONS.has(a.extension?.toLowerCase() || '')
           ) ?? false;
         }
 
-        if (rawQuery.startsWith('.') && extCandidate.length >= 2) {
+        if (rawQuery === '.img' || rawQuery === '.image' || rawQuery === 'image') {
+          return n.attachments?.some((a) => IMAGE_EXTENSIONS.has(a.extension?.toLowerCase() || '')) ?? false;
+        }
+
+        if (rawQuery === '.3d' || rawQuery === '.cad' || rawQuery === '3d') {
+          return n.attachments?.some((a) => CAD_EXTENSIONS.has(a.extension?.toLowerCase() || '')) ?? false;
+        }
+
+        if (rawQuery === '.doc' || rawQuery === '.document' || rawQuery === 'doc') {
+          return n.attachments?.some((a) => DOC_EXTENSIONS.has(a.extension?.toLowerCase() || '')) ?? false;
+        }
+
+        if (rawQuery === '.sheet' || rawQuery === 'sheet') {
+          return n.attachments?.some((a) => SHEET_EXTENSIONS.has(a.extension?.toLowerCase() || '')) ?? false;
+        }
+
+        if (rawQuery === '.code' || rawQuery === 'code') {
+          return n.attachments?.some((a) => CODE_EXTENSIONS.has(a.extension?.toLowerCase() || '')) ?? false;
+        }
+
+        if (rawQuery === '.archive' || rawQuery === '.zip' || rawQuery === 'archive') {
+          return n.attachments?.some((a) => ARCHIVE_EXTENSIONS.has(a.extension?.toLowerCase() || '')) ?? false;
+        }
+
+        if (rawQuery.startsWith('.') && extCandidate.length >= 1) {
           return n.attachments?.some(
             (a) =>
               a.extension?.toLowerCase() === extCandidate ||

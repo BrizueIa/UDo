@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { Trash2, RotateCcw, X, AlertTriangle, CheckSquare, Square } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { Trash2, RotateCcw, X, AlertTriangle, CheckSquare, Square, Search, Clock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { trashIpc } from '../api/trashIpc';
 import { NoteItem, SubjectItem, FolderItem } from '../../../shared/types';
-import { formatRelativeTime } from '../../../shared/utils/formatTime';
+import { normalizeDiacritics } from '../../../shared/utils/diacritics';
+import { TrashItemRow } from './TrashItemRow';
 
 interface Props {
   isOpen: boolean;
@@ -15,6 +16,8 @@ interface Props {
   onNotesRestored: () => void;
 }
 
+type TrashTab = 'all' | 'day' | 'week' | 'month';
+
 export const TrashModal: React.FC<Props> = ({
   isOpen,
   isVaultUnlocked,
@@ -23,11 +26,13 @@ export const TrashModal: React.FC<Props> = ({
   onClose,
   onNotesRestored,
 }) => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [deletedNotes, setDeletedNotes] = useState<NoteItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isConfirmingEmpty, setIsConfirmingEmpty] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<TrashTab>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const loadDeletedNotes = useCallback(async () => {
     setLoading(true);
@@ -44,8 +49,56 @@ export const TrashModal: React.FC<Props> = ({
     if (isOpen) {
       loadDeletedNotes();
       setIsConfirmingEmpty(false);
+      setSearchQuery('');
+      setActiveTab('all');
     }
   }, [isOpen, loadDeletedNotes]);
+
+  const { isToday, isWithinDays } = useMemo(() => {
+    const now = new Date();
+    return {
+      isToday: (dStr: string) => {
+        const d = new Date(dStr);
+        return (
+          d.getDate() === now.getDate() &&
+          d.getMonth() === now.getMonth() &&
+          d.getFullYear() === now.getFullYear()
+        );
+      },
+      isWithinDays: (dStr: string, days: number) => {
+        const diff = now.getTime() - new Date(dStr).getTime();
+        return diff >= 0 && diff <= days * 86400000;
+      },
+    };
+  }, []);
+
+  const counts = useMemo(() => ({
+    all: deletedNotes.length,
+    day: deletedNotes.filter((n) => isToday(n.updatedAt) || isWithinDays(n.updatedAt, 1)).length,
+    week: deletedNotes.filter((n) => isWithinDays(n.updatedAt, 7)).length,
+    month: deletedNotes.filter((n) => isWithinDays(n.updatedAt, 30)).length,
+  }), [deletedNotes, isToday, isWithinDays]);
+
+  const filteredNotes = useMemo(() => {
+    return deletedNotes.filter((n) => {
+      if (activeTab === 'day' && !isToday(n.updatedAt) && !isWithinDays(n.updatedAt, 1)) return false;
+      if (activeTab === 'week' && !isWithinDays(n.updatedAt, 7)) return false;
+      if (activeTab === 'month' && !isWithinDays(n.updatedAt, 30)) return false;
+
+      if (searchQuery.trim()) {
+        const q = normalizeDiacritics(searchQuery.trim());
+        const matchTitle = normalizeDiacritics(n.title).includes(q);
+        const matchContent = normalizeDiacritics(n.content).includes(q);
+        const matchTags = n.tags.some((tag) => normalizeDiacritics(tag).includes(q));
+        const sub = subjects.find((s) => s.id === n.subjectId);
+        const fol = folders.find((f) => f.id === n.folderId);
+        const matchSub = sub ? normalizeDiacritics(sub.name).includes(q) : false;
+        const matchFol = fol ? normalizeDiacritics(fol.name).includes(q) : false;
+        if (!matchTitle && !matchContent && !matchTags && !matchSub && !matchFol) return false;
+      }
+      return true;
+    });
+  }, [deletedNotes, activeTab, searchQuery, subjects, folders, isToday, isWithinDays]);
 
   const handleToggleSelect = (id: string) => {
     setSelectedIds((prev) => {
@@ -57,10 +110,10 @@ export const TrashModal: React.FC<Props> = ({
   };
 
   const handleSelectAll = () => {
-    if (selectedIds.size === deletedNotes.length) {
+    if (selectedIds.size === filteredNotes.length) {
       setSelectedIds(new Set());
     } else {
-      setSelectedIds(new Set(deletedNotes.map((n) => n.id)));
+      setSelectedIds(new Set(filteredNotes.map((n) => n.id)));
     }
   };
 
@@ -93,6 +146,13 @@ export const TrashModal: React.FC<Props> = ({
 
   if (!isOpen) return null;
 
+  const tabs: { key: TrashTab; label: string; count: number }[] = [
+    { key: 'all', label: t('trash.tabAll') || 'Todas', count: counts.all },
+    { key: 'day', label: t('trash.tabDay') || 'Hoy', count: counts.day },
+    { key: 'week', label: t('trash.tabWeek') || 'Semana', count: counts.week },
+    { key: 'month', label: t('trash.tabMonth') || 'Mes', count: counts.month },
+  ];
+
   return (
     <div
       onClick={onClose}
@@ -100,7 +160,7 @@ export const TrashModal: React.FC<Props> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl bg-theme-sidebar border border-theme-border rounded-2xl shadow-2xl flex flex-col h-[520px] max-h-[85vh] overflow-hidden"
+        className="w-full max-w-2xl bg-theme-sidebar border border-theme-border rounded-2xl shadow-2xl flex flex-col h-[540px] max-h-[85vh] overflow-hidden"
       >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-theme-border/60">
@@ -169,15 +229,61 @@ export const TrashModal: React.FC<Props> = ({
           )}
         </AnimatePresence>
 
-        {/* Selection Toolbar */}
-        {deletedNotes.length > 0 && (
-          <div className="px-5 py-2 bg-theme-column/30 border-b border-theme-border/40 flex items-center justify-between text-xs">
+        {/* Tabs & Search Filter Toolbar */}
+        <div className="px-5 py-2.5 bg-theme-column/40 border-b border-theme-border/40 flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center space-x-1 bg-theme-base/60 p-0.5 rounded-lg border border-theme-border/40">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => {
+                  setActiveTab(tab.key);
+                  setSelectedIds(new Set());
+                }}
+                className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                  activeTab === tab.key
+                    ? 'bg-theme-card text-theme-text shadow-xs'
+                    : 'text-theme-muted hover:text-theme-text'
+                }`}
+              >
+                <span>{tab.label}</span>
+                <span className="text-[10px] font-mono px-1 py-0.2 rounded-full bg-theme-hover text-theme-muted">
+                  {tab.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-theme-base/80 border border-theme-border/60 text-xs text-theme-muted focus-within:text-theme-text focus-within:border-theme-accent/50 w-48">
+            <Search size={13} className="shrink-0" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t('trash.searchPlaceholder') || 'Buscar notas...'}
+              className="bg-transparent text-xs text-theme-text outline-none placeholder-theme-muted w-full"
+            />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="text-theme-muted hover:text-theme-text p-0.5"
+              >
+                <X size={11} />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Action Selection Bar */}
+        {filteredNotes.length > 0 && (
+          <div className="px-5 py-2 bg-theme-column/20 border-b border-theme-border/30 flex items-center justify-between text-xs">
             <button
               type="button"
               onClick={handleSelectAll}
               className="flex items-center space-x-2 text-theme-muted hover:text-theme-text transition-colors cursor-pointer"
             >
-              {selectedIds.size === deletedNotes.length ? (
+              {selectedIds.size === filteredNotes.length && filteredNotes.length > 0 ? (
                 <CheckSquare size={14} className="text-theme-accent" />
               ) : (
                 <Square size={14} />
@@ -214,79 +320,39 @@ export const TrashModal: React.FC<Props> = ({
             <div className="flex items-center justify-center h-48 text-theme-muted text-xs">
               {t('settings.loading') || 'Cargando...'}
             </div>
-          ) : deletedNotes.length === 0 ? (
+          ) : filteredNotes.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-56 text-theme-muted space-y-2">
               <Trash2 size={28} className="opacity-30" />
-              <p className="text-xs">{t('trash.emptyState') || 'La papelera está vacía'}</p>
+              <p className="text-xs">
+                {searchQuery || activeTab !== 'all'
+                  ? t('trash.noResults') || 'No hay notas en este periodo o filtro'
+                  : t('trash.emptyState') || 'La papelera está vacía'}
+              </p>
             </div>
           ) : (
-            deletedNotes.map((note) => {
-              const isSelected = selectedIds.has(note.id);
-              const subject = subjects.find((s) => s.id === note.subjectId);
-              const folder = folders.find((f) => f.id === note.folderId);
-              const formattedTime = formatRelativeTime(note.updatedAt, i18n.language);
-
-              return (
-                <div
-                  key={note.id}
-                  onClick={() => handleToggleSelect(note.id)}
-                  className={`group flex items-center justify-between px-3 py-2 rounded-xl border transition-all cursor-pointer ${
-                    isSelected
-                      ? 'bg-theme-accent/15 border-theme-accent/30 text-theme-text'
-                      : 'border-transparent hover:bg-theme-card/70 hover:border-theme-border/40 text-theme-text'
-                  }`}
-                >
-                  <div className="flex items-center space-x-2.5 min-w-0 flex-1">
-                    <div className="text-theme-muted shrink-0">
-                      {isSelected ? (
-                        <CheckSquare size={14} className="text-theme-accent" />
-                      ) : (
-                        <Square size={14} />
-                      )}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="text-xs font-medium truncate">{note.title || t('note.titlePlaceholder')}</div>
-                      <div className="text-[11px] text-theme-muted flex items-center space-x-1.5 mt-0.5 truncate">
-                        {subject && (
-                          <span className="flex items-center space-x-1 truncate shrink-0">
-                            <span className="w-2 h-2 rounded-full" style={{ backgroundColor: subject.color }} />
-                            <span className="truncate">{subject.name}</span>
-                          </span>
-                        )}
-                        {folder && <span className="truncate">/ {folder.name}</span>}
-                        <span className="shrink-0">• {formattedTime}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleRestoreSingle(note.id);
-                      }}
-                      title={t('trash.restore') || 'Restaurar'}
-                      className="p-1 rounded-md text-theme-muted hover:text-theme-accent hover:bg-theme-accent/15 transition-colors cursor-pointer"
-                    >
-                      <RotateCcw size={13} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        trashIpc.permanentlyDeleteNotes([note.id]).then(() => loadDeletedNotes());
-                      }}
-                      title={t('trash.permanentlyDelete') || 'Eliminar definitivamente'}
-                      className="p-1 rounded-md text-theme-muted hover:text-rose-400 hover:bg-rose-500/15 transition-colors cursor-pointer"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
-                </div>
-              );
-            })
+            filteredNotes.map((note) => (
+              <TrashItemRow
+                key={note.id}
+                note={note}
+                isSelected={selectedIds.has(note.id)}
+                subject={subjects.find((s) => s.id === note.subjectId)}
+                folder={folders.find((f) => f.id === note.folderId)}
+                onToggleSelect={handleToggleSelect}
+                onRestore={handleRestoreSingle}
+                onPermanentlyDelete={(id) => {
+                  trashIpc.permanentlyDeleteNotes([id]).then(() => loadDeletedNotes());
+                }}
+              />
+            ))
           )}
+        </div>
+
+        {/* Auto-Delete 30 Days Notice Footer */}
+        <div className="px-5 py-2.5 bg-theme-column/40 border-t border-theme-border/50 flex items-center justify-between text-[11px] text-theme-muted">
+          <div className="flex items-center space-x-1.5">
+            <Clock size={12} className="opacity-60 text-theme-muted" />
+            <span>{t('trash.autoDeleteNotice') || 'Las notas con más de 30 días en la papelera se eliminan automáticamente.'}</span>
+          </div>
         </div>
       </div>
     </div>
