@@ -23,6 +23,11 @@ serde_json = "1"
 rusqlite = { version = "0.31", features = ["bundled"] }
 chrono = { version = "0.4", features = ["serde"] }
 dirs = "5"
+tauri-plugin-clipboard-manager = "2"
+arboard = "3"
+base64 = "0.23"
+image = { version = "0.25.10", default-features = false, features = ["png"] }
+percent-encoding = "2.3"
 
 [profile.release]
 panic = "abort"

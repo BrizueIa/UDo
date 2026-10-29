@@ -48,6 +48,8 @@ pub fn run() {
             commands::delete_subject,
             commands::save_folder,
             commands::delete_folder,
+            commands::get_clipboard_image,
+            commands::read_image_as_data_url,
             window::toggle_widget_mode,
             window::set_widget_size,
             window::minimize_window,

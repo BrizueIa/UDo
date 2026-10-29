@@ -36,6 +36,7 @@ export function useNoteMediaPaste({ note, onUpdateNote, onOpenMediaDrawer }: Pro
   useEffect(() => {
     const handleGlobalPaste = async (e: ClipboardEvent) => {
       if (!e.clipboardData) return;
+      if (document.querySelector('.fixed.inset-0.z-50')) return;
 
       const hasImages = hasClipboardImageContent(e.clipboardData);
       if (hasImages) {
@@ -48,8 +49,8 @@ export function useNoteMediaPaste({ note, onUpdateNote, onOpenMediaDrawer }: Pro
       }
     };
 
-    window.addEventListener('paste', handleGlobalPaste, true);
-    return () => window.removeEventListener('paste', handleGlobalPaste, true);
+    window.addEventListener('paste', handleGlobalPaste);
+    return () => window.removeEventListener('paste', handleGlobalPaste);
   }, [attachSketches, t]);
 
   // Keydown listener for Ctrl+V when viewing note in interactive mode (outside input)
@@ -124,14 +125,27 @@ export function useNoteMediaPaste({ note, onUpdateNote, onOpenMediaDrawer }: Pro
       try {
         const { getCurrentWindow } = await import('@tauri-apps/api/window');
         const unsub = await getCurrentWindow().onDragDropEvent(async (event) => {
-          if (event.payload.type === 'drop') {
-            const imagePaths = event.payload.paths.filter(isImagePath);
-            if (imagePaths.length > 0) {
-              const newSketches = await Promise.all(
-                imagePaths.map((p) => createSketchFromPath(p, t('note.droppedImage')))
-              );
-              attachSketches(newSketches);
+          try {
+            if (event.payload.type === 'drop') {
+              if (document.querySelector('.fixed.inset-0.z-50')) return;
+              const imagePaths = event.payload.paths.filter(isImagePath);
+              if (imagePaths.length > 0) {
+                const newSketches: SketchItem[] = [];
+                for (const p of imagePaths) {
+                  try {
+                    const sk = await createSketchFromPath(p, t('note.droppedImage'));
+                    newSketches.push(sk);
+                  } catch (err) {
+                    console.warn('Failed to load dropped image:', err);
+                  }
+                }
+                if (newSketches.length > 0) {
+                  attachSketches(newSketches);
+                }
+              }
             }
+          } catch (err) {
+            console.warn('onDragDropEvent processing error:', err);
           }
         });
         unlisten = unsub;

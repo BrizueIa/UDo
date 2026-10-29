@@ -263,6 +263,30 @@ export const api = {
     };
   },
 
+  async getClipboardImage(): Promise<string | null> {
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        return await invoke<string | null>('get_clipboard_image');
+      } catch (err) {
+        console.warn('Tauri get_clipboard_image failed', err);
+      }
+    }
+    return null;
+  },
+
+  async readImageAsDataUrl(path: string): Promise<string | null> {
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        return await invoke<string>('read_image_as_data_url', { path });
+      } catch (err) {
+        console.warn('Tauri read_image_as_data_url failed', err);
+      }
+    }
+    return null;
+  },
+
   async sendNativeNotification(title: string, body: string): Promise<void> {
     if (isTauri) {
       try {

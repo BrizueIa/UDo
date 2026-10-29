@@ -1,4 +1,5 @@
 import { SketchItem } from '../types';
+import { api } from '../api/ipc';
 
 const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg', '.bmp'];
 
@@ -110,18 +111,16 @@ export async function createSketchFromPath(
   filePath: string,
   fallbackTitle: string = 'Dropped Image'
 ): Promise<SketchItem> {
-  const { readFile } = await import('@tauri-apps/plugin-fs');
-  const bytes = await readFile(filePath);
-  const ext = filePath.split('.').pop()?.toLowerCase() || 'png';
-  const mime = ext === 'svg' ? 'image/svg+xml' : `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-
-  let binary = '';
-  const len = bytes.byteLength;
-  for (let i = 0; i < len; i++) {
-    binary += String.fromCharCode(bytes[i]);
+  let dataUrl: string | null = null;
+  try {
+    dataUrl = await api.readImageAsDataUrl(filePath);
+  } catch (err) {
+    console.warn('api.readImageAsDataUrl failed:', err);
   }
-  const base64 = btoa(binary);
-  const dataUrl = `data:${mime};base64,${base64}`;
+
+  if (!dataUrl) {
+    throw new Error(`Failed to load image from path: ${filePath}`);
+  }
 
   const fileName = filePath.replace(/\\/g, '/').split('/').pop() || fallbackTitle;
   const cleanName = fileName.replace(/\.[^/.]+$/, '');

@@ -2,10 +2,10 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Paperclip, UploadCloud, FolderOpen, ClipboardPaste, X, Check } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SketchItem } from '../../../shared/types';
+import { api } from '../../../shared/api/ipc';
 import {
   extractImageFile,
   fileToDataUrl,
-  createSketchFromPath,
   extractImagePathsFromText,
 } from '../../../shared/utils/imageClipboard';
 
@@ -47,27 +47,39 @@ export const ImageAttachmentModal: React.FC<Props> = ({ isOpen, onClose, onAttac
   };
 
   const handleClipboardPaste = useCallback(async () => {
-    if (typeof navigator === 'undefined' || !navigator.clipboard) return;
     try {
-      if (navigator.clipboard.read) {
-        const items = await navigator.clipboard.read();
-        for (const item of items) {
-          for (const type of item.types) {
-            if (type.startsWith('image/')) {
-              const blob = await item.getType(type);
-              const file = new File([blob], 'clipboard-image.png', { type });
-              await handleFile(file);
-              return;
+      // 1. Primary: Native Rust clipboard image reader (X11 / Wayland bitmap & path)
+      const nativeDataUrl = await api.getClipboardImage();
+      if (nativeDataUrl) {
+        handleImageLoaded(nativeDataUrl, t('note.pastedImage'));
+        return;
+      }
+
+      // 2. Web navigator.clipboard fallback
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        if (navigator.clipboard.read) {
+          const items = await navigator.clipboard.read();
+          for (const item of items) {
+            for (const type of item.types) {
+              if (type.startsWith('image/')) {
+                const blob = await item.getType(type);
+                const file = new File([blob], 'clipboard-image.png', { type });
+                await handleFile(file);
+                return;
+              }
             }
           }
         }
-      }
-      if (navigator.clipboard.readText) {
-        const text = await navigator.clipboard.readText();
-        const paths = extractImagePathsFromText(text);
-        if (paths.length > 0) {
-          const sk = await createSketchFromPath(paths[0], t('note.pastedImage'));
-          handleImageLoaded(sk.dataUrl, sk.title);
+        if (navigator.clipboard.readText) {
+          const text = await navigator.clipboard.readText();
+          const paths = extractImagePathsFromText(text);
+          if (paths.length > 0) {
+            const dataUrl = await api.readImageAsDataUrl(paths[0]);
+            if (dataUrl) {
+              const fileName = paths[0].replace(/\\/g, '/').split('/').pop() || t('note.pastedImage');
+              handleImageLoaded(dataUrl, fileName.replace(/\.[^/.]+$/, ''));
+            }
+          }
         }
       }
     } catch (err) {
@@ -86,37 +98,26 @@ export const ImageAttachmentModal: React.FC<Props> = ({ isOpen, onClose, onAttac
       } else if (e.key === 'Enter' && previewUrl) {
         e.preventDefault();
         handleConfirm();
+      } else if ((e.ctrlKey || e.metaKey) && (e.key.toLowerCase() === 'v' || e.code === 'KeyV')) {
+        e.preventDefault();
+        e.stopPropagation();
+        handleClipboardPaste();
       }
     };
 
     const handlePaste = async (e: ClipboardEvent) => {
-      if (!e.clipboardData) return;
-      const file = extractImageFile(e);
-      if (file) {
-        e.preventDefault();
-        await handleFile(file);
-        return;
-      }
-      const plainText = e.clipboardData.getData('text/plain');
-      const paths = extractImagePathsFromText(plainText);
-      if (paths.length > 0) {
-        e.preventDefault();
-        try {
-          const sk = await createSketchFromPath(paths[0], t('note.pastedImage'));
-          handleImageLoaded(sk.dataUrl, sk.title);
-        } catch (err) {
-          console.warn('Failed to load image from path:', err);
-        }
-      }
+      e.preventDefault();
+      e.stopPropagation();
+      await handleClipboardPaste();
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('paste', handlePaste);
+    window.addEventListener('keydown', handleKeyDown, true);
+    window.addEventListener('paste', handlePaste, true);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('paste', handlePaste);
+      window.removeEventListener('keydown', handleKeyDown, true);
+      window.removeEventListener('paste', handlePaste, true);
     };
-  }, [isOpen, previewUrl, onClose]);
+  }, [isOpen, previewUrl, onClose, handleClipboardPaste]);
 
   const handleConfirm = () => {
     if (!previewUrl) return;
@@ -154,17 +155,44 @@ export const ImageAttachmentModal: React.FC<Props> = ({ isOpen, onClose, onAttac
           <div
             onDragOver={(e) => {
               e.preventDefault();
+              e.stopPropagation();
+              e.dataTransfer.dropEffect = 'copy';
               setIsDragOver(true);
             }}
             onDragLeave={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               setIsDragOver(false);
             }}
             onDrop={async (e) => {
               e.preventDefault();
+              e.stopPropagation();
               setIsDragOver(false);
-              const file = extractImageFile(e);
-              if (file) await handleFile(file);
+
+              try {
+                // 1. Direct HTML5 File drop
+                const file = extractImageFile(e);
+                if (file && file.size > 0) {
+                  await handleFile(file);
+                  return;
+                }
+
+                // 2. Linux URI-list / text path drop
+                const uriList = e.dataTransfer.getData('text/uri-list');
+                const plainText = e.dataTransfer.getData('text/plain');
+                const paths = Array.from(
+                  new Set([...extractImagePathsFromText(uriList), ...extractImagePathsFromText(plainText)])
+                );
+                if (paths.length > 0) {
+                  const dataUrl = await api.readImageAsDataUrl(paths[0]);
+                  if (dataUrl) {
+                    const fileName = paths[0].replace(/\\/g, '/').split('/').pop() || t('note.droppedImage');
+                    handleImageLoaded(dataUrl, fileName.replace(/\.[^/.]+$/, ''));
+                  }
+                }
+              } catch (err) {
+                console.warn('Drop error in ImageAttachmentModal:', err);
+              }
             }}
             className={`border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center space-y-4 transition-all ${
               isDragOver
