@@ -7,7 +7,8 @@ export const PRESET_THEMES: {
   icon: string;
   previewColors: [string, string, string];
 }[] = [
-  // 🌙 Temas Oscuros (Antigravity)
+  // 🌙 Temas Oscuros (Antigravity & UDo)
+  { id: 'udo-original', name: 'UDo Original', category: 'dark', icon: '✨', previewColors: ['#5551f5', '#1fd4a5', '#ffc95f'] },
   { id: 'tokyo-night', name: 'Tokyo Night', category: 'dark', icon: '🌙', previewColors: ['#1a1b26', '#7aa2f7', '#bb9af7'] },
   { id: 'default-dark', name: 'Default Dark', category: 'dark', icon: '🌑', previewColors: ['#1e1e1e', '#007acc', '#cccccc'] },
   { id: 'catppuccin-mocha', name: 'Catppuccin Mocha', category: 'dark', icon: '☕', previewColors: ['#1e1e2e', '#cba6f7', '#89b4fa'] },

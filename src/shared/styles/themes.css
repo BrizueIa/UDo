@@ -1,0 +1,331 @@
+@layer base {
+  /* ==========================================================================
+     DARK THEMES (Oscuros)
+     ========================================================================== */
+
+  /* Default / Official: UDo Original */
+  :root, [data-theme="udo-original"] {
+    --color-bg-base: #0e101c;
+    --color-bg-sidebar: #090b14;
+    --color-bg-column: #131626;
+    --color-bg-card: #1a1e33;
+    --color-bg-hover: #232842;
+    --color-border: #262b47;
+    --color-text-main: #f3f3fb;
+    --color-text-muted: #9499c4;
+    --color-accent: #5551f5;
+    --color-accent-glow: rgba(85, 81, 245, 0.30);
+    --color-accent-hover: #8b85ff;
+    --color-node-mint: #1fd4a5;
+    --color-node-violet: #a986ff;
+    --color-node-amber: #ffc95f;
+  }
+
+  /* Tokyo Night */
+  [data-theme="tokyo-night"] {
+    --color-bg-base: #1a1b26;
+    --color-bg-sidebar: #16161e;
+    --color-bg-column: #1f2335;
+    --color-bg-card: #24283b;
+    --color-bg-hover: #292e42;
+    --color-border: #2f3549;
+    --color-text-main: #c0caf5;
+    --color-text-muted: #7982a9;
+    --color-accent: #7aa2f7;
+    --color-accent-glow: rgba(122, 162, 247, 0.25);
+    --color-accent-hover: #89ddff;
+  }
+
+  /* Default Dark (VS Code / Antigravity Dark) */
+  [data-theme="default-dark"] {
+    --color-bg-base: #1e1e1e;
+    --color-bg-sidebar: #181818;
+    --color-bg-column: #252526;
+    --color-bg-card: #2d2d2d;
+    --color-bg-hover: #37373d;
+    --color-border: #333333;
+    --color-text-main: #cccccc;
+    --color-text-muted: #858585;
+    --color-accent: #007acc;
+    --color-accent-glow: rgba(0, 122, 204, 0.25);
+    --color-accent-hover: #0e639c;
+  }
+
+  /* Catppuccin Mocha */
+  [data-theme="catppuccin-mocha"] {
+    --color-bg-base: #181825;
+    --color-bg-sidebar: #11111b;
+    --color-bg-column: #1e1e2e;
+    --color-bg-card: #313244;
+    --color-bg-hover: #45475a;
+    --color-border: #313244;
+    --color-text-main: #cdd6f4;
+    --color-text-muted: #9399b2;
+    --color-accent: #cba6f7;
+    --color-accent-glow: rgba(203, 166, 247, 0.25);
+    --color-accent-hover: #b4befe;
+  }
+
+  /* Dracula */
+  [data-theme="dracula"] {
+    --color-bg-base: #282a36;
+    --color-bg-sidebar: #21222c;
+    --color-bg-column: #242632;
+    --color-bg-card: #343746;
+    --color-bg-hover: #44475a;
+    --color-border: #44475a;
+    --color-text-main: #f8f8f2;
+    --color-text-muted: #6272a4;
+    --color-accent: #bd93f9;
+    --color-accent-glow: rgba(189, 147, 249, 0.28);
+    --color-accent-hover: #ff79c6;
+  }
+
+  /* Gruvbox Material Dark */
+  [data-theme="gruvbox"] {
+    --color-bg-base: #282828;
+    --color-bg-sidebar: #1d2021;
+    --color-bg-column: #32302f;
+    --color-bg-card: #3c3836;
+    --color-bg-hover: #504945;
+    --color-border: #504945;
+    --color-text-main: #ebdbb2;
+    --color-text-muted: #a89984;
+    --color-accent: #fe8019;
+    --color-accent-glow: rgba(254, 128, 25, 0.28);
+    --color-accent-hover: #fabd2f;
+  }
+
+  /* Monokai */
+  [data-theme="monokai"] {
+    --color-bg-base: #272822;
+    --color-bg-sidebar: #1e1f1c;
+    --color-bg-column: #2d2e27;
+    --color-bg-card: #383930;
+    --color-bg-hover: #49483e;
+    --color-border: #49483e;
+    --color-text-main: #f8f8f2;
+    --color-text-muted: #75715e;
+    --color-accent: #a6e22e;
+    --color-accent-glow: rgba(166, 226, 46, 0.28);
+    --color-accent-hover: #fd971f;
+  }
+
+  /* One Dark Pro */
+  [data-theme="one-dark"] {
+    --color-bg-base: #21252b;
+    --color-bg-sidebar: #1e2227;
+    --color-bg-column: #282c34;
+    --color-bg-card: #2c313a;
+    --color-bg-hover: #3e4451;
+    --color-border: #3e4451;
+    --color-text-main: #abb2bf;
+    --color-text-muted: #5c6370;
+    --color-accent: #61afef;
+    --color-accent-glow: rgba(97, 175, 239, 0.28);
+    --color-accent-hover: #98c379;
+  }
+
+  /* Solarized Dark */
+  [data-theme="solarized-dark"] {
+    --color-bg-base: #002b36;
+    --color-bg-sidebar: #073642;
+    --color-bg-column: #00212b;
+    --color-bg-card: #073642;
+    --color-bg-hover: #0a404e;
+    --color-border: #0e4d5c;
+    --color-text-main: #93a1a1;
+    --color-text-muted: #657b83;
+    --color-accent: #268bd2;
+    --color-accent-glow: rgba(38, 139, 210, 0.28);
+    --color-accent-hover: #2aa198;
+  }
+
+  /* Vesper */
+  [data-theme="vesper"] {
+    --color-bg-base: #101010;
+    --color-bg-sidebar: #0b0b0b;
+    --color-bg-column: #141414;
+    --color-bg-card: #1c1c1c;
+    --color-bg-hover: #282828;
+    --color-border: #282828;
+    --color-text-main: #ffffff;
+    --color-text-muted: #808080;
+    --color-accent: #ffc799;
+    --color-accent-glow: rgba(255, 199, 153, 0.28);
+    --color-accent-hover: #ff9e64;
+  }
+
+  /* OLED Pure Black */
+  [data-theme="oled"] {
+    --color-bg-base: #000000;
+    --color-bg-sidebar: #050505;
+    --color-bg-column: #0a0a0a;
+    --color-bg-card: #141414;
+    --color-bg-hover: #222222;
+    --color-border: #27272a;
+    --color-text-main: #fafafa;
+    --color-text-muted: #a1a1aa;
+    --color-accent: #6366f1;
+    --color-accent-glow: rgba(99, 102, 241, 0.35);
+    --color-accent-hover: #4f46e5;
+  }
+
+  /* Nord */
+  [data-theme="nord"] {
+    --color-bg-base: #242933;
+    --color-bg-sidebar: #1e222a;
+    --color-bg-column: #2e3440;
+    --color-bg-card: #3b4252;
+    --color-bg-hover: #434c5e;
+    --color-border: #434c5e;
+    --color-text-main: #eceff4;
+    --color-text-muted: #d8dee9;
+    --color-accent: #88c0d0;
+    --color-accent-glow: rgba(136, 192, 208, 0.25);
+    --color-accent-hover: #81a1c1;
+  }
+
+  /* Rosé Pine */
+  [data-theme="rose-pine"] {
+    --color-bg-base: #191724;
+    --color-bg-sidebar: #14121f;
+    --color-bg-column: #1f1d2e;
+    --color-bg-card: #26233a;
+    --color-bg-hover: #312f44;
+    --color-border: #26233a;
+    --color-text-main: #e0def4;
+    --color-text-muted: #908caa;
+    --color-accent: #eb6f92;
+    --color-accent-glow: rgba(235, 111, 146, 0.25);
+    --color-accent-hover: #ebbcba;
+  }
+
+  /* Synthwave '84 */
+  [data-theme="synthwave"] {
+    --color-bg-base: #1f1635;
+    --color-bg-sidebar: #171126;
+    --color-bg-column: #261b41;
+    --color-bg-card: #2e214d;
+    --color-bg-hover: #3c2b64;
+    --color-border: #3c2b64;
+    --color-text-main: #fede5d;
+    --color-text-muted: #ff7edb;
+    --color-accent: #fe4450;
+    --color-accent-glow: rgba(254, 68, 80, 0.35);
+    --color-accent-hover: #ff7edb;
+  }
+
+  /* ==========================================================================
+     LIGHT THEMES (Claros)
+     ========================================================================== */
+
+  /* Default Light */
+  [data-theme="default-light"] {
+    --color-bg-base: #ffffff;
+    --color-bg-sidebar: #f6f8fa;
+    --color-bg-column: #f1f3f5;
+    --color-bg-card: #ffffff;
+    --color-bg-hover: #eaeef2;
+    --color-border: #d0d7de;
+    --color-text-main: #1f2328;
+    --color-text-muted: #656d76;
+    --color-accent: #0969da;
+    --color-accent-glow: rgba(9, 105, 218, 0.2);
+    --color-accent-hover: #0550ae;
+  }
+
+  /* Catppuccin Latte */
+  [data-theme="catppuccin-latte"] {
+    --color-bg-base: #eff1f5;
+    --color-bg-sidebar: #e6e9ef;
+    --color-bg-column: #dce0e8;
+    --color-bg-card: #ffffff;
+    --color-bg-hover: #ccd0da;
+    --color-border: #bcc0cc;
+    --color-text-main: #4c4f69;
+    --color-text-muted: #7c7f93;
+    --color-accent: #8839ef;
+    --color-accent-glow: rgba(136, 57, 239, 0.2);
+    --color-accent-hover: #7287fd;
+  }
+
+  /* Gruvbox Material Light */
+  [data-theme="gruvbox-light"] {
+    --color-bg-base: #fbf1c7;
+    --color-bg-sidebar: #f2e5bc;
+    --color-bg-column: #ebdbb2;
+    --color-bg-card: #f9f5d7;
+    --color-bg-hover: #e0d0aa;
+    --color-border: #d5c4a1;
+    --color-text-main: #3c3836;
+    --color-text-muted: #7c6f64;
+    --color-accent: #af3a03;
+    --color-accent-glow: rgba(175, 58, 3, 0.2);
+    --color-accent-hover: #d65d0e;
+  }
+
+  /* One Light */
+  [data-theme="one-light"] {
+    --color-bg-base: #fafafa;
+    --color-bg-sidebar: #f0f0f0;
+    --color-bg-column: #f4f4f4;
+    --color-bg-card: #ffffff;
+    --color-bg-hover: #e5e5e6;
+    --color-border: #dbdbdc;
+    --color-text-main: #383a42;
+    --color-text-muted: #a0a1a7;
+    --color-accent: #4078f2;
+    --color-accent-glow: rgba(64, 120, 242, 0.2);
+    --color-accent-hover: #255cd9;
+  }
+
+  /* Solarized Light */
+  [data-theme="solarized-light"] {
+    --color-bg-base: #fdf6e3;
+    --color-bg-sidebar: #eee8d5;
+    --color-bg-column: #f5efdc;
+    --color-bg-card: #fffbf0;
+    --color-bg-hover: #e4decb;
+    --color-border: #d5ccb6;
+    --color-text-main: #657b83;
+    --color-text-muted: #93a1a1;
+    --color-accent: #268bd2;
+    --color-accent-glow: rgba(38, 139, 210, 0.2);
+    --color-accent-hover: #2aa198;
+  }
+
+  /* ==========================================================================
+     Accent Overrides
+     ========================================================================== */
+  [data-accent="purple"] {
+    --color-accent: #8b5cf6;
+    --color-accent-glow: rgba(139, 92, 246, 0.28);
+    --color-accent-hover: #7c3aed;
+  }
+  [data-accent="blue"] {
+    --color-accent: #3b82f6;
+    --color-accent-glow: rgba(59, 130, 246, 0.28);
+    --color-accent-hover: #2563eb;
+  }
+  [data-accent="emerald"] {
+    --color-accent: #10b981;
+    --color-accent-glow: rgba(16, 185, 129, 0.28);
+    --color-accent-hover: #059669;
+  }
+  [data-accent="amber"] {
+    --color-accent: #f59e0b;
+    --color-accent-glow: rgba(245, 158, 11, 0.28);
+    --color-accent-hover: #d97706;
+  }
+  [data-accent="rose"] {
+    --color-accent: #f43f5e;
+    --color-accent-glow: rgba(244, 63, 94, 0.28);
+    --color-accent-hover: #e11d48;
+  }
+  [data-accent="cyan"] {
+    --color-accent: #06b6d4;
+    --color-accent-glow: rgba(6, 182, 212, 0.28);
+    --color-accent-hover: #0891b2;
+  }
+}

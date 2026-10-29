@@ -194,7 +194,7 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
                             {th.previewColors.map((color, idx) => (
                               <span
                                 key={idx}
-                                className="w-2.5 h-2.5 rounded-full border border-black/30 shadow-xs"
+                                className="w-2.5 h-2.5 rounded-[3px] border border-black/30 shadow-xs"
                                 style={{ backgroundColor: color }}
                               />
                             ))}
@@ -243,7 +243,7 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
                             {th.previewColors.map((color, idx) => (
                               <span
                                 key={idx}
-                                className="w-2.5 h-2.5 rounded-full border border-black/30 shadow-xs"
+                                className="w-2.5 h-2.5 rounded-[3px] border border-black/30 shadow-xs"
                                 style={{ backgroundColor: color }}
                               />
                             ))}
@@ -292,11 +292,11 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
                         <div className="flex items-center space-x-2 shrink-0">
                           <div className="flex items-center space-x-1 px-1.5 py-0.5 rounded-md bg-theme-base/60 border border-white/[0.04]">
                             <span
-                              className="w-2.5 h-2.5 rounded-full border border-black/30 shadow-xs"
+                              className="w-2.5 h-2.5 rounded-[3px] border border-black/30 shadow-xs"
                               style={{ backgroundColor: ct.colors.bgBase }}
                             />
                             <span
-                              className="w-2.5 h-2.5 rounded-full border border-black/30 shadow-xs"
+                              className="w-2.5 h-2.5 rounded-[3px] border border-black/30 shadow-xs"
                               style={{ backgroundColor: ct.colors.accent }}
                             />
                           </div>
@@ -346,7 +346,7 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
                   }`}
                 >
                   <span
-                    className="w-3.5 h-3.5 rounded-full shadow-xs border border-white/10 shrink-0"
+                    className="w-3.5 h-3.5 rounded-[4px] shadow-xs border border-white/10 shrink-0"
                     style={{ backgroundColor: acc.color }}
                   />
                   <span className="truncate">{label}</span>

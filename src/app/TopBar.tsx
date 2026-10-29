@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ViewFilter, ThemeId, AccentColor, CustomThemeDefinition } from '../shared/types';
 import { TrafficLights } from '../shared/ui/TrafficLights';
+import { UDoLogo } from '../shared/ui/UDoLogo';
 import { SettingsModal } from './SettingsModal';
 import { TopBarSearch } from './TopBarSearch';
 import { TopBarFilterTabs } from './TopBarFilterTabs';
@@ -170,7 +171,7 @@ export const TopBar: React.FC<Props> = ({
             </button>
           )}
 
-          <span className="w-2.5 h-2.5 rounded-full bg-theme-accent shadow-sm ml-1" />
+          <UDoLogo variant="color" size={20} className="ml-1 shrink-0 drop-shadow-sm" />
           <h1 className="text-xs font-bold tracking-tight text-theme-text font-sans">
             {t('app.title')}
           </h1>

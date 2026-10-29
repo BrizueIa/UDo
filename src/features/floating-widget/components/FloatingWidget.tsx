@@ -2,7 +2,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { NoteItem, FolderItem, SubjectItem } from '../../../shared/types';
 import { FocusTimerState } from '../../../shared/hooks/useFocusTimer';
 import {
-  Circle,
   Maximize2,
   ChevronDown,
   ChevronUp,
@@ -10,10 +9,11 @@ import {
   Timer,
   Mic,
   Folder as FolderIcon,
-  Check,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../../shared/api/ipc';
+import { UDoLogo } from '../../../shared/ui/UDoLogo';
+import { FloatingWidgetSelectors } from './FloatingWidgetSelectors';
 
 interface Props {
   notes: NoteItem[];
@@ -127,18 +127,18 @@ export const FloatingWidget: React.FC<Props> = ({
           onClick={() => handleToggleExpand(true)}
           className="flex items-center space-x-2 cursor-pointer"
         >
-          <span className="w-2.5 h-2.5 rounded-full bg-theme-accent shadow-sm animate-pulse" />
+          <UDoLogo variant="color" size={18} className="shrink-0 drop-shadow-sm" />
           <span className="text-xs font-bold text-theme-text font-sans tracking-tight">
             {t('app.title')}
           </span>
 
           {timer && (timer.isRunning || timer.isPaused) ? (
-            <span className="flex items-center space-x-1 px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-[10px]">
+            <span className="flex items-center space-x-1 px-1.5 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 font-mono text-[10px]">
               <Timer size={10} className={timer.isRunning ? 'animate-pulse' : ''} />
               <span>{timer.formattedTime}</span>
             </span>
           ) : (
-            <span className="px-1.5 py-0.5 rounded-full bg-theme-accent/20 text-theme-accent font-mono text-[10px] font-semibold">
+            <span className="px-1.5 py-0.5 rounded-md bg-theme-accent/20 text-theme-accent font-mono text-[10px] font-semibold">
               {folderPendingNotes.length}
             </span>
           )}
@@ -175,11 +175,11 @@ export const FloatingWidget: React.FC<Props> = ({
         className="flex items-center justify-between px-3 py-2 bg-theme-base/90 border-b border-white/[0.06] cursor-move shrink-0"
       >
         <div className="flex items-center space-x-2" data-tauri-drag-region>
-          <span className="w-2 h-2 rounded-full bg-theme-accent" />
+          <UDoLogo variant="color" size={16} className="shrink-0 drop-shadow-sm" />
           <span className="text-xs font-bold text-theme-text font-sans tracking-tight">
             {t('widget.title')}
           </span>
-          <span className="px-1.5 py-0.5 rounded-full bg-theme-accent/20 text-theme-accent font-mono text-[10px] font-semibold">
+          <span className="px-1.5 py-0.5 rounded-md bg-theme-accent/20 text-theme-accent font-mono text-[10px] font-semibold">
             {folderPendingNotes.length}
           </span>
         </div>
@@ -219,87 +219,22 @@ export const FloatingWidget: React.FC<Props> = ({
 
       {/* Project Selector & Folder Selector Bar */}
       <div className="px-2.5 py-1.5 bg-theme-card/30 border-b border-white/[0.04] flex items-center justify-between text-xs space-x-1.5">
-        <div className="flex items-center space-x-1.5 flex-1 min-w-0">
-          {/* Project Dropdown */}
-          <div className="relative shrink-0" ref={subjectMenuRef}>
-            <button
-              type="button"
-              onClick={() => setShowSubjectMenu(!showSubjectMenu)}
-              className="flex items-center space-x-1 px-2 py-0.5 rounded-md bg-theme-card border border-white/[0.06] hover:bg-theme-hover text-theme-text transition-colors cursor-pointer text-[11px]"
-              title={t('widget.chooseProject')}
-            >
-              <span
-                className="w-2 h-2 rounded-full shrink-0"
-                style={{ backgroundColor: currentSubject?.color || '#3b82f6' }}
-              />
-              <span className="truncate max-w-[85px] font-medium">{currentSubject?.name}</span>
-              <ChevronDown size={10} className="text-theme-muted" />
-            </button>
-
-            {showSubjectMenu && (
-              <div className="absolute top-full left-0 mt-1 w-40 bg-theme-card border border-white/[0.08] rounded-xl shadow-2xl py-1 z-40 max-h-40 overflow-y-auto">
-                {subjects.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => handleSelectSubject(s.id)}
-                    className={`w-full text-left px-2.5 py-1 text-[11px] flex items-center justify-between hover:bg-theme-hover transition-colors ${
-                      s.id === activeSubjectId ? 'text-theme-accent font-semibold' : 'text-theme-text'
-                    }`}
-                  >
-                    <div className="flex items-center space-x-1.5 truncate">
-                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: s.color }} />
-                      <span className="truncate">{s.name}</span>
-                    </div>
-                    {s.id === activeSubjectId && <Check size={11} />}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Folder Dropdown */}
-          <div className="relative flex-1 min-w-0" ref={folderMenuRef}>
-            <button
-              type="button"
-              onClick={() => setShowFolderMenu(!showFolderMenu)}
-              className="w-full flex items-center space-x-1 px-2 py-0.5 rounded-md bg-theme-card border border-white/[0.06] hover:bg-theme-hover text-theme-text transition-colors cursor-pointer text-[11px]"
-              title={t('widget.chooseFolder')}
-            >
-              <FolderIcon size={11} className="text-amber-400 shrink-0" />
-              <span className="truncate flex-1 text-left">
-                {currentFolder
-                  ? currentFolder.name
-                  : (projectFolders.length === 0 ? t('widget.noFolders') : t('widget.chooseFolder'))}
-              </span>
-              <ChevronDown size={10} className="text-theme-muted shrink-0" />
-            </button>
-
-            {showFolderMenu && (
-              <div className="absolute top-full left-0 mt-1 w-44 bg-theme-card border border-white/[0.08] rounded-xl shadow-2xl py-1 z-40 max-h-40 overflow-y-auto">
-                {projectFolders.length === 0 ? (
-                  <div className="px-2.5 py-2 text-[11px] text-theme-muted text-center">
-                    {t('folders.empty')}
-                  </div>
-                ) : (
-                  projectFolders.map((f) => (
-                    <button
-                      key={f.id}
-                      type="button"
-                      onClick={() => handleSelectFolder(f.id)}
-                      className={`w-full text-left px-2.5 py-1 text-[11px] flex items-center justify-between hover:bg-theme-hover transition-colors ${
-                        f.id === activeFolderId ? 'text-theme-accent font-semibold' : 'text-theme-text'
-                      }`}
-                    >
-                      <span className="truncate">{f.name}</span>
-                      {f.id === activeFolderId && <Check size={11} />}
-                    </button>
-                  ))
-                )}
-              </div>
-            )}
-          </div>
-        </div>
+        <FloatingWidgetSelectors
+          subjects={subjects}
+          projectFolders={projectFolders}
+          currentSubject={currentSubject}
+          currentFolder={currentFolder}
+          activeSubjectId={activeSubjectId}
+          activeFolderId={activeFolderId}
+          showSubjectMenu={showSubjectMenu}
+          showFolderMenu={showFolderMenu}
+          subjectMenuRef={subjectMenuRef}
+          folderMenuRef={folderMenuRef}
+          onToggleSubjectMenu={() => setShowSubjectMenu(!showSubjectMenu)}
+          onToggleFolderMenu={() => setShowFolderMenu(!showFolderMenu)}
+          onSelectSubject={handleSelectSubject}
+          onSelectFolder={handleSelectFolder}
+        />
 
         {/* Audio Note Placeholder Button */}
         <button
@@ -363,7 +298,7 @@ export const FloatingWidget: React.FC<Props> = ({
                   type="button"
                   className="text-theme-muted group-hover:text-theme-accent transition-colors shrink-0"
                 >
-                  <Circle size={12} />
+                  <div className="w-3.5 h-3.5 rounded-[4px] border border-theme-muted/60 group-hover:border-theme-accent transition-colors" />
                 </button>
                 <span className="text-xs text-theme-text truncate">{note.title}</span>
               </div>

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Circle, Pin } from 'lucide-react';
+import { Check, Pin } from 'lucide-react';
 import { NoteItem } from '../../../shared/types';
 import { useTranslation } from 'react-i18next';
 
@@ -98,9 +98,11 @@ export const NoteItemRow: React.FC<Props> = ({
           className="flex-shrink-0 text-theme-muted hover:text-theme-accent transition-colors cursor-pointer"
         >
           {note.isCompleted ? (
-            <CheckCircle2 size={15} className="text-emerald-500" />
+            <div className="w-4 h-4 rounded-[5px] bg-[#1fd4a5]/20 border border-[#1fd4a5] text-[#1fd4a5] flex items-center justify-center transition-colors shadow-xs">
+              <Check size={11} strokeWidth={3} />
+            </div>
           ) : (
-            <Circle size={15} className="hover:stroke-theme-accent" />
+            <div className="w-4 h-4 rounded-[5px] border border-theme-muted/60 hover:border-theme-accent transition-colors" />
           )}
         </button>
 

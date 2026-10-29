@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Settings,
   X,
   Palette,
   Volume2,
@@ -12,6 +11,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { ThemeId, AccentColor, CustomThemeDefinition } from '../shared/types';
 import { ThemeSettingsPanel } from '../shared/ui/ThemeSettingsPanel';
+import { UDoLogo } from '../shared/ui/UDoLogo';
 import { AudioSettingsTab } from './AudioSettingsTab';
 import { ShortcutsSettingsTab } from './ShortcutsSettingsTab';
 
@@ -98,7 +98,7 @@ export const SettingsModal: React.FC<Props> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3.5 border-b border-theme-border">
           <div className="flex items-center space-x-2.5">
-            <Settings size={18} className="text-theme-accent" />
+            <UDoLogo variant="color" size={20} className="shrink-0 drop-shadow-sm" />
             <span className="font-semibold text-sm text-theme-text">{t('settings.title')}</span>
           </div>
           <button

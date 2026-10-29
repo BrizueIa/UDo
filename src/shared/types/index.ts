@@ -1,4 +1,5 @@
 export type ThemeId =
+  | 'udo-original'
   | 'tokyo-night'
   | 'default-dark'
   | 'catppuccin-mocha'

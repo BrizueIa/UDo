@@ -352,5 +352,25 @@
     "testSound": "Test Speaker Sound",
     "configure": "Configure",
     "done": "Save & Close"
+  },
+  "richText": {
+    "textSize": "Size",
+    "sizeSmall": "Small",
+    "sizeNormal": "Normal",
+    "sizeLarge": "Large",
+    "sizeSubtitle": "Subtitle",
+    "sizeTitle": "Title",
+    "bold": "Bold",
+    "italic": "Italic",
+    "underline": "Underline",
+    "strikethrough": "Strikethrough",
+    "textColor": "Text Color",
+    "highlight": "Highlight Color",
+    "customColor": "Custom color",
+    "removeColor": "Clear color",
+    "removeHighlight": "Clear highlight",
+    "clearFormatting": "Clear formatting",
+    "selectionActive": "Selection active",
+    "sampleText": "text"
   }
 }

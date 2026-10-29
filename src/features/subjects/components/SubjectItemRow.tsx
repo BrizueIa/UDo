@@ -5,8 +5,8 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const COLOR_PALETTE = [
-  '#f97316', '#10b981', '#6366f1', '#ec4899',
-  '#3b82f6', '#eab308', '#8b5cf6', '#14b8a6',
+  '#5551f5', '#1fd4a5', '#a986ff', '#ffc95f',
+  '#f97316', '#10b981', '#ec4899', '#3b82f6',
 ];
 
 interface Props {
@@ -137,7 +137,7 @@ export const SubjectItemRow: React.FC<Props> = ({
               key={c}
               type="button"
               onClick={() => setEditColor(c)}
-              className={`w-4 h-4 rounded-full transition-transform ${
+              className={`w-4 h-4 rounded-[4px] transition-transform ${
                 editColor === c ? 'scale-125 ring-2 ring-white/60' : 'opacity-80 hover:opacity-100'
               }`}
               style={{ backgroundColor: c }}
@@ -175,7 +175,7 @@ export const SubjectItemRow: React.FC<Props> = ({
       >
         <div className="relative z-10 flex items-center space-x-2.5 min-w-0 flex-1">
           <span
-            className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm transition-transform group-hover:scale-110"
+            className="w-2.5 h-2.5 rounded-[3.5px] flex-shrink-0 shadow-sm transition-transform group-hover:scale-110"
             style={{ backgroundColor: subject.color }}
           />
           <span className="truncate text-[13px]">{subject.name}</span>
@@ -234,7 +234,7 @@ export const SubjectItemRow: React.FC<Props> = ({
 
           {count > 0 && !isDeleting && (
             <span
-              className={`text-xs px-2 py-0.5 rounded-full font-mono text-[11px] group-hover:hidden ${
+              className={`text-xs px-2 py-0.5 rounded-md font-mono text-[11px] group-hover:hidden ${
                 isSelected
                   ? 'bg-theme-accent/20 text-theme-accent font-semibold'
                   : 'bg-theme-card/70 text-theme-muted'

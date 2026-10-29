@@ -6,8 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { SubjectItemRow } from './SubjectItemRow';
 
 const COLOR_PALETTE = [
-  '#f97316', '#10b981', '#6366f1', '#ec4899',
-  '#3b82f6', '#eab308', '#8b5cf6', '#14b8a6',
+  '#5551f5', '#1fd4a5', '#a986ff', '#ffc95f',
+  '#f97316', '#10b981', '#ec4899', '#3b82f6',
 ];
 
 interface Props {
@@ -163,7 +163,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
                   key={c}
                   type="button"
                   onClick={() => setNewColor(c)}
-                  className={`w-4 h-4 rounded-full transition-transform ${
+                  className={`w-4 h-4 rounded-[4px] transition-transform ${
                     newColor === c ? 'scale-125 ring-2 ring-white/60 shadow-sm' : 'opacity-80 hover:opacity-100'
                   }`}
                   style={{ backgroundColor: c }}

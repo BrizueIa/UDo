@@ -10,7 +10,7 @@ import {
 
 export function useThemeManager() {
   const [currentTheme, setCurrentTheme] = useState<ThemeId>(() => {
-    return (localStorage.getItem('udo_theme') as ThemeId) || 'tokyo-night';
+    return (localStorage.getItem('udo_theme') as ThemeId) || 'udo-original';
   });
 
   const [currentAccent, setCurrentAccent] = useState<AccentColor>(() => {
@@ -58,7 +58,7 @@ export function useThemeManager() {
     setCustomThemes((prev) => prev.filter((t) => t.id !== id));
     if (currentTheme === id) {
       removeCustomThemeStyles();
-      setCurrentTheme('tokyo-night');
+      setCurrentTheme('udo-original');
     }
   };
 

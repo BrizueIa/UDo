@@ -352,5 +352,25 @@
     "testSound": "Probar sonido del altavoz",
     "configure": "Configurar",
     "done": "Guardar y Cerrar"
+  },
+  "richText": {
+    "textSize": "Tamaño",
+    "sizeSmall": "Pequeño",
+    "sizeNormal": "Normal",
+    "sizeLarge": "Grande",
+    "sizeSubtitle": "Subtítulo",
+    "sizeTitle": "Título",
+    "bold": "Negrita",
+    "italic": "Cursiva",
+    "underline": "Subrayado",
+    "strikethrough": "Tachado",
+    "textColor": "Color de texto",
+    "highlight": "Resaltador / Subrayado de color",
+    "customColor": "Color personalizado",
+    "removeColor": "Quitar color",
+    "removeHighlight": "Quitar resaltado",
+    "clearFormatting": "Limpiar formato",
+    "selectionActive": "Selección activa",
+    "sampleText": "texto"
   }
 }

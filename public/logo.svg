@@ -1,0 +1,47 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="udo-body" x1="74" y1="86" x2="370" y2="437" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8B85FF"/>
+      <stop offset="0.5" stop-color="#5352F6"/>
+      <stop offset="1" stop-color="#7138F4"/>
+    </linearGradient>
+    <linearGradient id="udo-top-link" x1="291" y1="171" x2="417" y2="71" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5253F5"/>
+      <stop offset="1" stop-color="#17C89B"/>
+    </linearGradient>
+    <linearGradient id="udo-middle-link" x1="291" y1="275" x2="418" y2="172" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#534CF2"/>
+      <stop offset="1" stop-color="#9C73FF"/>
+    </linearGradient>
+    <linearGradient id="udo-bottom-link" x1="291" y1="369" x2="418" y2="272" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5D46EE"/>
+      <stop offset="1" stop-color="#FFBF4B"/>
+    </linearGradient>
+    <linearGradient id="udo-green" x1="392" y1="52" x2="455" y2="122" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1FD4A5"/>
+      <stop offset="1" stop-color="#18BFA0"/>
+    </linearGradient>
+    <linearGradient id="udo-violet" x1="391" y1="160" x2="457" y2="225" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A986FF"/>
+      <stop offset="1" stop-color="#825CF0"/>
+    </linearGradient>
+    <linearGradient id="udo-amber" x1="392" y1="266" x2="457" y2="331" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFC95F"/>
+      <stop offset="1" stop-color="#F5AD32"/>
+    </linearGradient>
+    <filter id="udo-node-shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#101020" flood-opacity=".18"/>
+    </filter>
+  </defs>
+
+  <path d="M99 105V293C99 375 145 418 217 418C289 418 329 374 329 299V190" stroke="url(#udo-body)" stroke-width="80" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M329 190V171L405 95" stroke="url(#udo-top-link)" stroke-width="42" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M329 271L404 196" stroke="url(#udo-middle-link)" stroke-width="36" stroke-linecap="round"/>
+  <path d="M326 369L404 291" stroke="url(#udo-bottom-link)" stroke-width="36" stroke-linecap="round"/>
+
+  <g filter="url(#udo-node-shadow)">
+    <rect x="382" y="52" width="82" height="82" rx="21" fill="url(#udo-green)"/>
+    <rect x="382" y="155" width="82" height="72" rx="19" fill="url(#udo-violet)"/>
+    <rect x="382" y="260" width="82" height="72" rx="19" fill="url(#udo-amber)"/>
+  </g>
+</svg>

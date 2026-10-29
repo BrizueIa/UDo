@@ -55,9 +55,9 @@ export const NoteActionRibbon: React.FC<Props> = ({
         {/* Toggle complete button */}
         <button
           onClick={onToggleComplete}
-          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
             note.isCompleted
-              ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+              ? 'bg-[#1fd4a5]/20 text-[#1fd4a5] border border-[#1fd4a5]/40 shadow-xs'
               : 'bg-theme-card hover:bg-theme-hover text-theme-text border border-white/[0.06]'
           }`}
         >
@@ -68,7 +68,7 @@ export const NoteActionRibbon: React.FC<Props> = ({
         {/* Pin note button */}
         <button
           onClick={onTogglePin}
-          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+          className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
             note.isPinned
               ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-sm'
               : 'bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.06]'
@@ -84,7 +84,7 @@ export const NoteActionRibbon: React.FC<Props> = ({
           <button
             key={isTimerRunning ? 'timer-running' : 'timer-idle'}
             onClick={onOpenFocusTimer}
-            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-colors cursor-pointer whitespace-nowrap flex-shrink-0 ${
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors cursor-pointer whitespace-nowrap flex-shrink-0 ${
               isTimerRunning
                 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 shadow-sm'
                 : 'bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.06]'
@@ -111,7 +111,7 @@ export const NoteActionRibbon: React.FC<Props> = ({
         <div className="relative" ref={folderPickerRef}>
           <button
             onClick={() => setShowFolderPicker(!showFolderPicker)}
-            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-full text-xs bg-theme-card/80 hover:bg-theme-card text-theme-text border border-white/[0.06] transition-colors shadow-sm cursor-pointer"
+            className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs bg-theme-card/80 hover:bg-theme-card text-theme-text border border-white/[0.06] transition-colors shadow-sm cursor-pointer"
             title={t('note.moveToFolder')}
           >
             <span>📁</span>

@@ -1,9 +1,11 @@
-import React, { useEffect } from 'react';
-import { CheckSquare, Square, FileText, Plus } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CheckSquare, Square } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NoteItem, SketchItem } from '../../../shared/types';
-import { buildDiacriticRegex, normalizeDiacritics } from '../../../shared/utils/diacritics';
+import { buildDiacriticRegex } from '../../../shared/utils/diacritics';
 import { hasClipboardImageContent, processImageDropOrPaste } from '../../../shared/utils/imageClipboard';
+import { parseInlineRichText, RichTextParserOptions } from '../utils/inlineRichTextParser';
+import { RichTextToolbar } from './RichTextToolbar';
 
 interface Props {
   content: string;
@@ -39,6 +41,7 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
   onAttachSketches,
 }) => {
   const { t } = useTranslation();
+  const [hasSelection, setHasSelection] = useState(false);
 
   // Calculate total matches in content (diacritic-insensitive)
   useEffect(() => {
@@ -59,119 +62,42 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
   // Scroll active match into view smoothly
   useEffect(() => {
     if (findQuery.trim()) {
-      const activeEl = document.querySelector('[data-current-find-match="true"]');
+      const activeEl = document.querySelector('[data-find-active="true"]');
       activeEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     }
   }, [currentMatchIndex, findQuery]);
 
-  let matchCounter = 0;
-
-  const renderTextWithHighlights = (rawText: string, keyPrefix: string): React.ReactNode => {
-    const q = findQuery.trim();
-    if (!q) return rawText;
-
-    try {
-      const regex = buildDiacriticRegex(q, 'gi');
-      const segments = rawText.split(regex);
-      const normQ = normalizeDiacritics(q);
-
-      return segments.map((segment, segIdx) => {
-        if (segment && normalizeDiacritics(segment) === normQ) {
-          const thisIndex = matchCounter++;
-          const isCurrent = thisIndex === currentMatchIndex;
-          return (
-            <mark
-              key={`${keyPrefix}-find-${segIdx}-${thisIndex}`}
-              data-find-match="true"
-              data-current-find-match={isCurrent ? 'true' : undefined}
-              className={`rounded px-0.5 transition-all ${
-                isCurrent
-                  ? 'bg-amber-400 text-black font-semibold ring-2 ring-amber-500 shadow-sm'
-                  : 'bg-amber-300/40 text-theme-text'
-              }`}
-            >
-              {segment}
-            </mark>
-          );
-        }
-        return segment;
-      });
-    } catch {
-      return rawText;
-    }
+  const matchCounter = { current: 0 };
+  const parserOpts: RichTextParserOptions = {
+    notes,
+    findQuery,
+    currentMatchIndex,
+    matchCounter,
+    onSelectNote,
+    onCreateNoteWithTitle,
+    t,
   };
 
-  const renderInlineMarkdown = (text: string): React.ReactNode => {
-    // Detects [[Wiki Links]], `code`, **bold**, *italic*
-    const parts = text.split(/(\[\[[^\]]+\]\]|`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g);
-    return parts.map((part, i) => {
-      // Wiki Link [[Title]]
-      if (part.startsWith('[[') && part.endsWith(']]')) {
-        const wikiTitle = part.slice(2, -2).trim();
-        const existingNote = notes.find(
-          (n) => n.title.toLowerCase() === wikiTitle.toLowerCase()
-        );
+  const checkSelection = () => {
+    const el = textareaRef.current;
+    if (!el) {
+      setHasSelection(false);
+      return;
+    }
+    setHasSelection(el.selectionStart !== el.selectionEnd);
+  };
 
-        if (existingNote) {
-          return (
-            <button
-              key={i}
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onSelectNote(existingNote.id, existingNote.subjectId);
-              }}
-              className="inline-flex items-center space-x-1 px-2 py-0.5 mx-1 rounded-md bg-theme-accent/20 hover:bg-theme-accent/30 text-theme-accent border border-theme-accent/40 font-medium text-xs transition-colors cursor-pointer"
-              title={t('note.openWikiLink', { title: wikiTitle })}
-            >
-              <FileText size={12} className="flex-shrink-0" />
-              <span>{wikiTitle}</span>
-            </button>
-          );
-        }
-
-        return (
-          <button
-            key={i}
-            type="button"
-            onClick={(e) => {
-              e.stopPropagation();
-              onCreateNoteWithTitle(wikiTitle);
-            }}
-            className="inline-flex items-center space-x-1 px-2 py-0.5 mx-1 rounded-md bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-dashed border-white/[0.15] text-xs transition-colors cursor-pointer"
-            title={t('note.createWikiLink', { title: wikiTitle })}
-          >
-            <Plus size={12} className="flex-shrink-0" />
-            <span>{wikiTitle}</span>
-          </button>
-        );
-      }
-
-      if (part.startsWith('`') && part.endsWith('`')) {
-        return (
-          <code
-            key={i}
-            className="px-1.5 py-0.5 rounded bg-theme-column font-mono text-xs text-theme-accent border border-white/[0.05]"
-          >
-            {part.slice(1, -1)}
-          </code>
-        );
-      }
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return (
-          <strong key={i} className="font-semibold text-theme-text">
-            {renderTextWithHighlights(part.slice(2, -2), `strong-${i}`)}
-          </strong>
-        );
-      }
-      if (part.startsWith('*') && part.endsWith('*')) {
-        return (
-          <em key={i} className="italic text-theme-muted">
-            {renderTextWithHighlights(part.slice(1, -1), `em-${i}`)}
-          </em>
-        );
-      }
-      return renderTextWithHighlights(part, `text-${i}`);
+  const handleShortcutWrap = (prefix: string, suffix: string) => {
+    const el = textareaRef.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const sel = content.slice(start, end) || t('richText.sampleText');
+    const rep = `${prefix}${sel}${suffix}`;
+    onChangeContent(content.slice(0, start) + rep + content.slice(end));
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start, start + rep.length);
     });
   };
 
@@ -183,7 +109,6 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
       <div className="min-h-[350px] p-5 rounded-2xl bg-theme-card/30 border border-white/[0.05] space-y-2 text-sm text-theme-text leading-relaxed select-text shadow-xs">
         {content.trim() ? (
           contentLines.map((line, idx) => {
-            // Task Checkbox match (- [ ] or - [x])
             const checkMatch = line.match(/^(\s*[-*]\s+)\[([ xX])\]\s*(.*)$/);
             if (checkMatch) {
               const isChecked = checkMatch[2].toLowerCase() === 'x';
@@ -194,84 +119,79 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
                   key={idx}
                   onClick={() => onToggleCheckbox(idx)}
                   className={`flex items-start space-x-2.5 py-1 px-2 rounded-lg cursor-pointer transition-colors group ${
-                    isChecked
-                      ? 'bg-emerald-500/10 text-theme-muted'
-                      : 'hover:bg-theme-hover/60 text-theme-text'
+                    isChecked ? 'bg-[#1fd4a5]/10 text-theme-muted' : 'hover:bg-theme-hover/60 text-theme-text'
                   }`}
                 >
-                  <button
-                    type="button"
-                    className="mt-0.5 shrink-0 text-theme-muted group-hover:text-theme-accent transition-colors"
-                  >
+                  <button type="button" className="mt-0.5 shrink-0 text-theme-muted group-hover:text-theme-accent transition-colors">
                     {isChecked ? (
-                      <CheckSquare size={16} className="text-emerald-400 fill-emerald-400/20" />
+                      <CheckSquare size={16} className="text-[#1fd4a5] fill-[#1fd4a5]/20 rounded-[5px]" />
                     ) : (
-                      <Square size={16} className="text-theme-muted" />
+                      <Square size={16} className="text-theme-muted rounded-[5px]" />
                     )}
                   </button>
                   <span className={`text-sm ${isChecked ? 'line-through opacity-70' : ''}`}>
-                    {renderInlineMarkdown(text)}
+                    {parseInlineRichText(text, parserOpts, `line-${idx}`)}
                   </span>
                 </div>
               );
             }
 
-            // Headings (#, ##, ###)
             if (line.startsWith('# ')) {
               return (
                 <h1 key={idx} className="text-2xl font-bold text-theme-text pt-2 pb-1 border-b border-white/[0.05]">
-                  {renderInlineMarkdown(line.slice(2))}
+                  {parseInlineRichText(line.slice(2), parserOpts, `h1-${idx}`)}
                 </h1>
               );
             }
             if (line.startsWith('## ')) {
               return (
                 <h2 key={idx} className="text-xl font-semibold text-theme-text pt-2 pb-0.5">
-                  {renderInlineMarkdown(line.slice(3))}
+                  {parseInlineRichText(line.slice(3), parserOpts, `h2-${idx}`)}
                 </h2>
               );
             }
             if (line.startsWith('### ')) {
               return (
                 <h3 key={idx} className="text-base font-semibold text-theme-text pt-1">
-                  {renderInlineMarkdown(line.slice(4))}
+                  {parseInlineRichText(line.slice(4), parserOpts, `h3-${idx}`)}
                 </h3>
               );
             }
 
-            // Bullet Lists (- or *)
             if (/^\s*[-*]\s+/.test(line)) {
               return (
                 <li key={idx} className="list-disc list-inside text-sm text-theme-text/90 ml-2">
-                  {renderInlineMarkdown(line.replace(/^\s*[-*]\s+/, ''))}
+                  {parseInlineRichText(line.replace(/^\s*[-*]\s+/, ''), parserOpts, `li-${idx}`)}
                 </li>
               );
             }
 
-            // Empty line
-            if (!line.trim()) {
-              return <div key={idx} className="h-2" />;
-            }
+            if (!line.trim()) return <div key={idx} className="h-2" />;
 
-            // Regular paragraph
             return (
               <p key={idx} className="text-sm text-theme-text/90 leading-relaxed">
-                {renderInlineMarkdown(line)}
+                {parseInlineRichText(line, parserOpts, `p-${idx}`)}
               </p>
             );
           })
         ) : (
-          <p className="text-xs text-theme-muted italic">
-            {t('note.markdownPlaceholder')}
-          </p>
+          <p className="text-xs text-theme-muted italic">{t('note.markdownPlaceholder')}</p>
         )}
       </div>
     );
   }
 
-  // Edit Mode: Textarea + Quick Checklists Block
+  // Edit Mode: Toolbar + Interactive Checklists Block + Textarea
   return (
     <div className="space-y-3">
+      {/* Word-style Rich Text Mini-Toolbar */}
+      <RichTextToolbar
+        textareaRef={textareaRef}
+        content={content}
+        hasSelection={hasSelection}
+        onChangeContent={onChangeContent}
+      />
+
       {hasCheckboxes && (
         <div
           style={{ backgroundColor: 'var(--color-bg-card)' }}
@@ -295,9 +215,9 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
                 >
                   <button type="button" className="text-theme-muted group-hover:text-theme-accent">
                     {isChecked ? (
-                      <CheckSquare size={14} className="text-emerald-400 fill-emerald-400/20" />
+                      <CheckSquare size={14} className="text-[#1fd4a5] fill-[#1fd4a5]/20 rounded-[4px]" />
                     ) : (
-                      <Square size={14} className="text-theme-muted" />
+                      <Square size={14} className="text-theme-muted rounded-[4px]" />
                     )}
                   </button>
                   <span className={isChecked ? 'line-through text-theme-muted' : 'text-theme-text'}>
@@ -314,9 +234,21 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
         ref={textareaRef}
         value={content}
         onChange={(e) => onChangeContent(e.target.value)}
+        onSelect={checkSelection}
+        onKeyUp={checkSelection}
+        onMouseUp={checkSelection}
         onKeyDown={(e) => {
           const isCtrl = e.ctrlKey || e.metaKey;
-          if (isCtrl && !e.shiftKey && (e.key.toLowerCase() === 'z' || e.code === 'KeyZ')) {
+          if (isCtrl && !e.shiftKey && e.key.toLowerCase() === 'b') {
+            e.preventDefault();
+            handleShortcutWrap('**', '**');
+          } else if (isCtrl && !e.shiftKey && e.key.toLowerCase() === 'i') {
+            e.preventDefault();
+            handleShortcutWrap('*', '*');
+          } else if (isCtrl && !e.shiftKey && e.key.toLowerCase() === 'u') {
+            e.preventDefault();
+            handleShortcutWrap('<u>', '</u>');
+          } else if (isCtrl && !e.shiftKey && (e.key.toLowerCase() === 'z' || e.code === 'KeyZ')) {
             e.preventDefault();
             onUndoText?.();
           } else if (

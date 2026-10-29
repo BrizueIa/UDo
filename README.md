@@ -1,7 +1,8 @@
-# UDo
+<p align="center">
+  <img src="assets/UDo-logo-horizontal-vector.svg" alt="UDo - The way u do" width="640" />
+</p>
 
 <p align="center">
-  <strong>The way u do.</strong><br>
   <em>An opinionated, local-first notes and project organizer built for multi-branch workflows. Tree hierarchy, strikethrough sheets, and quick desktop access.</em>
 </p>
 
