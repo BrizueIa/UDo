@@ -115,19 +115,31 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
     ctx.putImageData(nextState, 0, 0);
   }, []);
 
+  const modalContainerRef = useRef<HTMLDivElement>(null);
+
+  // Auto-focus modal on open so keyboard shortcuts work immediately
+  useEffect(() => {
+    if (isOpen) {
+      setTimeout(() => modalContainerRef.current?.focus(), 50);
+    }
+  }, [isOpen]);
+
   // Keyboard shortcuts (Ctrl+Z, Ctrl+Y, Ctrl+Shift+Z, Esc)
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
+
       const isCtrl = e.ctrlKey || e.metaKey;
       const isZ = e.code === 'KeyZ' || e.key.toLowerCase() === 'z';
       const isY = e.code === 'KeyY' || e.key.toLowerCase() === 'y';
 
-      if (isCtrl && !e.shiftKey && isZ) {
+      if (!isInput && isCtrl && !e.shiftKey && isZ) {
         e.preventDefault();
         e.stopPropagation();
         handleUndo();
-      } else if ((isCtrl && isY) || (isCtrl && e.shiftKey && isZ)) {
+      } else if (!isInput && ((isCtrl && isY) || (isCtrl && e.shiftKey && isZ))) {
         e.preventDefault();
         e.stopPropagation();
         handleRedo();
@@ -310,7 +322,11 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col select-none animate-in fade-in duration-150">
+    <div
+      ref={modalContainerRef}
+      tabIndex={-1}
+      className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex flex-col select-none outline-none animate-in fade-in duration-150"
+    >
       <CanvasToolbar
         title={title}
         onTitleChange={setTitle}

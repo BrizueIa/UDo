@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import { NoteItem, LinkItem, SketchItem, FolderItem } from '../../../shared/types';
 import { NoteActionRibbon } from './NoteActionRibbon';
 import { NoteAttachmentsDrawer } from './NoteAttachmentsDrawer';
@@ -12,6 +12,7 @@ import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { playTaskCompleteSound } from '../../../shared/utils/soundEffects';
 import { useNoteMediaPaste } from '../hooks/useNoteMediaPaste';
+import { useNoteEditorState } from '../hooks/useNoteEditorState';
 
 interface Props {
   note: NoteItem;
@@ -50,47 +51,31 @@ export const NoteDetailView: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
 
-  // Inputs state
+  // Attachments inputs state
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
   const [isMediaDrawerOpen, setIsMediaDrawerOpen] = useState(true);
 
-  // In-Note Search (FR-07)
-  const [isFindBarOpen, setIsFindBarOpen] = useState(false);
-  const [findQuery, setFindQuery] = useState('');
-  const [currentMatchIndex, setCurrentMatchIndex] = useState(0);
-  const [totalMatches, setTotalMatches] = useState(0);
-
-  // View Mode: 'preview' (Interactive checkboxes/markdown) vs 'edit' (Markdown source)
-  const [viewMode, setViewMode] = useState<'preview' | 'edit'>('preview');
-
-  // Textarea Ref for cursor preservation
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Listen for Ctrl+F (Find in note) and Ctrl+E (Markdown edit mode)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'f') {
-        e.preventDefault();
-        setIsFindBarOpen(true);
-      } else if (e.ctrlKey && !e.shiftKey && e.key.toLowerCase() === 'e') {
-        e.preventDefault();
-        setViewMode('edit');
-        setTimeout(() => textareaRef.current?.focus(), 50);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onUpdateNote({ ...note, title: e.target.value, updatedAt: new Date().toISOString() });
-  };
-
-  const handleContentChange = (newContent: string) => {
-    onUpdateNote({ ...note, content: newContent, updatedAt: new Date().toISOString() });
-  };
+  // Editor buffered state for 0ms typing response & find bar (FR-07)
+  const {
+    viewMode,
+    setViewMode,
+    localTitle,
+    localContent,
+    textareaRef,
+    isFindBarOpen,
+    setIsFindBarOpen,
+    findQuery,
+    setFindQuery,
+    currentMatchIndex,
+    setCurrentMatchIndex,
+    totalMatches,
+    setTotalMatches,
+    handleTitleChange,
+    handleContentChange,
+    flushSave,
+  } = useNoteEditorState({ note, onUpdateNote });
 
   const handleToggleComplete = () => {
     const nextState = !note.isCompleted;
@@ -114,24 +99,21 @@ export const NoteDetailView: React.FC<Props> = ({
       const textarea = textareaRef.current;
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
-      const before = note.content.substring(0, start);
-      const after = note.content.substring(end);
+      const before = localContent.substring(0, start);
+      const after = localContent.substring(end);
       const needsNewline = before.length > 0 && !before.endsWith('\n');
       newContent = `${before}${needsNewline ? '\n' : ''}${taskPrefix}${after}`;
     } else {
-      const needsNewline = note.content.length > 0 && !note.content.endsWith('\n');
-      newContent = `${note.content}${needsNewline ? '\n' : ''}${taskPrefix}${t('note.newTask')}`;
+      const needsNewline = localContent.length > 0 && !localContent.endsWith('\n');
+      newContent = `${localContent}${needsNewline ? '\n' : ''}${taskPrefix}${t('note.newTask')}`;
     }
 
-    onUpdateNote({
-      ...note,
-      content: newContent,
-      updatedAt: new Date().toISOString(),
-    });
+    handleContentChange(newContent);
+    onUpdateNote({ ...note, content: newContent, updatedAt: new Date().toISOString() });
   };
 
   const handleToggleCheckbox = (targetLineIdx: number) => {
-    const lines = note.content.split('\n');
+    const lines = localContent.split('\n');
     const targetLine = lines[targetLineIdx];
     if (targetLine === undefined) return;
 
@@ -139,15 +121,11 @@ export const NoteDetailView: React.FC<Props> = ({
     if (match) {
       const isCurrentlyChecked = match[2].toLowerCase() === 'x';
       const newChar = isCurrentlyChecked ? ' ' : 'x';
-      if (!isCurrentlyChecked) {
-        playTaskCompleteSound();
-      }
+      if (!isCurrentlyChecked) playTaskCompleteSound();
       lines[targetLineIdx] = `${match[1]}${newChar}${match[3]}${match[4]}`;
-      onUpdateNote({
-        ...note,
-        content: lines.join('\n'),
-        updatedAt: new Date().toISOString(),
-      });
+      const updatedText = lines.join('\n');
+      handleContentChange(updatedText);
+      onUpdateNote({ ...note, content: updatedText, updatedAt: new Date().toISOString() });
     }
   };
 
@@ -188,9 +166,15 @@ export const NoteDetailView: React.FC<Props> = ({
   };
 
   const handleSelectTemplate = (templateContent: string, templateTitle?: string) => {
+    const updatedTitle =
+      (!localTitle.trim() || localTitle === t('note.titlePlaceholder')) && templateTitle
+        ? templateTitle
+        : localTitle;
+    handleTitleChange({ target: { value: updatedTitle } } as React.ChangeEvent<HTMLInputElement>);
+    handleContentChange(templateContent);
     onUpdateNote({
       ...note,
-      title: (!note.title.trim() || note.title === t('note.titlePlaceholder')) && templateTitle ? templateTitle : note.title,
+      title: updatedTitle,
       content: templateContent,
       updatedAt: new Date().toISOString(),
     });
@@ -231,8 +215,9 @@ export const NoteDetailView: React.FC<Props> = ({
           <div className="flex items-center justify-between gap-4">
             <input
               type="text"
-              value={note.title}
+              value={localTitle}
               onChange={handleTitleChange}
+              onBlur={flushSave}
               placeholder={t('note.titlePlaceholder')}
               className={`w-full text-3xl font-bold bg-transparent outline-none border-b border-transparent focus:border-theme-accent/50 pb-1 transition-colors ${
                 note.isCompleted ? 'line-through text-theme-muted opacity-80' : 'text-theme-text'
@@ -332,13 +317,13 @@ export const NoteDetailView: React.FC<Props> = ({
           />
 
           {/* Quick Starter Templates when note content is empty (FR-23) */}
-          {!note.content.trim() && (
+          {!localContent.trim() && (
             <NoteTemplatePicker onSelectTemplate={handleSelectTemplate} />
           )}
 
           {/* Markdown Sheet Preview with Wiki-Links & Match Highlighting (FR-07, FR-22) */}
           <MarkdownSheetPreview
-            content={note.content}
+            content={localContent}
             notes={notes}
             viewMode={viewMode}
             textareaRef={textareaRef}

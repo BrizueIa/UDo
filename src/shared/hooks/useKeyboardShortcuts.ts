@@ -17,6 +17,8 @@ interface ShortcutHandlers {
   onNavigateVertical: (direction: 'up' | 'down') => void;
   onNavigateHorizontal?: (direction: 'left' | 'right') => void;
   onEnterTreeItem?: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
   onEscape: () => void;
 }
 
@@ -35,6 +37,8 @@ export function useKeyboardShortcuts({
   onNavigateVertical,
   onNavigateHorizontal,
   onEnterTreeItem,
+  onUndo,
+  onRedo,
   onEscape,
 }: ShortcutHandlers) {
   useEffect(() => {
@@ -48,6 +52,24 @@ export function useKeyboardShortcuts({
       // Esc: Global escape handler (FR-08)
       if (e.key === 'Escape') {
         onEscape();
+        return;
+      }
+
+      // Ctrl + Z: Undo workspace action outside text inputs (FR-08)
+      if (!isInput && e.ctrlKey && !e.shiftKey && (e.code === 'KeyZ' || e.key.toLowerCase() === 'z')) {
+        e.preventDefault();
+        onUndo?.();
+        return;
+      }
+
+      // Ctrl + Y or Ctrl + Shift + Z: Redo workspace action outside text inputs (FR-08)
+      if (
+        !isInput &&
+        ((e.ctrlKey && (e.code === 'KeyY' || e.key.toLowerCase() === 'y')) ||
+          (e.ctrlKey && e.shiftKey && (e.code === 'KeyZ' || e.key.toLowerCase() === 'z')))
+      ) {
+        e.preventDefault();
+        onRedo?.();
         return;
       }
 
@@ -214,6 +236,8 @@ export function useKeyboardShortcuts({
     onNavigateVertical,
     onNavigateHorizontal,
     onEnterTreeItem,
+    onUndo,
+    onRedo,
     onEscape,
   ]);
 }
