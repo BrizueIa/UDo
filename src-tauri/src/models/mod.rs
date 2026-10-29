@@ -38,7 +38,7 @@ pub struct NoteAttachment {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NoteItem {
     pub id: String,
-    #[serde(rename = "folderId")]
+    #[serde(rename = "folderId", default)]
     pub folder_id: String,
     #[serde(rename = "subjectId")]
     pub subject_id: String,

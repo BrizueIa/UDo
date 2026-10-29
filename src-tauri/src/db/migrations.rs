@@ -29,7 +29,7 @@ pub fn init_schema(conn: &Connection) -> Result<()> {
 
         CREATE TABLE IF NOT EXISTS notes (
             id TEXT PRIMARY KEY,
-            folder_id TEXT NOT NULL,
+            folder_id TEXT,
             subject_id TEXT NOT NULL,
             title TEXT NOT NULL,
             content TEXT NOT NULL,
@@ -45,7 +45,7 @@ pub fn init_schema(conn: &Connection) -> Result<()> {
             focus_minutes INTEGER,
             sort_order INTEGER NOT NULL DEFAULT 0,
             is_deleted INTEGER NOT NULL DEFAULT 0,
-            FOREIGN KEY(folder_id) REFERENCES folders(id) ON DELETE CASCADE,
+            FOREIGN KEY(folder_id) REFERENCES folders(id) ON DELETE SET NULL,
             FOREIGN KEY(subject_id) REFERENCES subjects(id) ON DELETE CASCADE
         );
 
@@ -102,6 +102,71 @@ pub fn init_schema(conn: &Connection) -> Result<()> {
         conn.execute(
             "ALTER TABLE subjects ADD COLUMN is_private INTEGER NOT NULL DEFAULT 0;",
             [],
+        )?;
+    }
+
+    // Migration: Allow nullable folder_id for root project notes
+    let mut pragma_notes = conn.prepare("PRAGMA table_info(notes)")?;
+    let folder_id_not_null = pragma_notes
+        .query_map([], |row| {
+            let name: String = row.get(1)?;
+            let notnull: i64 = row.get(3)?;
+            Ok((name, notnull))
+        })?
+        .any(|col| matches!(col, Ok((name, notnull)) if name == "folder_id" && notnull == 1));
+
+    if folder_id_not_null {
+        conn.execute_batch(
+            "
+            PRAGMA foreign_keys = OFF;
+            CREATE TABLE notes_mig (
+                id TEXT PRIMARY KEY,
+                folder_id TEXT,
+                subject_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                is_completed INTEGER NOT NULL DEFAULT 0,
+                is_pinned INTEGER NOT NULL DEFAULT 0,
+                tags_json TEXT NOT NULL DEFAULT '[]',
+                links_json TEXT NOT NULL DEFAULT '[]',
+                sketches_json TEXT NOT NULL DEFAULT '[]',
+                attachments_json TEXT NOT NULL DEFAULT '[]',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL,
+                due_date TEXT,
+                focus_minutes INTEGER,
+                sort_order INTEGER NOT NULL DEFAULT 0,
+                is_deleted INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY(folder_id) REFERENCES folders(id) ON DELETE SET NULL,
+                FOREIGN KEY(subject_id) REFERENCES subjects(id) ON DELETE CASCADE
+            );
+            INSERT INTO notes_mig SELECT 
+                id, folder_id, subject_id, title, content, is_completed, is_pinned, 
+                tags_json, links_json, sketches_json, attachments_json, created_at, 
+                updated_at, due_date, focus_minutes, sort_order, is_deleted 
+            FROM notes;
+            DROP TABLE notes;
+            ALTER TABLE notes_mig RENAME TO notes;
+
+            CREATE TRIGGER IF NOT EXISTS notes_ai AFTER INSERT ON notes BEGIN
+                INSERT INTO notes_fts(rowid, title, content, tags_json)
+                VALUES (new.rowid, new.title, new.content, new.tags_json);
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS notes_ad AFTER DELETE ON notes BEGIN
+                INSERT INTO notes_fts(notes_fts, rowid, title, content, tags_json)
+                VALUES ('delete', old.rowid, old.title, old.content, old.tags_json);
+            END;
+
+            CREATE TRIGGER IF NOT EXISTS notes_au AFTER UPDATE ON notes BEGIN
+                INSERT INTO notes_fts(notes_fts, rowid, title, content, tags_json)
+                VALUES ('delete', old.rowid, old.title, old.content, old.tags_json);
+                INSERT INTO notes_fts(rowid, title, content, tags_json)
+                VALUES (new.rowid, new.title, new.content, new.tags_json);
+            END;
+
+            PRAGMA foreign_keys = ON;
+            ",
         )?;
     }
 

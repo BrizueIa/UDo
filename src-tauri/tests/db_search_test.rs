@@ -165,5 +165,31 @@ fn test_database_init_and_search() {
         "Search for '.canvas' should find note with sketches"
     );
 
+    // 5. Test root project note (note without folder)
+    let root_note = NoteItem {
+        id: "note-root-project".to_string(),
+        folder_id: "".to_string(),
+        subject_id: initial.subjects[0].id.clone(),
+        title: "Nota en raíz de proyecto".to_string(),
+        content: "Contenido directo en el proyecto sin carpeta.".to_string(),
+        is_completed: false,
+        is_pinned: true,
+        tags: vec!["Raiz".to_string()],
+        links: vec![],
+        sketches: vec![],
+        attachments: vec![],
+        created_at: "2026-10-27T00:00:00Z".to_string(),
+        updated_at: "2026-10-27T00:00:00Z".to_string(),
+        due_date: None,
+        focus_minutes: None,
+        order: Some(0),
+    };
+    db.save_note(&root_note).expect("Failed to save root note without folder");
+
+    let all_notes = db.get_initial_data().expect("Failed to fetch data").notes;
+    let saved_root = all_notes.iter().find(|n| n.id == "note-root-project").expect("Root note not found in DB");
+    assert_eq!(saved_root.folder_id, "", "Root note folder_id should be empty");
+    assert_eq!(saved_root.title, "Nota en raíz de proyecto");
+
     std::fs::remove_file(temp_path).ok();
 }

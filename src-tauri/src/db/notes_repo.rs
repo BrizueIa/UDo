@@ -17,7 +17,7 @@ pub fn map_note_row(row: &rusqlite::Row) -> Result<NoteItem> {
 
     Ok(NoteItem {
         id: row.get(0)?,
-        folder_id: row.get(1)?,
+        folder_id: row.get::<_, Option<String>>(1)?.unwrap_or_default(),
         subject_id: row.get(2)?,
         title: row.get(3)?,
         content: row.get(4)?,
@@ -213,6 +213,11 @@ pub fn save_note(conn: &Connection, note: &NoteItem) -> Result<()> {
     let sketches_json = serde_json::to_string(&note.sketches).unwrap_or_else(|_| "[]".to_string());
     let attachments_json = serde_json::to_string(&note.attachments).unwrap_or_else(|_| "[]".to_string());
     let sort_order = note.order.unwrap_or(0);
+    let folder_id_param: Option<&str> = if note.folder_id.trim().is_empty() {
+        None
+    } else {
+        Some(note.folder_id.as_str())
+    };
 
     conn.execute(
         "INSERT INTO notes (id, folder_id, subject_id, title, content, is_completed, is_pinned,
@@ -237,7 +242,7 @@ pub fn save_note(conn: &Connection, note: &NoteItem) -> Result<()> {
          is_deleted=0;",
         params![
             note.id,
-            note.folder_id,
+            folder_id_param,
             note.subject_id,
             note.title,
             note.content,

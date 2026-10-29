@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { FolderItem, NoteItem, SubjectItem, ViewFilter } from '../../../shared/types';
 import { FolderItemRow } from './FolderItemRow';
-import { NoteItemRow } from './NoteItemRow';
+import { RootNotesList } from './RootNotesList';
+import { FolderNotesAccordion } from './FolderNotesAccordion';
 import { FolderPlus, X, Hash, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { motion, AnimatePresence } from 'framer-motion';
 import { normalizeDiacritics } from '../../../shared/utils/diacritics';
 import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
 import { useMultiSelection } from '../hooks/useMultiSelection';
@@ -35,17 +35,8 @@ interface Props {
   onDeleteFolder: (id: string) => void;
   onAddNote: (folderId: string) => void;
   onMoveNoteToFolder?: (noteId: string, folderId: string) => void;
-  onReorderOrMoveNote?: (
-    draggedNoteId: string,
-    targetFolderId: string,
-    targetNoteId?: string,
-    position?: 'before' | 'after'
-  ) => void;
-  onReorderFolder?: (
-    draggedFolderId: string,
-    targetFolderId: string,
-    position?: 'before' | 'after'
-  ) => void;
+  onReorderOrMoveNote?: (draggedNoteId: string, targetFolderId: string, targetNoteId?: string, position?: 'before' | 'after') => void;
+  onReorderFolder?: (draggedFolderId: string, targetFolderId: string, position?: 'before' | 'after') => void;
   onBatchDeleteNotes?: (ids: string[]) => void;
   onBatchToggleCompleteNotes?: (ids: string[]) => void;
   onBatchMoveNotesToFolder?: (ids: string[], folderId: string) => void;
@@ -53,37 +44,48 @@ interface Props {
 }
 
 export const FoldersList: React.FC<Props> = ({
-  currentSubject,
-  folders,
-  notes,
-  selectedFolderId,
-  selectedNoteId,
-  activeNoteFolderId,
-  filter,
-  searchQuery = '',
-  activeTagFilter,
-  isFocused = false,
-  onClearTagFilter,
-  onSelectFolder,
-  onSelectNote,
-  onToggleNoteComplete,
-  onToggleFolderExpand,
-  onAddFolder,
-  onUpdateFolder,
-  onDeleteFolder,
-  onAddNote,
-  onMoveNoteToFolder,
-  onReorderOrMoveNote,
-  onReorderFolder,
-  onBatchDeleteNotes,
-  onBatchToggleCompleteNotes,
-  onBatchMoveNotesToFolder,
-  onDuplicateNote,
+  currentSubject, folders, notes, selectedFolderId, selectedNoteId, activeNoteFolderId,
+  filter, searchQuery = '', activeTagFilter, isFocused = false, onClearTagFilter,
+  onSelectFolder, onSelectNote, onToggleNoteComplete, onToggleFolderExpand,
+  onAddFolder, onUpdateFolder, onDeleteFolder, onAddNote, onMoveNoteToFolder,
+  onReorderOrMoveNote, onReorderFolder, onBatchDeleteNotes, onBatchToggleCompleteNotes,
+  onBatchMoveNotesToFolder, onDuplicateNote,
 }) => {
   const { t } = useTranslation();
+  const [isCreating, setIsCreating] = useState(false);
+
+  // Root notes belonging to the current subject without a folder
+  const currentSubjectId = currentSubject?.id;
+  const rootNotes = useMemo(() => {
+    if (!currentSubjectId) return [];
+    return notes.filter(
+      (n) => n.subjectId === currentSubjectId && (!n.folderId || n.folderId === '')
+    );
+  }, [notes, currentSubjectId]);
+
+  const visibleRootNotes = useMemo(() => {
+    return filterAndSortFolderNotes({
+      notes: rootNotes,
+      filter,
+      searchQuery,
+      activeTagFilter,
+    });
+  }, [rootNotes, filter, searchQuery, activeTagFilter]);
 
   const currentFolderNoteIds = useMemo(() => {
-    const targetFolderId = selectedFolderId || activeNoteFolderId || folders[0]?.id;
+    if (selectedFolderId) {
+      const folderNotes = notes.filter((n) => n.folderId === selectedFolderId);
+      return filterAndSortFolderNotes({
+        notes: folderNotes,
+        filter,
+        searchQuery,
+        activeTagFilter,
+      }).map((n) => n.id);
+    }
+    if (visibleRootNotes.length > 0) {
+      return visibleRootNotes.map((n) => n.id);
+    }
+    const targetFolderId = activeNoteFolderId || folders[0]?.id;
     if (!targetFolderId) return [];
     const folderNotes = notes.filter((n) => n.folderId === targetFolderId);
     return filterAndSortFolderNotes({
@@ -92,10 +94,10 @@ export const FoldersList: React.FC<Props> = ({
       searchQuery,
       activeTagFilter,
     }).map((n) => n.id);
-  }, [notes, selectedFolderId, activeNoteFolderId, folders, filter, searchQuery, activeTagFilter]);
+  }, [notes, selectedFolderId, visibleRootNotes, activeNoteFolderId, folders, filter, searchQuery, activeTagFilter]);
 
   const orderedVisibleNoteIds = useMemo(() => {
-    const ids: string[] = [];
+    const ids: string[] = visibleRootNotes.map((n) => n.id);
     folders.forEach((f) => {
       if (f.isExpanded) {
         const folderNotes = notes.filter((n) => n.folderId === f.id);
@@ -109,7 +111,7 @@ export const FoldersList: React.FC<Props> = ({
       }
     });
     return ids;
-  }, [folders, notes, filter, searchQuery, activeTagFilter]);
+  }, [visibleRootNotes, folders, notes, filter, searchQuery, activeTagFilter]);
 
   const allVisibleFolderIds = useMemo(() => {
     return folders.map((f) => f.id);
@@ -150,15 +152,11 @@ export const FoldersList: React.FC<Props> = ({
     onDeleteFolder,
   });
 
-  // Create folder inline state
-  const [isCreating, setIsCreating] = useState(false);
-  const [dragOverFolderNotesId, setDragOverFolderNotesId] = useState<string | null>(null);
-
   // Count notes matching activeTagFilter across current subject
   const totalTagMatchingNotes = activeTagFilter
     ? notes.filter(
         (n) =>
-          folders.some((f) => f.id === n.folderId) &&
+          n.subjectId === currentSubjectId &&
           n.tags.some(
             (tag) => normalizeDiacritics(tag) === normalizeDiacritics(activeTagFilter)
           )
@@ -171,21 +169,30 @@ export const FoldersList: React.FC<Props> = ({
         isFocused ? 'ring-1 ring-inset ring-theme-accent/40 shadow-sm' : ''
       }`}
     >
-      {/* Header with active subject title and new folder button */}
+      {/* Header with active subject title, New Note button and New Folder button */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
         <h2 className="text-sm font-semibold text-theme-text truncate">
           {renderRichTitle(currentSubject?.name || t('nav.subjects'), 'folders-hdr', 0, { ignoreSize: true })}
         </h2>
-        <button
-          onClick={() => setIsCreating(true)}
-          className="p-1 rounded-md text-theme-muted hover:text-theme-text hover:bg-theme-hover transition-colors"
-          title={t('folders.addFolder')}
-        >
-          <FolderPlus size={16} />
-        </button>
+        <div className="flex items-center space-x-1 shrink-0">
+          <button
+            onClick={() => onAddNote('')}
+            className="p-1 rounded-md text-theme-muted hover:text-theme-text hover:bg-theme-hover transition-colors"
+            title={`${t('folders.addNote')} (Ctrl+N)`}
+          >
+            <Plus size={16} />
+          </button>
+          <button
+            onClick={() => setIsCreating(true)}
+            className="p-1 rounded-md text-theme-muted hover:text-theme-text hover:bg-theme-hover transition-colors"
+            title={t('folders.addFolder')}
+          >
+            <FolderPlus size={16} />
+          </button>
+        </div>
       </div>
 
-      {/* Active Transversal Tag Filter Chip (FR-21) */}
+      {/* Active Transversal Tag Filter Chip */}
       {activeTagFilter && (
         <div className="mx-2.5 mt-2 px-2.5 py-1.5 rounded-lg bg-theme-accent/15 border border-theme-accent/30 flex items-center justify-between text-xs animate-in fade-in">
           <div className="flex items-center space-x-1.5 min-w-0">
@@ -217,158 +224,119 @@ export const FoldersList: React.FC<Props> = ({
         }}
       />
 
-      {/* Folders & Notes list */}
+      {/* Folders & Notes list with container drop receiver */}
       <div
         data-folders-container
         onMouseDown={handleContainerMouseDown}
+        onDragOver={(e) => {
+          if (
+            e.dataTransfer.types.includes('application/udo-note-id') ||
+            e.dataTransfer.types.includes('application/udo-note-ids') ||
+            e.dataTransfer.types.includes('text/plain')
+          ) {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+          }
+        }}
+        onDrop={(e) => {
+          if (e.target !== e.currentTarget && !(e.target as HTMLElement).hasAttribute('data-folders-empty')) {
+            return;
+          }
+          e.preventDefault();
+          if (e.dataTransfer.types.includes('application/udo-folder-id')) return;
+          const noteIdsRaw = e.dataTransfer.getData('application/udo-note-ids');
+          if (noteIdsRaw && onBatchMoveNotesToFolder) {
+            try {
+              const ids: string[] = JSON.parse(noteIdsRaw);
+              onBatchMoveNotesToFolder(ids, '');
+              return;
+            } catch {}
+          }
+          const noteId =
+            e.dataTransfer.getData('application/udo-note-id') ||
+            e.dataTransfer.getData('text/plain');
+          if (noteId && onMoveNoteToFolder) {
+            onMoveNoteToFolder(noteId, '');
+          }
+        }}
         className="flex-1 overflow-y-auto px-2 py-2 space-y-2 relative"
       >
-        {folders.length === 0 && !isCreating ? (
-          <div className="text-center py-8 text-xs text-theme-muted">
-            {t('folders.empty')}
+        {folders.length === 0 && visibleRootNotes.length === 0 && !isCreating ? (
+          <div data-folders-empty className="text-center py-8 text-xs text-theme-muted">
+            {t('folders.noFoldersAndNotes')}
           </div>
         ) : (
-          folders.map((folder) => {
-            const folderNotes = notes.filter((n) => n.folderId === folder.id);
-            const visibleNotes = filterAndSortFolderNotes({
-              notes: folderNotes,
-              filter,
-              searchQuery,
-              activeTagFilter,
-            });
-            const isFolderSelected = selectedFolderId === folder.id;
-            const isDragOverNotes = dragOverFolderNotesId === folder.id;
+          <>
+            {/* Root Notes (Notes directly in project) */}
+            <RootNotesList
+              notes={visibleRootNotes}
+              selectedNoteId={selectedNoteId}
+              selectedNoteIds={selectedNoteIds}
+              onSelectFolder={onSelectFolder}
+              onSelectNote={onSelectNote}
+              onNoteClick={handleNoteClick}
+              onToggleNoteComplete={onToggleNoteComplete}
+              onNoteContextMenu={handleNoteContextMenu}
+              onReorderOrMoveNote={onReorderOrMoveNote}
+            />
 
-            return (
-              <div key={folder.id} className="space-y-1">
-                <FolderItemRow
-                  folder={folder}
-                  noteCount={folderNotes.length}
-                  isSelected={isFolderSelected}
-                  isMultiSelected={selectedFolderIds.has(folder.id)}
-                  hasActiveNote={folder.id === activeNoteFolderId}
-                  onSelectFolder={() => onSelectFolder(folder.id)}
-                  onSelectWithEvent={(e) => handleFolderClick(folder.id, e)}
-                  onToggleExpand={() => onToggleFolderExpand(folder.id)}
-                  onAddNote={() => onAddNote(folder.id)}
-                  onUpdateFolder={onUpdateFolder}
-                  onDeleteFolder={() => onDeleteFolder(folder.id)}
-                  onReorderFolder={onReorderFolder}
-                  onContextMenu={(e) => handleFolderContextMenu(e, folder)}
-                  onBatchMoveNotesToFolder={onBatchMoveNotesToFolder}
-                  onMoveNoteToFolder={(noteId) => {
-                    setTimeout(() => {
-                      if (onReorderOrMoveNote) {
-                        onReorderOrMoveNote(noteId, folder.id);
-                      } else if (onMoveNoteToFolder) {
-                        onMoveNoteToFolder(noteId, folder.id);
-                      }
-                    }, 0);
-                  }}
-                />
+            {/* Folders List */}
+            {folders.map((folder) => {
+              const folderNotes = notes.filter((n) => n.folderId === folder.id);
+              const visibleNotes = filterAndSortFolderNotes({
+                notes: folderNotes,
+                filter,
+                searchQuery,
+                activeTagFilter,
+              });
+              const isFolderSelected = selectedFolderId === folder.id;
 
-                {/* Notes in folder (Animated Accordion + drop receiver anywhere in folder) */}
-                <AnimatePresence initial={false}>
-                  {folder.isExpanded && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.15, ease: 'easeOut' }}
-                      onDragOver={(e) => {
-                        if (
-                          e.dataTransfer.types.includes('application/udo-note-id') ||
-                          e.dataTransfer.types.includes('application/udo-note-ids') ||
-                          e.dataTransfer.types.includes('text/plain')
-                        ) {
-                          e.preventDefault();
-                          e.dataTransfer.dropEffect = 'move';
-                          if (dragOverFolderNotesId !== folder.id) {
-                            setDragOverFolderNotesId(folder.id);
-                          }
+              return (
+                <div key={folder.id} className="space-y-1">
+                  <FolderItemRow
+                    folder={folder}
+                    noteCount={folderNotes.length}
+                    isSelected={isFolderSelected}
+                    isMultiSelected={selectedFolderIds.has(folder.id)}
+                    hasActiveNote={folder.id === activeNoteFolderId}
+                    onSelectFolder={() => onSelectFolder(folder.id)}
+                    onSelectWithEvent={(e) => handleFolderClick(folder.id, e)}
+                    onToggleExpand={() => onToggleFolderExpand(folder.id)}
+                    onAddNote={() => onAddNote(folder.id)}
+                    onUpdateFolder={onUpdateFolder}
+                    onDeleteFolder={() => onDeleteFolder(folder.id)}
+                    onReorderFolder={onReorderFolder}
+                    onContextMenu={(e) => handleFolderContextMenu(e, folder)}
+                    onBatchMoveNotesToFolder={onBatchMoveNotesToFolder}
+                    onMoveNoteToFolder={(noteId) => {
+                      setTimeout(() => {
+                        if (onReorderOrMoveNote) {
+                          onReorderOrMoveNote(noteId, folder.id);
+                        } else if (onMoveNoteToFolder) {
+                          onMoveNoteToFolder(noteId, folder.id);
                         }
-                      }}
-                      onDragLeave={(e) => {
-                        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                          setDragOverFolderNotesId(null);
-                        }
-                      }}
-                      onDrop={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setDragOverFolderNotesId(null);
-                        const isFolder = e.dataTransfer.types.includes('application/udo-folder-id');
-                        if (isFolder) return;
+                      }, 0);
+                    }}
+                  />
 
-                        const noteIdsRaw = e.dataTransfer.getData('application/udo-note-ids');
-                        if (noteIdsRaw && onBatchMoveNotesToFolder) {
-                          try {
-                            const ids: string[] = JSON.parse(noteIdsRaw);
-                            onBatchMoveNotesToFolder(ids, folder.id);
-                            return;
-                          } catch {}
-                        }
-
-                        const noteId =
-                          e.dataTransfer.getData('application/udo-note-id') ||
-                          e.dataTransfer.getData('text/plain');
-                        if (noteId && onReorderOrMoveNote) {
-                          setTimeout(() => {
-                            onReorderOrMoveNote(noteId, folder.id);
-                          }, 0);
-                        }
-                      }}
-                      className={`overflow-hidden pl-3 space-y-0.5 border-l ml-4 transition-colors rounded-r-lg ${
-                        isDragOverNotes
-                          ? 'border-theme-accent bg-theme-accent/10 ring-1 ring-theme-accent/30'
-                          : 'border-white/[0.06]'
-                      }`}
-                    >
-                      {visibleNotes.length === 0 ? (
-                        <div
-                          onClick={() => onAddNote(folder.id)}
-                          className="flex items-center justify-between text-[11px] text-theme-muted/70 hover:text-theme-accent py-1.5 px-2 rounded-lg hover:bg-theme-hover/40 cursor-pointer transition-colors group"
-                          title={`${t('folders.addNote')} (Ctrl+N)`}
-                        >
-                          <span>{t('folders.noNotes')}</span>
-                          <span className="text-[10px] text-theme-accent opacity-0 group-hover:opacity-100 flex items-center space-x-1 transition-opacity">
-                            <Plus size={11} />
-                            <span>{t('folders.addNote')}</span>
-                          </span>
-                        </div>
-                      ) : (
-                        visibleNotes.map((note) => (
-                          <NoteItemRow
-                            key={note.id}
-                            note={note}
-                            isSelected={note.id === selectedNoteId}
-                            isMultiSelected={selectedNoteIds.has(note.id)}
-                            multiSelectedIds={Array.from(selectedNoteIds)}
-                            onSelect={() => {
-                              onSelectFolder(folder.id);
-                              onSelectNote(note.id);
-                            }}
-                            onSelectWithEvent={(e) => {
-                              onSelectFolder(folder.id);
-                              onSelectNote(note.id);
-                              handleNoteClick(note.id, e);
-                            }}
-                            onToggleComplete={() => onToggleNoteComplete(note.id)}
-                            onContextMenu={(e) => handleNoteContextMenu(e, note)}
-                            onDropOnNote={(draggedId, targetId, pos) => {
-                              if (onReorderOrMoveNote) {
-                                onReorderOrMoveNote(draggedId, folder.id, targetId, pos);
-                              }
-                            }}
-                          />
-                        ))
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            );
-          })
+                  <FolderNotesAccordion
+                    folder={folder}
+                    visibleNotes={visibleNotes}
+                    selectedNoteId={selectedNoteId}
+                    selectedNoteIds={selectedNoteIds}
+                    onSelectFolder={onSelectFolder}
+                    onSelectNote={onSelectNote}
+                    onNoteClick={handleNoteClick}
+                    onToggleNoteComplete={onToggleNoteComplete}
+                    onNoteContextMenu={handleNoteContextMenu}
+                    onAddNote={onAddNote}
+                    onReorderOrMoveNote={onReorderOrMoveNote}
+                    onBatchMoveNotesToFolder={onBatchMoveNotesToFolder}
+                  />
+                </div>
+              );
+            })}
+          </>
         )}
 
         <BatchActionBar

@@ -35,6 +35,10 @@
   "folders": {
     "addFolder": "Nueva Carpeta",
     "addNote": "Nueva Nota",
+    "newRootNote": "Nueva Nota",
+    "noFolder": "Sin carpeta (Raíz)",
+    "rootNotes": "Notas en raíz",
+    "noFoldersAndNotes": "No hay notas ni carpetas en este proyecto.",
     "collapseFolder": "Colapsar Carpeta",
     "expandFolder": "Expandir Carpeta",
     "empty": "No hay carpetas en este proyecto todavía.",

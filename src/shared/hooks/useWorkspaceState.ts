@@ -144,49 +144,43 @@ export function useWorkspaceState() {
   ) => {
     recordSnapshot(getSnapshot());
 
-    let folderId = targetFolderId || selectedFolderId;
     let subjectId = targetSubjectId || selectedSubjectId;
+    let folderId = '';
 
-    const existingFolder = folders.find((f) => f.id === folderId);
-    if (existingFolder) {
-      folderId = existingFolder.id;
-      subjectId = existingFolder.subjectId;
-    } else {
-      const subjFolders = folders.filter((f) => f.subjectId === subjectId);
-      if (subjFolders.length > 0) {
-        folderId = subjFolders[0].id;
-      } else if (folders.length > 0) {
-        folderId = folders[0].id;
-        subjectId = folders[0].subjectId;
-      } else if (subjectId) {
-        const autoFolder: FolderItem = {
-          id: `folder-${Date.now()}`,
-          subjectId,
-          name: 'General',
-          isExpanded: true,
-          order: 0,
-        };
-        setFolders((prev) => [...prev, autoFolder]);
-        api.saveFolder(autoFolder).catch((err) => console.error('Failed to save auto folder:', err));
-        folderId = autoFolder.id;
-      } else {
-        return;
+    if (targetFolderId !== undefined && targetFolderId !== '') {
+      const existingFolder = folders.find((f) => f.id === targetFolderId);
+      if (existingFolder) {
+        folderId = existingFolder.id;
+        subjectId = existingFolder.subjectId;
+      }
+    } else if (targetFolderId === undefined && selectedFolderId) {
+      const existingFolder = folders.find(
+        (f) => f.id === selectedFolderId && f.subjectId === subjectId
+      );
+      if (existingFolder) {
+        folderId = existingFolder.id;
       }
     }
 
     // Auto-expand folder if collapsed so new note is visible
-    setFolders((prev) =>
-      prev.map((f) => {
-        if (f.id === folderId && !f.isExpanded) {
-          const updated = { ...f, isExpanded: true };
-          api.saveFolder(updated).catch(console.error);
-          return updated;
-        }
-        return f;
-      })
-    );
+    if (folderId) {
+      setFolders((prev) =>
+        prev.map((f) => {
+          if (f.id === folderId && !f.isExpanded) {
+            const updated = { ...f, isExpanded: true };
+            api.saveFolder(updated).catch(console.error);
+            return updated;
+          }
+          return f;
+        })
+      );
+    }
 
-    const folderNotes = notes.filter((n) => n.folderId === folderId);
+    const siblingNotes = notes.filter((n) =>
+      folderId
+        ? n.folderId === folderId
+        : n.subjectId === subjectId && (!n.folderId || n.folderId === '')
+    );
     const newNote: NoteItem = {
       id: `note-${Date.now()}`,
       folderId,
@@ -195,7 +189,7 @@ export function useWorkspaceState() {
       content: '',
       isCompleted: false,
       isPinned: false,
-      order: folderNotes.length,
+      order: siblingNotes.length,
       tags: activeTagFilter ? [activeTagFilter] : [],
       links: [],
       sketches: [],
@@ -236,25 +230,9 @@ export function useWorkspaceState() {
 
   const handleDeleteFolder = (id: string) => {
     recordSnapshot(getSnapshot());
-    const deleted = folders.find((f) => f.id === id);
     const remainingFolders = folders.filter((f) => f.id !== id);
     setNotes((prev) => prev.filter((n) => n.folderId !== id));
     api.deleteFolder(id);
-
-    if (deleted) {
-      const subjectHasRemaining = remainingFolders.some((f) => f.subjectId === deleted.subjectId);
-      if (!subjectHasRemaining) {
-        const autoFolder: FolderItem = {
-          id: `folder-${Date.now()}`,
-          subjectId: deleted.subjectId,
-          name: 'General',
-          isExpanded: true,
-          order: 0,
-        };
-        remainingFolders.push(autoFolder);
-        api.saveFolder(autoFolder);
-      }
-    }
 
     setFolders(remainingFolders);
     if (selectedFolderId === id) {

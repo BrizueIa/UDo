@@ -137,13 +137,19 @@ pub fn import_workspace_json(
         let sketches_json = serde_json::to_string(&note.sketches).unwrap_or_else(|_| "[]".to_string());
         let attachments_json = serde_json::to_string(&note.attachments).unwrap_or_else(|_| "[]".to_string());
 
+        let folder_id_param: Option<&str> = if note.folder_id.trim().is_empty() {
+            None
+        } else {
+            Some(note.folder_id.as_str())
+        };
+
         tx.execute(
             "INSERT INTO notes (id, folder_id, subject_id, title, content, is_completed, is_pinned,
                                 tags_json, links_json, sketches_json, attachments_json,
                                 created_at, updated_at, due_date, focus_minutes, sort_order, is_deleted)
              VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, 0)",
             params![
-                note.id, note.folder_id, note.subject_id, note.title, note.content,
+                note.id, folder_id_param, note.subject_id, note.title, note.content,
                 if note.is_completed { 1 } else { 0 },
                 if note.is_pinned { 1 } else { 0 },
                 tags_json, links_json, sketches_json, attachments_json,

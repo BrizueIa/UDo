@@ -61,11 +61,18 @@ export function useFoldersContextMenu({
           id: 'batch-move',
           label: t('batch.moveToFolder') || 'Mover a carpeta...',
           icon: <FolderInput size={14} />,
-          submenu: folders.map((f) => ({
-            id: `sub-${f.id}`,
-            label: f.name,
-            onClick: () => onBatchMoveNotesToFolder?.(targetIds, f.id),
-          })),
+          submenu: [
+            {
+              id: 'sub-batch-root',
+              label: t('folders.noFolder'),
+              onClick: () => onBatchMoveNotesToFolder?.(targetIds, ''),
+            },
+            ...folders.map((f) => ({
+              id: `sub-${f.id}`,
+              label: f.name,
+              onClick: () => onBatchMoveNotesToFolder?.(targetIds, f.id),
+            })),
+          ],
         },
         { id: 'sep-1', label: '', separator: true },
         {
@@ -102,11 +109,18 @@ export function useFoldersContextMenu({
           id: 'move-to',
           label: t('note.moveToFolder') || 'Mover a carpeta...',
           icon: <FolderInput size={14} />,
-          submenu: folders.map((f) => ({
-            id: `sub-${f.id}`,
-            label: f.name,
-            onClick: () => onMoveNoteToFolder?.(note.id, f.id),
-          })),
+          submenu: [
+            {
+              id: 'sub-single-root',
+              label: t('folders.noFolder'),
+              onClick: () => onMoveNoteToFolder?.(note.id, ''),
+            },
+            ...folders.map((f) => ({
+              id: `sub-${f.id}`,
+              label: f.name,
+              onClick: () => onMoveNoteToFolder?.(note.id, f.id),
+            })),
+          ],
         },
         { id: 'sep-1', label: '', separator: true },
         {

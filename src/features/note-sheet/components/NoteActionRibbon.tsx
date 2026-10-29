@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NoteItem, FolderItem } from '../../../shared/types';
-import { CheckSquare, Pin, ChevronDown, Trash2, Timer, Folder } from 'lucide-react';
+import { CheckSquare, Pin, ChevronDown, Trash2, Timer, Folder, FileText } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { renderRichTitle } from '../utils/inlineRichTextParser';
@@ -115,9 +115,13 @@ export const NoteActionRibbon: React.FC<Props> = ({
             className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs bg-theme-card/80 hover:bg-theme-card text-theme-text border border-white/[0.06] transition-colors shadow-sm cursor-pointer"
             title={t('note.moveToFolder')}
           >
-            <Folder size={13} className="text-amber-400 fill-amber-400/20 shrink-0" />
+            {note.folderId ? (
+              <Folder size={13} className="text-amber-400 fill-amber-400/20 shrink-0" />
+            ) : (
+              <FileText size={13} className="text-theme-muted shrink-0" />
+            )}
             <span className="font-medium truncate max-w-[120px]">
-              {renderRichTitle(folderName, 'ribbon', 0, { ignoreSize: true })}
+              {renderRichTitle(folderName || t('folders.noFolder'), 'ribbon', 0, { ignoreSize: true })}
             </span>
             <ChevronDown size={12} className="text-theme-muted" />
           </button>
@@ -134,6 +138,20 @@ export const NoteActionRibbon: React.FC<Props> = ({
                   {t('note.moveToFolder')}
                 </div>
                 <div className="max-h-48 overflow-y-auto py-1">
+                  <button
+                    onClick={() => {
+                      onSelectFolder('');
+                      setShowFolderPicker(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 text-xs flex items-center space-x-2 hover:bg-theme-hover transition-colors ${
+                      !note.folderId
+                        ? 'text-theme-accent font-semibold bg-theme-hover/50'
+                        : 'text-theme-text'
+                    }`}
+                  >
+                    <FileText size={13} className="text-theme-muted shrink-0" />
+                    <span className="truncate">{t('folders.noFolder')}</span>
+                  </button>
                   {displayFolders.map((f) => (
                     <button
                       key={f.id}

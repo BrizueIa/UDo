@@ -29,7 +29,7 @@ export const App: React.FC = () => {
 
   const {
     subjects, folders, notes, selectedSubjectId, selectedFolderId, selectedNoteId, activeTagFilter,
-    currentSubject, currentSubjectFolders, currentNote, currentFolder,
+    currentSubject, currentSubjectFolders, currentNote,
     setSelectedSubjectId, setSelectedFolderId, setSelectedNoteId, setActiveTagFilter,
     handleUpdateNote, handleToggleNoteComplete, handleDeleteNote, handleCreateNote,
     handleMoveNoteToFolder, handleReorderOrMoveNote, handleReorderFolder,
@@ -81,8 +81,12 @@ export const App: React.FC = () => {
   const handleRevealLocation = () => {
     if (!effectiveCurrentNote) return;
     setSelectedSubjectId(effectiveCurrentNote.subjectId);
-    setSelectedFolderId(effectiveCurrentNote.folderId);
-    handleToggleFolderExpand(effectiveCurrentNote.folderId);
+    if (effectiveCurrentNote.folderId) {
+      setSelectedFolderId(effectiveCurrentNote.folderId);
+      handleToggleFolderExpand(effectiveCurrentNote.folderId);
+    } else {
+      setSelectedFolderId('');
+    }
   };
 
   const handleSprintCompleted = useCallback(
@@ -336,7 +340,7 @@ export const App: React.FC = () => {
               key={effectiveCurrentNote.id}
               note={effectiveCurrentNote}
               notes={notes}
-              folderName={noteFolder?.name || currentFolder?.name || 'Notes'}
+              folderName={noteFolder?.name || ''}
               folders={currentSubjectFolders}
               subjectName={noteSubject?.name}
               subjectColor={noteSubject?.color}
@@ -358,10 +362,7 @@ export const App: React.FC = () => {
               onSelectTagFilter={(tag) => setActiveTagFilter(tag)}
               onOpenSketchAnnotator={(sketch) => modalState.setActiveSketch(sketch)}
               onOpenWhiteboard={() => modalState.setActiveSketch({
-                id: `sketch-${Date.now()}`,
-                title: t('note.whiteboardDrawing'),
-                dataUrl: '',
-                createdAt: new Date().toISOString(),
+                id: `sketch-${Date.now()}`, title: t('note.whiteboardDrawing'), dataUrl: '', createdAt: new Date().toISOString(),
               })}
               onWorkspaceUndo={handleWorkspaceUndo}
               onWorkspaceRedo={handleWorkspaceRedo}
@@ -383,11 +384,7 @@ export const App: React.FC = () => {
         vault={vault}
         focusTimer={focusTimer}
         onSaveSketch={handleSaveSketch}
-        onSelectNoteFromPalette={(noteId, subjectId) => {
-          setSelectedSubjectId(subjectId);
-          setSelectedNoteId(noteId);
-          setActiveColumn(3);
-        }}
+        onSelectNoteFromPalette={(noteId, subjectId) => { setSelectedSubjectId(subjectId); setSelectedNoteId(noteId); setActiveColumn(3); }}
         onQuickAddSave={handleQuickAddSave}
         onNotesRestored={reloadWorkspaceData}
       />

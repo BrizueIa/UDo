@@ -69,6 +69,16 @@ export const BatchActionBar: React.FC<Props> = ({
                 <div className="px-2.5 py-1 text-[10px] font-semibold text-theme-muted uppercase tracking-wider">
                   {t('batch.selectFolder') || 'Seleccionar carpeta'}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onMoveAllToFolder('');
+                    setShowFolderPicker(false);
+                  }}
+                  className="w-full text-left px-2.5 py-1.5 text-xs text-theme-muted hover:text-theme-text hover:bg-theme-hover truncate transition-colors italic"
+                >
+                  {t('folders.noFolder')}
+                </button>
                 {folders.map((f) => (
                   <button
                     key={f.id}

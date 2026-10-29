@@ -75,11 +75,15 @@ export const NoteTitleBar: React.FC<Props> = ({
             <span className="font-medium text-theme-muted hover:text-theme-text">
               {renderRichTitle(subjectName || 'Project', 'bc-subj', 0, { ignoreSize: true })}
             </span>
-            <ChevronRight size={11} className="text-theme-muted/50" />
-            <Folder size={12} className="text-amber-400 fill-amber-400/20 flex-shrink-0" />
-            <span className="font-medium text-theme-muted hover:text-theme-text">
-              {renderRichTitle(folderName || 'Folder', 'bc-fold', 0, { ignoreSize: true })}
-            </span>
+            {folderName && (
+              <>
+                <ChevronRight size={11} className="text-theme-muted/50" />
+                <Folder size={12} className="text-amber-400 fill-amber-400/20 flex-shrink-0" />
+                <span className="font-medium text-theme-muted hover:text-theme-text">
+                  {renderRichTitle(folderName, 'bc-fold', 0, { ignoreSize: true })}
+                </span>
+              </>
+            )}
           </button>
         </div>
       )}

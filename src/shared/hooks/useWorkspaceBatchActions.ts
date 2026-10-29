@@ -68,11 +68,28 @@ export function useWorkspaceBatchActions({
   const handleBatchMoveNotesToFolder = useCallback(
     (ids: string[], targetFolderId: string) => {
       if (!ids || ids.length === 0) return;
-      const targetFolder = folders.find((f) => f.id === targetFolderId);
-      if (!targetFolder) return;
-
       recordSnapshot(getSnapshot());
       const idSet = new Set(ids);
+
+      if (!targetFolderId) {
+        setNotes((prev) =>
+          prev.map((n) => {
+            if (idSet.has(n.id)) {
+              const updated: NoteItem = {
+                ...n,
+                folderId: '',
+              };
+              api.saveNote(updated);
+              return updated;
+            }
+            return n;
+          })
+        );
+        return;
+      }
+
+      const targetFolder = folders.find((f) => f.id === targetFolderId);
+      if (!targetFolder) return;
 
       setNotes((prev) =>
         prev.map((n) => {
@@ -95,12 +112,25 @@ export function useWorkspaceBatchActions({
   const handleBatchMoveNotesToSubject = useCallback(
     (ids: string[], targetSubjectId: string) => {
       if (!ids || ids.length === 0) return;
-      const targetFolders = folders.filter((f) => f.subjectId === targetSubjectId);
-      if (targetFolders.length === 0) return;
-      const targetFolderId = targetFolders[0].id;
-      handleBatchMoveNotesToFolder(ids, targetFolderId);
+      recordSnapshot(getSnapshot());
+      const idSet = new Set(ids);
+
+      setNotes((prev) =>
+        prev.map((n) => {
+          if (idSet.has(n.id)) {
+            const updated: NoteItem = {
+              ...n,
+              subjectId: targetSubjectId,
+              folderId: '',
+            };
+            api.saveNote(updated);
+            return updated;
+          }
+          return n;
+        })
+      );
     },
-    [folders, handleBatchMoveNotesToFolder]
+    [recordSnapshot, getSnapshot, setNotes]
   );
 
   const handleToggleSubjectPrivate = useCallback(

@@ -35,6 +35,10 @@
   "folders": {
     "addFolder": "New Folder",
     "addNote": "New Note",
+    "newRootNote": "New Note",
+    "noFolder": "No folder (Root)",
+    "rootNotes": "Root Notes",
+    "noFoldersAndNotes": "No notes or folders in this project yet.",
     "collapseFolder": "Collapse Folder",
     "expandFolder": "Expand Folder",
     "empty": "No folders in this project yet.",
