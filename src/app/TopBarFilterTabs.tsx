@@ -21,9 +21,9 @@ export const TopBarFilterTabs: React.FC<Props> = ({
   const { t } = useTranslation();
 
   const filterTabs = [
-    { id: 'all', label: `${t('nav.filterAll')} (${totalCount})` },
-    { id: 'pending', label: `${t('nav.filterPending')} (${pendingCount})` },
-    { id: 'completed', label: `${t('nav.filterCompleted')} (${completedCount})` },
+    { id: 'all', label: t('nav.filterAll'), count: totalCount, dotColor: null },
+    { id: 'pending', label: t('nav.filterPending'), count: pendingCount, dotColor: 'bg-amber-400' },
+    { id: 'completed', label: t('nav.filterCompleted'), count: completedCount, dotColor: 'bg-[#1fd4a5]' },
   ];
 
   return (
@@ -46,7 +46,11 @@ export const TopBarFilterTabs: React.FC<Props> = ({
                 transition={{ type: 'spring', stiffness: 450, damping: 32 }}
               />
             )}
-            <span className="relative z-10 text-[11px]">{tab.label}</span>
+            <span className="relative z-10 text-[11px] flex items-center space-x-1">
+              {tab.dotColor && <span className={`w-1.5 h-1.5 rounded-[2px] ${tab.dotColor}`} />}
+              <span>{tab.label}</span>
+              <span className="opacity-75 font-mono text-[10px]">({tab.count})</span>
+            </span>
           </button>
         );
       })}

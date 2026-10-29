@@ -6,6 +6,7 @@ import { FolderPlus, Check, X, Hash, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { normalizeDiacritics } from '../../../shared/utils/diacritics';
+import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
 
 interface Props {
   currentSubject?: SubjectItem;
@@ -137,7 +138,7 @@ export const FoldersList: React.FC<Props> = ({
       {/* Header with active subject title and new folder button */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-theme-border/50">
         <h2 className="text-sm font-semibold text-theme-text truncate">
-          {currentSubject?.name || t('nav.subjects')}
+          {renderRichTitle(currentSubject?.name || t('nav.subjects'))}
         </h2>
         <button
           onClick={() => setIsCreating(true)}

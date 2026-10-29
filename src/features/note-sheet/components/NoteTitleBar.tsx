@@ -1,5 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { NoteFindBar } from './NoteFindBar';
+import { RichTextToolbar } from './RichTextToolbar';
+import { useRichTextSelection } from '../hooks/useRichTextSelection';
 import { useTranslation } from 'react-i18next';
 import { renderRichTitle } from '../utils/inlineRichTextParser';
 
@@ -32,32 +34,59 @@ export const NoteTitleBar: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const {
+    inputRef,
+    coords,
+    handleMouseUp,
+    handleKeyUp,
+    closeToolbar,
+  } = useRichTextSelection<HTMLInputElement>();
 
   return (
     <div className="flex items-center justify-between gap-4">
       {isEditing ? (
-        <input
-          ref={inputRef}
-          type="text"
-          autoFocus
-          value={localTitle}
-          onChange={onTitleChange}
-          onBlur={() => {
-            setIsEditing(false);
-            onBlur();
-          }}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
+        <div className="relative w-full">
+          <input
+            ref={inputRef}
+            type="text"
+            autoFocus
+            value={localTitle}
+            onChange={onTitleChange}
+            onMouseUp={handleMouseUp}
+            onKeyUp={handleKeyUp}
+            onBlur={(e) => {
+              if (
+                e.relatedTarget &&
+                (e.relatedTarget as HTMLElement).closest('[data-rich-toolbar="true"]')
+              ) {
+                return;
+              }
               setIsEditing(false);
+              closeToolbar();
               onBlur();
-            }
-          }}
-          placeholder={t('note.titlePlaceholder')}
-          className={`w-full text-3xl font-bold bg-transparent outline-none border-b border-theme-accent/60 pb-1 transition-colors ${
-            isCompleted ? 'line-through text-theme-muted opacity-80' : 'text-theme-text'
-          }`}
-        />
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setIsEditing(false);
+                closeToolbar();
+                onBlur();
+              }
+            }}
+            placeholder={t('note.titlePlaceholder')}
+            className={`w-full text-3xl font-bold bg-transparent outline-none border-b border-theme-accent/60 pb-1 transition-colors ${
+              isCompleted ? 'line-through text-theme-muted opacity-80' : 'text-theme-text'
+            }`}
+          />
+          <RichTextToolbar
+            inputRef={inputRef}
+            content={localTitle}
+            coords={coords}
+            onChangeContent={(newTitle) => {
+              onTitleChange({ target: { value: newTitle } } as any);
+            }}
+            onClose={closeToolbar}
+          />
+        </div>
       ) : (
         <div
           onClick={() => {

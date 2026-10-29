@@ -7,10 +7,14 @@ import {
   Trash2,
   Check,
   X,
+  Folder,
+  FolderOpen,
 } from 'lucide-react';
 import { FolderItem } from '../../../shared/types';
 import { useTranslation } from 'react-i18next';
 import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
+import { RichTextToolbar } from '../../note-sheet/components/RichTextToolbar';
+import { useRichTextSelection } from '../../note-sheet/hooks/useRichTextSelection';
 
 interface Props {
   folder: FolderItem;
@@ -43,6 +47,13 @@ export const FolderItemRow: React.FC<Props> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDragOverNote, setIsDragOverNote] = useState(false);
   const [dropPosition, setDropPosition] = useState<'before' | 'after' | null>(null);
+  const {
+    inputRef,
+    coords,
+    handleMouseUp,
+    handleKeyUp,
+    closeToolbar,
+  } = useRichTextSelection<HTMLInputElement>();
 
   const handleDragOver = (e: React.DragEvent) => {
     const isFolder = e.dataTransfer.types.includes('application/udo-folder-id');
@@ -119,30 +130,52 @@ export const FolderItemRow: React.FC<Props> = ({
 
   if (isEditing) {
     return (
-      <div className="flex items-center space-x-1 px-2 py-1 rounded bg-theme-card border border-theme-accent/50">
+      <div className="relative flex items-center space-x-1 px-2 py-1 rounded bg-theme-card border border-theme-accent/50">
         <input
+          ref={inputRef}
           type="text"
           autoFocus
           value={editingName}
           onChange={(e) => setEditingName(e.target.value)}
+          onMouseUp={handleMouseUp}
+          onKeyUp={handleKeyUp}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSaveEdit();
-            if (e.key === 'Escape') setIsEditing(false);
+            if (e.key === 'Enter') {
+              closeToolbar();
+              handleSaveEdit();
+            }
+            if (e.key === 'Escape') {
+              closeToolbar();
+              setIsEditing(false);
+            }
           }}
           className="flex-1 bg-transparent text-xs text-theme-text outline-none px-1"
         />
         <button
-          onClick={() => setIsEditing(false)}
+          onClick={() => {
+            closeToolbar();
+            setIsEditing(false);
+          }}
           className="p-0.5 text-theme-muted hover:text-theme-text"
         >
           <X size={12} />
         </button>
         <button
-          onClick={() => handleSaveEdit()}
+          onClick={() => {
+            closeToolbar();
+            handleSaveEdit();
+          }}
           className="p-0.5 text-theme-accent hover:text-theme-accent-hover"
         >
           <Check size={12} />
         </button>
+        <RichTextToolbar
+          inputRef={inputRef}
+          content={editingName}
+          coords={coords}
+          onChangeContent={(newName) => setEditingName(newName)}
+          onClose={closeToolbar}
+        />
       </div>
     );
   }
@@ -182,10 +215,17 @@ export const FolderItemRow: React.FC<Props> = ({
         <span className="text-theme-muted">
           {folder.isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </span>
-        <span className="text-xs font-semibold text-theme-text truncate">
-          📁 {renderRichTitle(folder.name)}
+        <span className="flex items-center space-x-1.5 min-w-0 truncate">
+          {folder.isExpanded ? (
+            <FolderOpen size={14} className="text-amber-400 fill-amber-400/25 shrink-0" />
+          ) : (
+            <Folder size={14} className="text-amber-400 fill-amber-400/20 shrink-0" />
+          )}
+          <span className="text-xs font-semibold text-theme-text truncate">
+            {renderRichTitle(folder.name)}
+          </span>
         </span>
-        <span className="text-[11px] text-theme-muted font-mono">
+        <span className="text-[11px] text-theme-muted font-mono ml-1">
           ({noteCount})
         </span>
       </button>

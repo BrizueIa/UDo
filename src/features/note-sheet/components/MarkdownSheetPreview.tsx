@@ -216,10 +216,11 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
     <div className="space-y-3 relative">
       {/* Word-style Floating Mini-Toolbar on Selection */}
       <RichTextToolbar
-        textareaRef={textareaRef}
+        inputRef={textareaRef}
         content={content}
         coords={selectionCoords}
         onChangeContent={onChangeContent}
+        onClose={() => setSelectionCoords(null)}
       />
 
       {hasCheckboxes && (

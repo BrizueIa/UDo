@@ -4,6 +4,8 @@ import { Pencil, Trash2, X, Check, Folder } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
+import { RichTextToolbar } from '../../note-sheet/components/RichTextToolbar';
+import { useRichTextSelection } from '../../note-sheet/hooks/useRichTextSelection';
 
 const COLOR_PALETTE = [
   '#5551f5', '#1fd4a5', '#a986ff', '#ffc95f',
@@ -40,6 +42,13 @@ export const SubjectItemRow: React.FC<Props> = ({
   const [editName, setEditName] = useState(subject.name);
   const [editColor, setEditColor] = useState(subject.color);
   const [isDeleting, setIsDeleting] = useState(false);
+  const {
+    inputRef,
+    coords,
+    handleMouseUp,
+    handleKeyUp,
+    closeToolbar,
+  } = useRichTextSelection<HTMLInputElement>();
 
   const [isDragOver, setIsDragOver] = useState(false);
   const [showFolderSubmenu, setShowFolderSubmenu] = useState(false);
@@ -120,15 +129,24 @@ export const SubjectItemRow: React.FC<Props> = ({
 
   if (isEditing) {
     return (
-      <div className="p-2.5 bg-theme-card border border-theme-accent/40 rounded-xl space-y-2 shadow-sm">
+      <div className="relative p-2.5 bg-theme-card border border-theme-accent/40 rounded-xl space-y-2 shadow-sm">
         <input
+          ref={inputRef}
           type="text"
           autoFocus
           value={editName}
           onChange={(e) => setEditName(e.target.value)}
+          onMouseUp={handleMouseUp}
+          onKeyUp={handleKeyUp}
           onKeyDown={(e) => {
-            if (e.key === 'Enter') handleSaveEdit();
-            if (e.key === 'Escape') setIsEditing(false);
+            if (e.key === 'Enter') {
+              closeToolbar();
+              handleSaveEdit();
+            }
+            if (e.key === 'Escape') {
+              closeToolbar();
+              setIsEditing(false);
+            }
           }}
           className="w-full bg-theme-column px-2 py-1 rounded text-xs outline-none border border-theme-border text-theme-text"
         />
@@ -146,13 +164,32 @@ export const SubjectItemRow: React.FC<Props> = ({
           ))}
         </div>
         <div className="flex items-center justify-end space-x-1 pt-1">
-          <button onClick={() => setIsEditing(false)} className="p-1 rounded text-theme-muted hover:text-theme-text">
+          <button
+            onClick={() => {
+              closeToolbar();
+              setIsEditing(false);
+            }}
+            className="p-1 rounded text-theme-muted hover:text-theme-text"
+          >
             <X size={13} />
           </button>
-          <button onClick={() => handleSaveEdit()} className="p-1 rounded bg-theme-accent text-white hover:bg-theme-accent-hover">
+          <button
+            onClick={() => {
+              closeToolbar();
+              handleSaveEdit();
+            }}
+            className="p-1 rounded bg-theme-accent text-white hover:bg-theme-accent-hover"
+          >
             <Check size={13} />
           </button>
         </div>
+        <RichTextToolbar
+          inputRef={inputRef}
+          content={editName}
+          coords={coords}
+          onChangeContent={(newName) => setEditName(newName)}
+          onClose={closeToolbar}
+        />
       </div>
     );
   }
@@ -293,8 +330,8 @@ export const SubjectItemRow: React.FC<Props> = ({
                       : 'bg-theme-card/60 hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-theme-border/40'
                   }`}
                 >
-                  <Folder size={12} className={isOverFolder ? 'text-white' : 'text-theme-muted'} />
-                  <span className="truncate">{f.name}</span>
+                  <Folder size={12} className={isOverFolder ? 'text-white' : 'text-amber-400 fill-amber-400/20'} />
+                  <span className="truncate">{renderRichTitle(f.name)}</span>
                 </div>
               );
             })}

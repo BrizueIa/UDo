@@ -4,6 +4,7 @@ import { Search, Hash, FileText, CornerDownLeft, ArrowUpDown } from 'lucide-reac
 import { useTranslation } from 'react-i18next';
 import { api } from '../../../shared/api/ipc';
 import { buildDiacriticRegex } from '../../../shared/utils/diacritics';
+import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
 
 interface Props {
   isOpen: boolean;
@@ -155,7 +156,7 @@ export const CommandPalette: React.FC<Props> = ({
                     <div className="flex items-center space-x-2.5 min-w-0">
                       <FileText size={15} className="text-theme-accent flex-shrink-0" />
                       <span className="text-xs font-medium text-theme-text truncate">
-                        {note.title || t('note.untitled', 'Untitled note')}
+                        {renderRichTitle(note.title || t('note.untitled', 'Untitled note'))}
                       </span>
                       {note.tags.length > 0 && (
                         <span className="flex items-center space-x-0.5 text-[11px] text-theme-muted">

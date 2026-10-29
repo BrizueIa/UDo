@@ -5,17 +5,17 @@
 
   /* Default / Official: UDo Original */
   :root, [data-theme="udo-original"] {
-    --color-bg-base: #0e101c;
-    --color-bg-sidebar: #090b14;
-    --color-bg-column: #131626;
-    --color-bg-card: #1a1e33;
-    --color-bg-hover: #232842;
-    --color-border: #262b47;
-    --color-text-main: #f3f3fb;
-    --color-text-muted: #9499c4;
-    --color-accent: #5551f5;
-    --color-accent-glow: rgba(85, 81, 245, 0.30);
-    --color-accent-hover: #8b85ff;
+    --color-bg-base: #161826;
+    --color-bg-sidebar: #11131f;
+    --color-bg-column: #191c2d;
+    --color-bg-card: #22263d;
+    --color-bg-hover: #2c3252;
+    --color-border: #313759;
+    --color-text-main: #f5f6ff;
+    --color-text-muted: #9da4d4;
+    --color-accent: #5b57f7;
+    --color-accent-glow: rgba(91, 87, 247, 0.32);
+    --color-accent-hover: #7e7aff;
     --color-node-mint: #1fd4a5;
     --color-node-violet: #a986ff;
     --color-node-amber: #ffc95f;
