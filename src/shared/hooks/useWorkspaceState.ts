@@ -177,6 +177,7 @@ export function useWorkspaceState() {
       tags: activeTagFilter ? [activeTagFilter] : [],
       links: [],
       sketches: [],
+      attachments: [],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

@@ -115,7 +115,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
       onDragOver={handleAsideDragOver}
       onDragLeave={handleAsideDragLeave}
       onDrop={handleAsideDrop}
-      className={`relative w-56 flex-shrink-0 bg-theme-sidebar border-r border-theme-border flex flex-col h-full select-none transition-all ${
+      className={`relative w-44 lg:w-56 flex-shrink-0 bg-theme-sidebar border-r border-theme-border flex flex-col h-full select-none transition-all ${
         isFocused ? 'ring-1 ring-inset ring-theme-accent/40 shadow-sm' : ''
       } ${isDropOverEmptySpace ? 'bg-theme-accent/5' : ''}`}
     >

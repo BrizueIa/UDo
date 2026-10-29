@@ -57,6 +57,10 @@ pub fn run() {
             window::close_window_to_tray,
             window::get_window_env,
             services::send_native_notification,
+            services::attachments::save_attachment_file,
+            services::attachments::open_attachment_native,
+            services::attachments::read_attachment_base64,
+            services::attachments::delete_attachment_file,
         ])
         .run(tauri::generate_context!())
         .expect("error while running UDo application");

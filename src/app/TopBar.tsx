@@ -1,10 +1,23 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { ViewFilter, ThemeId, AccentColor, CustomThemeDefinition } from '../shared/types';
 import { TrafficLights } from '../shared/ui/TrafficLights';
 import { ThemeSelectorMenu } from '../shared/ui/ThemeSelectorMenu';
+import { VolumePopover } from './VolumePopover';
 import { api, WindowEnvironment } from '../shared/api/ipc';
-import { playTaskCompleteSound } from '../shared/utils/soundEffects';
-import { Search, Globe, HelpCircle, Layers, X, Volume2, VolumeX, Timer, Play, Pause, PanelLeft } from 'lucide-react';
+import {
+  Search,
+  Globe,
+  HelpCircle,
+  Layers,
+  X,
+  Timer,
+  Play,
+  Pause,
+  PanelLeft,
+  FolderTree,
+  Maximize2,
+  Minimize2,
+} from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { FocusTimerState } from '../shared/hooks/useFocusTimer';
@@ -22,6 +35,9 @@ interface Props {
   timer?: FocusTimerState;
   isAudioMuted: boolean;
   audioVolume: number;
+  isSidebarCollapsed?: boolean;
+  isFoldersCollapsed?: boolean;
+  isZenMode?: boolean;
   onVolumeChange: (vol: number) => void;
   onSearchChange: (q: string) => void;
   onOpenSearchPalette: (initialQuery?: string) => void;
@@ -34,7 +50,8 @@ interface Props {
   onToggleShortcutsModal: () => void;
   onToggleWidgetMode: () => void;
   onToggleAudioMute: () => void;
-  isZenMode?: boolean;
+  onToggleSidebar?: () => void;
+  onToggleFolders?: () => void;
   onToggleZenMode?: () => void;
   onOpenTimerModal?: () => void;
 }
@@ -52,6 +69,8 @@ export const TopBar: React.FC<Props> = ({
   timer,
   isAudioMuted,
   audioVolume,
+  isSidebarCollapsed = false,
+  isFoldersCollapsed = false,
   isZenMode = false,
   onVolumeChange,
   onSearchChange,
@@ -65,13 +84,13 @@ export const TopBar: React.FC<Props> = ({
   onToggleShortcutsModal,
   onToggleWidgetMode,
   onToggleAudioMute,
+  onToggleSidebar,
+  onToggleFolders,
   onToggleZenMode,
   onOpenTimerModal,
 }) => {
   const { t, i18n } = useTranslation();
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const volumePopoverRef = useRef<HTMLDivElement>(null);
-  const [showVolumePopover, setShowVolumePopover] = useState(false);
   const [windowEnv, setWindowEnv] = useState<WindowEnvironment>({
     os: 'linux',
     desktop: '',
@@ -84,19 +103,7 @@ export const TopBar: React.FC<Props> = ({
     api.getWindowEnv().then(setWindowEnv).catch(() => {});
   }, []);
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (volumePopoverRef.current && !volumePopoverRef.current.contains(e.target as Node)) {
-        setShowVolumePopover(false);
-      }
-    };
-    if (showVolumePopover) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [showVolumePopover]);
-
-  // Global Ctrl + Shift + F listener to focus & select active category search bar (FR-06)
+  // Global Ctrl + Shift + F listener to focus & select search bar
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.ctrlKey && e.shiftKey && e.key.toLowerCase() === 'f') {
@@ -127,48 +134,78 @@ export const TopBar: React.FC<Props> = ({
   return (
     <header
       data-tauri-drag-region
-      className="h-12 bg-theme-sidebar border-b border-theme-border flex items-center justify-between px-3 select-none flex-shrink-0 z-20"
+      className="h-12 bg-theme-sidebar border-b border-theme-border flex items-center justify-between px-3 select-none flex-shrink-0 z-20 gap-2"
     >
-      {/* Left: macOS Traffic Lights (if left side) + App Title + Current Project Badge */}
-      <div className="flex items-center space-x-3">
+      {/* Left: Window Controls (if left) + Column Toggles + App Title */}
+      <div className="flex items-center space-x-2 shrink-0">
         {windowEnv.controlsSide === 'left' && (
-          <TrafficLights
-            showMinMax={windowEnv.showMinMax}
-            styleMode="mac"
-          />
+          <TrafficLights showMinMax={windowEnv.showMinMax} styleMode="mac" />
         )}
 
-        <div className="flex items-center space-x-2">
-          {onToggleZenMode && (
+        <div className="flex items-center space-x-1.5">
+          {/* Column 1 Toggle (Subjects, Ctrl+B) */}
+          {onToggleSidebar && (
             <button
               type="button"
-              onClick={onToggleZenMode}
-              className={`p-1 rounded-md transition-colors cursor-pointer ${
-                !isZenMode
+              onClick={onToggleSidebar}
+              className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                !isSidebarCollapsed
                   ? 'text-theme-muted hover:text-theme-text hover:bg-theme-card'
                   : 'text-theme-accent bg-theme-accent/20 hover:bg-theme-accent/30'
               }`}
-              title={t('nav.toggleSidebars')}
+              title={`${t('nav.toggleSubjects')} (Ctrl+B)`}
             >
               <PanelLeft size={14} />
             </button>
           )}
 
-          <span className="w-2.5 h-2.5 rounded-full bg-theme-accent shadow-sm" />
+          {/* Column 2 Toggle (Folders, Ctrl+\) */}
+          {onToggleFolders && (
+            <button
+              type="button"
+              onClick={onToggleFolders}
+              className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                !isFoldersCollapsed
+                  ? 'text-theme-muted hover:text-theme-text hover:bg-theme-card'
+                  : 'text-theme-accent bg-theme-accent/20 hover:bg-theme-accent/30'
+              }`}
+              title={`${t('nav.toggleFolders')} (Ctrl+\\)`}
+            >
+              <FolderTree size={14} />
+            </button>
+          )}
+
+          {/* Zen Mode Toggle (F11) */}
+          {onToggleZenMode && (
+            <button
+              type="button"
+              onClick={onToggleZenMode}
+              className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                !isZenMode
+                  ? 'text-theme-muted hover:text-theme-text hover:bg-theme-card'
+                  : 'text-theme-accent bg-theme-accent/20 hover:bg-theme-accent/30'
+              }`}
+              title={`${t('nav.toggleSidebars')} (F11)`}
+            >
+              {isZenMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            </button>
+          )}
+
+          <span className="w-2.5 h-2.5 rounded-full bg-theme-accent shadow-sm ml-1" />
           <h1 className="text-xs font-bold tracking-tight text-theme-text font-sans">
             {t('app.title')}
           </h1>
 
           {currentSubjectName && (
-            <span className="px-2 py-0.5 rounded-md bg-theme-card text-[11px] font-semibold text-theme-muted border border-white/[0.05]">
+            <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-theme-card text-[11px] font-semibold text-theme-muted border border-white/[0.05] truncate max-w-[130px]">
               {currentSubjectName}
             </span>
           )}
         </div>
       </div>
 
-      {/* Middle: Unified Search Bar with Real-time Filtering & Quick Ctrl+K Palette */}
-      <div className="flex-1 max-w-md mx-4">
+      {/* Middle: Unified Search Bar */}
+      <div className="flex-1 max-w-md mx-2 min-w-0">
         <div className="relative flex items-center group">
           <Search
             size={14}
@@ -197,7 +234,7 @@ export const TopBar: React.FC<Props> = ({
             <button
               type="button"
               onClick={() => onOpenSearchPalette(searchQuery)}
-              className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-theme-hover text-theme-muted border border-white/[0.06] hover:border-theme-accent/40 hover:text-theme-text transition-colors cursor-pointer"
+              className="hidden sm:inline-block text-[10px] font-mono px-1.5 py-0.5 rounded bg-theme-hover text-theme-muted border border-white/[0.06] hover:border-theme-accent/40 hover:text-theme-text transition-colors cursor-pointer"
               title="Ctrl + K"
             >
               Ctrl K
@@ -207,12 +244,12 @@ export const TopBar: React.FC<Props> = ({
       </div>
 
       {/* Right: Filter Pills + Quick Tools */}
-      <div className="flex items-center space-x-3">
+      <div className="flex items-center space-x-2 shrink-0">
         {/* Active Focus Sprint Timer (FR-14) */}
         {timer && (timer.isRunning || timer.isPaused) && (
           <div
             onClick={onOpenTimerModal}
-            className={`flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold cursor-pointer border transition-colors shadow-sm whitespace-nowrap ${
+            className={`hidden md:flex items-center space-x-1.5 px-2.5 py-1 rounded-lg text-xs font-mono font-semibold cursor-pointer border transition-colors shadow-sm whitespace-nowrap ${
               timer.isPaused
                 ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
                 : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
@@ -246,7 +283,7 @@ export const TopBar: React.FC<Props> = ({
         )}
 
         {/* Animated Filter Pills */}
-        <div className="flex items-center bg-theme-column/80 p-0.5 rounded-lg border border-white/[0.05] text-xs font-medium">
+        <div className="hidden lg:flex items-center bg-theme-column/80 p-0.5 rounded-lg border border-white/[0.05] text-xs font-medium">
           {filterTabs.map((tab) => {
             const isSelected = filter === tab.id;
             return (
@@ -271,7 +308,7 @@ export const TopBar: React.FC<Props> = ({
         </div>
 
         {/* Quick Icon Actions */}
-        <div className="flex items-center space-x-1 pl-2 border-l border-white/[0.06] text-theme-muted">
+        <div className="flex items-center space-x-1 pl-1 sm:pl-2 border-l border-white/[0.06] text-theme-muted">
           {/* Always-on-top Widget toggle */}
           <button
             onClick={onToggleWidgetMode}
@@ -281,54 +318,15 @@ export const TopBar: React.FC<Props> = ({
             <Layers size={15} />
           </button>
 
-          {/* Audio Feedback Mute & Volume Slider (FR-15) */}
-          <div className="relative" ref={volumePopoverRef}>
-            <button
-              onClick={() => setShowVolumePopover(!showVolumePopover)}
-              className={`p-1.5 rounded-md transition-colors cursor-pointer ${
-                isAudioMuted
-                  ? 'text-theme-muted/60 hover:text-theme-text hover:bg-theme-hover'
-                  : 'text-theme-accent hover:text-theme-accent-hover hover:bg-theme-hover'
-              }`}
-              title={isAudioMuted ? t('audio.unmute') : t('audio.mute')}
-            >
-              {isAudioMuted ? <VolumeX size={15} /> : <Volume2 size={15} />}
-            </button>
+          {/* Audio Feedback Mute & Volume Popover (FR-15) */}
+          <VolumePopover
+            isAudioMuted={isAudioMuted}
+            audioVolume={audioVolume}
+            onVolumeChange={onVolumeChange}
+            onToggleAudioMute={onToggleAudioMute}
+          />
 
-            {showVolumePopover && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-theme-card border border-white/[0.1] rounded-xl shadow-2xl p-2.5 z-50 flex items-center space-x-2">
-                <button
-                  type="button"
-                  onClick={onToggleAudioMute}
-                  className="p-1 rounded text-theme-muted hover:text-theme-text hover:bg-theme-hover transition-colors shrink-0 cursor-pointer"
-                  title={isAudioMuted ? t('audio.unmute') : t('audio.mute')}
-                >
-                  {isAudioMuted ? (
-                    <VolumeX size={14} className="text-red-400" />
-                  ) : (
-                    <Volume2 size={14} className="text-theme-accent" />
-                  )}
-                </button>
-                <input
-                  type="range"
-                  min="0"
-                  max="100"
-                  value={isAudioMuted ? 0 : Math.round(audioVolume * 100)}
-                  onChange={(e) => onVolumeChange(Number(e.target.value) / 100)}
-                  onMouseUp={() => playTaskCompleteSound()}
-                  onTouchEnd={() => playTaskCompleteSound()}
-                  aria-label={t('audio.volume')}
-                  title={t('audio.volume')}
-                  className="w-full accent-theme-accent cursor-pointer h-1.5 bg-theme-base rounded-lg"
-                />
-                <span className="text-[10px] font-mono text-theme-muted w-7 text-right shrink-0">
-                  {isAudioMuted ? '0%' : `${Math.round(audioVolume * 100)}%`}
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* Extracted Theme & VS Code Selector Menu */}
+          {/* Theme Selector Menu */}
           <ThemeSelectorMenu
             currentTheme={currentTheme}
             currentAccent={currentAccent}
@@ -360,13 +358,10 @@ export const TopBar: React.FC<Props> = ({
             <HelpCircle size={15} />
           </button>
 
-          {/* Right: Windows / Linux Window Controls */}
+          {/* Window Controls (Native) */}
           {windowEnv.controlsSide === 'right' && (
-            <div className="pl-2 ml-1 border-l border-theme-border/60 flex items-center">
-              <TrafficLights
-                showMinMax={windowEnv.showMinMax}
-                styleMode="native"
-              />
+            <div className="pl-1 sm:pl-2 ml-1 border-l border-theme-border/60 flex items-center">
+              <TrafficLights showMinMax={windowEnv.showMinMax} styleMode="native" />
             </div>
           )}
         </div>

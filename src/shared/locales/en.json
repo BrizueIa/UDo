@@ -26,7 +26,9 @@
     "filterCompleted": "Done",
     "clearSearch": "Clear search",
     "clearFilter": "Clear filter",
-    "toggleSidebars": "Toggle Sidebars (F11)"
+    "toggleSidebars": "Toggle Sidebars (F11)",
+    "toggleSubjects": "Toggle Projects Sidebar",
+    "toggleFolders": "Toggle Folders List"
   },
   "folders": {
     "addFolder": "New Folder",
@@ -234,6 +236,8 @@
     "summonApp": "Summon / Hide App (Global OS Hotkey)",
     "quickAdd": "Quick Add / Scratchpad Bar",
     "toggleWidget": "Toggle Full Window ↔ Floating Widget",
+    "toggleSidebar": "Toggle Projects Sidebar (Column 1)",
+    "toggleFolders": "Toggle Folders List (Column 2)",
     "zenMode": "Zen Mode (Distraction-free Writing)",
     "showHelp": "Show this Shortcuts Cheat Sheet",
     "escapeAction": "Close modals / Clear search / Unfocus"
@@ -263,5 +267,26 @@
     "exportData": "Export All Data (JSON)",
     "importData": "Import Data",
     "version": "Version"
+  },
+  "attachments": {
+    "attachFile": "Attach File",
+    "files": "Files & Attachments",
+    "openWithSystemApp": "Open with default system application",
+    "deleteAttachment": "Delete attachment",
+    "blockedExtensionError": "File blocked for security reasons: {{ext}} cannot be attached."
+  },
+  "voiceRecorder": {
+    "record": "Voice Note",
+    "recordVoiceNote": "Record audio note with microphone",
+    "voiceNotes": "Voice Notes",
+    "saveRecording": "Save voice recording",
+    "cancelRecording": "Cancel recording",
+    "deleteRecording": "Delete voice note",
+    "microphonePermissionError": "Could not access microphone. Please check permissions."
+  },
+  "audioPlayer": {
+    "play": "Play",
+    "pause": "Pause",
+    "speed": "Playback speed"
   }
 }

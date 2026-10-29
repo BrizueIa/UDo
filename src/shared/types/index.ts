@@ -60,6 +60,18 @@ export interface SketchItem {
   createdAt: string;
 }
 
+export interface NoteAttachment {
+  id: string;
+  name: string;
+  filePath: string;
+  mimeType: string;
+  sizeBytes: number;
+  extension: string;
+  kind: 'file' | 'audio';
+  durationSeconds?: number;
+  createdAt: string;
+}
+
 export interface NoteItem {
   id: string;
   folderId: string;
@@ -71,6 +83,7 @@ export interface NoteItem {
   tags: string[];
   links: LinkItem[];
   sketches: SketchItem[];
+  attachments: NoteAttachment[];
   createdAt: string;
   updatedAt: string;
   dueDate?: string; // Optional deadline

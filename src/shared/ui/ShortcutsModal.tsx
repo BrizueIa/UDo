@@ -25,6 +25,8 @@ export const ShortcutsModal: React.FC<Props> = ({ isOpen, onClose }) => {
     { key: 'Alt + Shift + Space', descKey: 'shortcuts.summonApp' },
     { key: 'Ctrl + Space', descKey: 'shortcuts.quickAdd' },
     { key: 'Alt + W', descKey: 'shortcuts.toggleWidget' },
+    { key: 'Ctrl + B', descKey: 'shortcuts.toggleSidebar' },
+    { key: 'Ctrl + \\', descKey: 'shortcuts.toggleFolders' },
     { key: 'F11', descKey: 'shortcuts.zenMode' },
     { key: '?', descKey: 'shortcuts.showHelp' },
     { key: 'Esc', descKey: 'shortcuts.escapeAction' },

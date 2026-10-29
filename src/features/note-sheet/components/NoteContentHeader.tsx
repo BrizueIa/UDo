@@ -35,12 +35,12 @@ export const NoteContentHeader: React.FC<Props> = ({
   }, [showTemplates]);
 
   return (
-    <div className="flex items-center justify-between pb-1 border-b border-white/[0.05]">
+    <div className="flex items-center justify-between pb-1 border-b border-white/[0.05] flex-wrap gap-2">
       <span className="text-[11px] font-bold tracking-wider text-theme-muted uppercase">
         {t('note.sheetContent')}
       </span>
 
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center flex-wrap gap-1.5">
         {/* Template Picker Dropdown */}
         <div ref={containerRef} className="relative">
           <button

@@ -1,12 +1,15 @@
 import React from 'react';
-import { LinkItem, SketchItem } from '../../../shared/types';
-import { Link as LinkIcon, ExternalLink, Image as ImageIcon, X } from 'lucide-react';
+import { LinkItem, SketchItem, NoteAttachment } from '../../../shared/types';
+import { Link as LinkIcon, ExternalLink, Image as ImageIcon, X, Mic, Paperclip } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
+import { FileAttachmentCard } from './FileAttachmentCard';
+import { AudioAttachmentCard } from './AudioAttachmentCard';
 
 interface Props {
   links: LinkItem[];
   sketches: SketchItem[];
+  attachments?: NoteAttachment[];
   isOpen: boolean;
   showLinkInput: boolean;
   newLinkTitle: string;
@@ -17,12 +20,14 @@ interface Props {
   onCloseLinkInput: () => void;
   onRemoveLink: (id: string) => void;
   onRemoveSketch: (id: string) => void;
+  onRemoveAttachment?: (id: string) => void;
   onOpenSketchAnnotator: (sketch: SketchItem) => void;
 }
 
 export const NoteAttachmentsDrawer: React.FC<Props> = ({
   links,
   sketches,
+  attachments = [],
   isOpen,
   showLinkInput,
   newLinkTitle,
@@ -33,6 +38,7 @@ export const NoteAttachmentsDrawer: React.FC<Props> = ({
   onCloseLinkInput,
   onRemoveLink,
   onRemoveSketch,
+  onRemoveAttachment,
   onOpenSketchAnnotator,
 }) => {
   const { t } = useTranslation();
@@ -46,11 +52,13 @@ export const NoteAttachmentsDrawer: React.FC<Props> = ({
     }
   };
 
-  const totalMediaCount = links.length + sketches.length;
+  const audioAttachments = attachments.filter((a) => a.kind === 'audio');
+  const fileAttachments = attachments.filter((a) => a.kind === 'file');
+  const totalMediaCount = links.length + sketches.length + attachments.length;
 
   return (
     <div className="space-y-3">
-      {/* Rectangular Cards for Attachments (Considerable size, soft subtle borders) */}
+      {/* Rectangular Cards for Attachments */}
       <AnimatePresence>
         {isOpen && totalMediaCount > 0 && (
           <motion.div
@@ -60,6 +68,48 @@ export const NoteAttachmentsDrawer: React.FC<Props> = ({
             transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
             className="space-y-3.5 pt-1 pb-1"
           >
+            {/* Audio Voice Notes */}
+            {audioAttachments.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="text-[11px] font-medium text-theme-muted flex items-center space-x-1.5">
+                  <Mic size={12} className="text-red-400" />
+                  <span>
+                    {t('voiceRecorder.voiceNotes')} ({audioAttachments.length})
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2.5">
+                  {audioAttachments.map((audio) => (
+                    <AudioAttachmentCard
+                      key={audio.id}
+                      attachment={audio}
+                      onRemove={(id) => onRemoveAttachment?.(id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Universal PC File Attachments */}
+            {fileAttachments.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="text-[11px] font-medium text-theme-muted flex items-center space-x-1.5">
+                  <Paperclip size={12} className="text-theme-accent" />
+                  <span>
+                    {t('attachments.files')} ({fileAttachments.length})
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-2.5">
+                  {fileAttachments.map((file) => (
+                    <FileAttachmentCard
+                      key={file.id}
+                      attachment={file}
+                      onRemove={(id) => onRemoveAttachment?.(id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Canvas / Sketches Cards */}
             {sketches.length > 0 && (
               <div className="space-y-1.5">
@@ -77,7 +127,6 @@ export const NoteAttachmentsDrawer: React.FC<Props> = ({
                       onClick={() => onOpenSketchAnnotator(sketch)}
                       className="group relative w-44 rounded-xl bg-theme-card/60 hover:bg-theme-card border border-white/[0.06] hover:border-white/[0.14] overflow-hidden cursor-pointer transition-all shadow-xs hover:shadow-md flex flex-col"
                     >
-                      {/* Image Preview Container (Generous size so drawing is clearly visible) */}
                       <div className="w-full h-24 bg-[#14151f] flex items-center justify-center p-2 relative overflow-hidden">
                         <img
                           src={sketch.dataUrl}
@@ -89,7 +138,6 @@ export const NoteAttachmentsDrawer: React.FC<Props> = ({
                         </div>
                       </div>
 
-                      {/* Footer with Title and Delete Button */}
                       <div className="px-2.5 py-1.5 flex items-center justify-between border-t border-white/[0.04] bg-theme-card/90">
                         <span className="text-xs font-medium text-theme-text truncate" title={sketch.title}>
                           {sketch.title || 'Boceto'}

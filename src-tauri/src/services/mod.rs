@@ -1,3 +1,5 @@
+pub mod attachments;
+
 use tauri::AppHandle;
 use tauri_plugin_notification::NotificationExt;
 

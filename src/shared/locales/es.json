@@ -26,7 +26,9 @@
     "filterCompleted": "Hecho",
     "clearSearch": "Limpiar búsqueda",
     "clearFilter": "Limpiar filtro",
-    "toggleSidebars": "Mostrar/Ocultar paneles laterales (F11)"
+    "toggleSidebars": "Mostrar/Ocultar paneles laterales (F11)",
+    "toggleSubjects": "Alternar barra de Proyectos",
+    "toggleFolders": "Alternar lista de Carpetas"
   },
   "folders": {
     "addFolder": "Nueva Carpeta",
@@ -234,6 +236,8 @@
     "summonApp": "Mostrar / Ocultar App (Atajo Global del Sistema)",
     "quickAdd": "Barra de captura rápida",
     "toggleWidget": "Alternar Ventana Completa ↔ Widget Flotante",
+    "toggleSidebar": "Alternar barra de Proyectos (Columna 1)",
+    "toggleFolders": "Alternar lista de Carpetas (Columna 2)",
     "zenMode": "Modo Zen (Escritura sin distracciones)",
     "showHelp": "Mostrar esta guía de atajos",
     "escapeAction": "Cerrar modales / Limpiar búsqueda / Desenfocar"
@@ -263,5 +267,26 @@
     "exportData": "Exportar Datos (JSON)",
     "importData": "Importar Datos",
     "version": "Versión"
+  },
+  "attachments": {
+    "attachFile": "Adjuntar archivo",
+    "files": "Archivos y Adjuntos",
+    "openWithSystemApp": "Abrir con la aplicación predeterminada",
+    "deleteAttachment": "Eliminar archivo adjunto",
+    "blockedExtensionError": "Archivo bloqueado por seguridad: la extensión {{ext}} no está permitida."
+  },
+  "voiceRecorder": {
+    "record": "Nota de voz",
+    "recordVoiceNote": "Grabar nota de audio con micrófono",
+    "voiceNotes": "Notas de voz",
+    "saveRecording": "Guardar grabación",
+    "cancelRecording": "Cancelar grabación",
+    "deleteRecording": "Eliminar nota de voz",
+    "microphonePermissionError": "No se pudo acceder al micrófono. Por favor verifica los permisos."
+  },
+  "audioPlayer": {
+    "play": "Reproducir",
+    "pause": "Pausar",
+    "speed": "Velocidad de reproducción"
   }
 }

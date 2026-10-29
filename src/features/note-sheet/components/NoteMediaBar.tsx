@@ -1,6 +1,8 @@
-import React from 'react';
-import { Paperclip, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
+import React, { useRef } from 'react';
+import { Paperclip, Link as LinkIcon, Image as ImageIcon, UploadCloud } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { NoteAttachment } from '../../../shared/types';
+import { VoiceRecorderButton } from './VoiceRecorderButton';
 
 interface Props {
   isMediaDrawerOpen: boolean;
@@ -9,6 +11,9 @@ interface Props {
   onToggleAddLink: () => void;
   onOpenWhiteboard: () => void;
   onOpenAttachImageModal?: () => void;
+  onAttachFiles?: (files: FileList) => void;
+  onAttachmentCreated?: (attachment: NoteAttachment) => void;
+  onError?: (message: string) => void;
 }
 
 export const NoteMediaBar: React.FC<Props> = ({
@@ -18,14 +23,26 @@ export const NoteMediaBar: React.FC<Props> = ({
   onToggleAddLink,
   onOpenWhiteboard,
   onOpenAttachImageModal,
+  onAttachFiles,
+  onAttachmentCreated,
+  onError,
 }) => {
   const { t } = useTranslation();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      onAttachFiles?.(e.target.files);
+      e.target.value = '';
+    }
+  };
 
   return (
-    <div className="border-t border-b border-white/[0.05] py-2 flex items-center justify-between text-xs">
+    <div className="border-t border-b border-white/[0.05] py-2 flex items-center justify-between text-xs flex-wrap gap-2">
       <button
+        type="button"
         onClick={onToggleMediaDrawer}
-        className="flex items-center space-x-2 text-theme-muted hover:text-theme-text font-medium transition-colors"
+        className="flex items-center space-x-2 text-theme-muted hover:text-theme-text font-medium transition-colors cursor-pointer"
       >
         <Paperclip size={14} className="text-theme-accent" />
         <span>
@@ -38,27 +55,65 @@ export const NoteMediaBar: React.FC<Props> = ({
         )}
       </button>
 
-      <div className="flex items-center space-x-2">
+      <div className="flex items-center flex-wrap gap-1.5">
+        {/* Hidden File Input for universal PC files */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={handleFileInputChange}
+        />
+
+        {/* Universal Attach File Button */}
+        {onAttachFiles && (
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.05] transition-colors text-[11px] cursor-pointer"
+            title={t('attachments.attachFile')}
+          >
+            <UploadCloud size={12} className="text-theme-accent" />
+            <span>{t('attachments.attachFile')}</span>
+          </button>
+        )}
+
+        {/* Voice Note Recorder Button */}
+        {onAttachmentCreated && (
+          <VoiceRecorderButton
+            onAttachmentCreated={onAttachmentCreated}
+            onError={onError}
+          />
+        )}
+
+        {/* Image Modal Button */}
         {onOpenAttachImageModal && (
           <button
+            type="button"
             onClick={onOpenAttachImageModal}
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.05] transition-colors text-[11px]"
+            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.05] transition-colors text-[11px] cursor-pointer"
             title={t('note.attachImageModalTitle')}
           >
             <Paperclip size={12} className="text-theme-accent" />
             <span>{t('note.attachImageBtn')}</span>
           </button>
         )}
+
+        {/* Add Link */}
         <button
+          type="button"
           onClick={onToggleAddLink}
-          className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.05] transition-colors text-[11px]"
+          className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.05] transition-colors text-[11px] cursor-pointer"
         >
           <LinkIcon size={12} />
           <span>{t('note.addLink')}</span>
         </button>
+
+        {/* Whiteboard / Sketch */}
         <button
+          type="button"
           onClick={onOpenWhiteboard}
-          className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.05] transition-colors text-[11px]"
+          className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.05] transition-colors text-[11px] cursor-pointer"
         >
           <ImageIcon size={12} />
           <span>{t('note.addSketch')}</span>

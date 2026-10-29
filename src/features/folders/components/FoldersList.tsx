@@ -130,7 +130,7 @@ export const FoldersList: React.FC<Props> = ({
 
   return (
     <div
-      className={`w-72 flex-shrink-0 bg-theme-column border-r border-theme-border flex flex-col h-full select-none transition-all ${
+      className={`w-56 lg:w-72 flex-shrink-0 bg-theme-column border-r border-theme-border flex flex-col h-full select-none transition-all ${
         isFocused ? 'ring-1 ring-inset ring-theme-accent/40 shadow-sm' : ''
       }`}
     >

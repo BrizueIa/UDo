@@ -7,6 +7,8 @@ interface ShortcutHandlers {
   onToggleQuickAdd?: () => void;
   onToggleWidgetMode: () => void;
   onToggleZenMode: () => void;
+  onToggleSidebar?: () => void;
+  onToggleFolders?: () => void;
   onToggleShortcutsModal: () => void;
   onCreateNote: () => void;
   onCreateFolder: () => void;
@@ -27,6 +29,8 @@ export function useKeyboardShortcuts({
   onToggleQuickAdd,
   onToggleWidgetMode,
   onToggleZenMode,
+  onToggleSidebar,
+  onToggleFolders,
   onToggleShortcutsModal,
   onCreateNote,
   onCreateFolder,
@@ -132,6 +136,23 @@ export function useKeyboardShortcuts({
         return;
       }
 
+      // Ctrl + B: Toggle Column 1 (Subjects Sidebar)
+      if (e.ctrlKey && !e.shiftKey && (e.code === 'KeyB' || e.key.toLowerCase() === 'b')) {
+        e.preventDefault();
+        onToggleSidebar?.();
+        return;
+      }
+
+      // Ctrl + \ or Alt + B: Toggle Column 2 (Folders List)
+      if (
+        (e.ctrlKey && (e.key === '\\' || e.code === 'Backslash')) ||
+        (e.altKey && (e.code === 'KeyB' || e.key.toLowerCase() === 'b'))
+      ) {
+        e.preventDefault();
+        onToggleFolders?.();
+        return;
+      }
+
       // Ctrl + /: Shortcuts Modal
       if (e.ctrlKey && e.key === '/') {
         e.preventDefault();
@@ -226,6 +247,8 @@ export function useKeyboardShortcuts({
     onToggleQuickAdd,
     onToggleWidgetMode,
     onToggleZenMode,
+    onToggleSidebar,
+    onToggleFolders,
     onToggleShortcutsModal,
     onCreateNote,
     onCreateFolder,

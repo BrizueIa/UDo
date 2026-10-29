@@ -14,9 +14,10 @@ interface Props {
   note: NoteItem;
   onUpdateNote: (note: NoteItem) => void;
   onOpenMediaDrawer: () => void;
+  onDropFiles?: (files: FileList) => void;
 }
 
-export function useNoteMediaPaste({ note, onUpdateNote, onOpenMediaDrawer }: Props) {
+export function useNoteMediaPaste({ note, onUpdateNote, onOpenMediaDrawer, onDropFiles }: Props) {
   const { t } = useTranslation();
 
   const attachSketches = useCallback(
@@ -169,10 +170,15 @@ export function useNoteMediaPaste({ note, onUpdateNote, onOpenMediaDrawer }: Pro
   const handleDrop = useCallback(
     async (e: React.DragEvent) => {
       e.preventDefault();
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        onDropFiles?.(e.dataTransfer.files);
+      }
       const sketches = await processImageDropOrPaste(e, t('note.droppedImage'));
-      attachSketches(sketches);
+      if (sketches.length > 0) {
+        attachSketches(sketches);
+      }
     },
-    [attachSketches, t]
+    [attachSketches, onDropFiles, t]
   );
 
   return {

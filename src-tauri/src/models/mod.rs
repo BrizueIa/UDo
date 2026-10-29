@@ -18,6 +18,24 @@ pub struct SketchItem {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct NoteAttachment {
+    pub id: String,
+    pub name: String,
+    #[serde(rename = "filePath")]
+    pub file_path: String,
+    #[serde(rename = "mimeType")]
+    pub mime_type: String,
+    #[serde(rename = "sizeBytes")]
+    pub size_bytes: u64,
+    pub extension: String,
+    pub kind: String, // "file" | "audio"
+    #[serde(rename = "durationSeconds", default)]
+    pub duration_seconds: Option<f64>,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct NoteItem {
     pub id: String,
     #[serde(rename = "folderId")]
@@ -33,6 +51,8 @@ pub struct NoteItem {
     pub tags: Vec<String>,
     pub links: Vec<LinkItem>,
     pub sketches: Vec<SketchItem>,
+    #[serde(default)]
+    pub attachments: Vec<NoteAttachment>,
     #[serde(rename = "createdAt")]
     pub created_at: String,
     #[serde(rename = "updatedAt")]
