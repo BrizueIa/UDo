@@ -122,15 +122,17 @@ export function useWorkspaceState() {
     let folderId = targetFolderId || selectedFolderId;
     let subjectId = targetSubjectId || selectedSubjectId;
 
-    if (folderId && !targetSubjectId) {
-      const knownFolder = folders.find((f) => f.id === folderId);
-      if (knownFolder) subjectId = knownFolder.subjectId;
-    }
-
-    if (!folderId) {
+    const existingFolder = folders.find((f) => f.id === folderId);
+    if (existingFolder) {
+      folderId = existingFolder.id;
+      subjectId = existingFolder.subjectId;
+    } else {
       const subjFolders = folders.filter((f) => f.subjectId === subjectId);
       if (subjFolders.length > 0) {
         folderId = subjFolders[0].id;
+      } else if (folders.length > 0) {
+        folderId = folders[0].id;
+        subjectId = folders[0].subjectId;
       } else if (subjectId) {
         const autoFolder: FolderItem = {
           id: `folder-${Date.now()}`,
@@ -140,7 +142,7 @@ export function useWorkspaceState() {
           order: 0,
         };
         setFolders((prev) => [...prev, autoFolder]);
-        api.saveFolder(autoFolder);
+        api.saveFolder(autoFolder).catch((err) => console.error('Failed to save auto folder:', err));
         folderId = autoFolder.id;
       } else {
         return;
@@ -152,7 +154,7 @@ export function useWorkspaceState() {
       prev.map((f) => {
         if (f.id === folderId && !f.isExpanded) {
           const updated = { ...f, isExpanded: true };
-          api.saveFolder(updated);
+          api.saveFolder(updated).catch(console.error);
           return updated;
         }
         return f;
@@ -180,7 +182,7 @@ export function useWorkspaceState() {
     setSelectedNoteId(newNote.id);
     setSelectedFolderId(folderId);
     setSelectedSubjectId(subjectId);
-    api.saveNote(newNote);
+    api.saveNote(newNote).catch((err) => console.error('Failed to save new note:', err));
   };
 
   const handleAddFolder = (name: string, targetSubjectId?: string) => {

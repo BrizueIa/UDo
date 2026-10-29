@@ -38,11 +38,36 @@ export function useWorkspaceHistory() {
 
   const syncDatabaseDiff = useCallback(async (current: WorkspaceSnapshot, target: WorkspaceSnapshot) => {
     try {
-      // 1. Sync Notes diff
+      const currentSubjectMap = new Map(current.subjects.map((s) => [s.id, s]));
+      const targetSubjectMap = new Map(target.subjects.map((s) => [s.id, s]));
+      const currentFolderMap = new Map(current.folders.map((f) => [f.id, f]));
+      const targetFolderMap = new Map(target.folders.map((f) => [f.id, f]));
       const currentNoteMap = new Map(current.notes.map((n) => [n.id, n]));
       const targetNoteMap = new Map(target.notes.map((n) => [n.id, n]));
 
-      // Restored or updated notes in target
+      // 1. Restored or updated Subjects in target (first for foreign key constraints)
+      for (const targetSubject of target.subjects) {
+        const cur = currentSubjectMap.get(targetSubject.id);
+        if (!cur || cur.name !== targetSubject.name || cur.color !== targetSubject.color) {
+          await api.saveSubject(targetSubject).catch((err) => console.error('Undo sync saveSubject failed:', err));
+        }
+      }
+
+      // 2. Restored or updated Folders in target
+      for (const targetFolder of target.folders) {
+        const cur = currentFolderMap.get(targetFolder.id);
+        if (
+          !cur ||
+          cur.name !== targetFolder.name ||
+          cur.subjectId !== targetFolder.subjectId ||
+          cur.isExpanded !== targetFolder.isExpanded ||
+          cur.order !== targetFolder.order
+        ) {
+          await api.saveFolder(targetFolder).catch((err) => console.error('Undo sync saveFolder failed:', err));
+        }
+      }
+
+      // 3. Restored or updated Notes in target
       for (const targetNote of target.notes) {
         const cur = currentNoteMap.get(targetNote.id);
         if (
@@ -59,47 +84,21 @@ export function useWorkspaceHistory() {
         }
       }
 
-      // Notes deleted in target
+      // 4. Notes deleted in target (delete children before parents)
       for (const curNote of current.notes) {
         if (!targetNoteMap.has(curNote.id)) {
           await api.deleteNote(curNote.id).catch((err) => console.error('Undo sync deleteNote failed:', err));
         }
       }
 
-      // 2. Sync Folders diff
-      const currentFolderMap = new Map(current.folders.map((f) => [f.id, f]));
-      const targetFolderMap = new Map(target.folders.map((f) => [f.id, f]));
-
-      for (const targetFolder of target.folders) {
-        const cur = currentFolderMap.get(targetFolder.id);
-        if (
-          !cur ||
-          cur.name !== targetFolder.name ||
-          cur.subjectId !== targetFolder.subjectId ||
-          cur.isExpanded !== targetFolder.isExpanded ||
-          cur.order !== targetFolder.order
-        ) {
-          await api.saveFolder(targetFolder).catch((err) => console.error('Undo sync saveFolder failed:', err));
-        }
-      }
-
+      // 5. Folders deleted in target
       for (const curFolder of current.folders) {
         if (!targetFolderMap.has(curFolder.id)) {
           await api.deleteFolder(curFolder.id).catch((err) => console.error('Undo sync deleteFolder failed:', err));
         }
       }
 
-      // 3. Sync Subjects diff
-      const currentSubjectMap = new Map(current.subjects.map((s) => [s.id, s]));
-      const targetSubjectMap = new Map(target.subjects.map((s) => [s.id, s]));
-
-      for (const targetSubject of target.subjects) {
-        const cur = currentSubjectMap.get(targetSubject.id);
-        if (!cur || cur.name !== targetSubject.name || cur.color !== targetSubject.color) {
-          await api.saveSubject(targetSubject).catch((err) => console.error('Undo sync saveSubject failed:', err));
-        }
-      }
-
+      // 6. Subjects deleted in target
       for (const curSubject of current.subjects) {
         if (!targetSubjectMap.has(curSubject.id)) {
           await api.deleteSubject(curSubject.id).catch((err) => console.error('Undo sync deleteSubject failed:', err));

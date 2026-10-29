@@ -233,11 +233,13 @@ export const FoldersList: React.FC<Props> = ({
                   onUpdateFolder={onUpdateFolder}
                   onDeleteFolder={() => onDeleteFolder(folder.id)}
                   onMoveNoteToFolder={(noteId) => {
-                    if (onReorderOrMoveNote) {
-                      onReorderOrMoveNote(noteId, folder.id);
-                    } else if (onMoveNoteToFolder) {
-                      onMoveNoteToFolder(noteId, folder.id);
-                    }
+                    setTimeout(() => {
+                      if (onReorderOrMoveNote) {
+                        onReorderOrMoveNote(noteId, folder.id);
+                      } else if (onMoveNoteToFolder) {
+                        onMoveNoteToFolder(noteId, folder.id);
+                      }
+                    }, 0);
                   }}
                 />
 
@@ -277,7 +279,9 @@ export const FoldersList: React.FC<Props> = ({
                           e.dataTransfer.getData('application/udo-note-id') ||
                           e.dataTransfer.getData('text/plain');
                         if (noteId && onReorderOrMoveNote) {
-                          onReorderOrMoveNote(noteId, folder.id);
+                          setTimeout(() => {
+                            onReorderOrMoveNote(noteId, folder.id);
+                          }, 0);
                         }
                       }}
                       className={`overflow-hidden pl-3 space-y-0.5 border-l ml-4 transition-colors rounded-r-lg ${

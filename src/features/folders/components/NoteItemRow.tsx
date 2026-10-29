@@ -60,7 +60,9 @@ export const NoteItemRow: React.FC<Props> = ({
     setDropPosition(null);
 
     if (draggedNoteId && draggedNoteId !== note.id && onDropOnNote) {
-      onDropOnNote(draggedNoteId, note.id, pos);
+      setTimeout(() => {
+        onDropOnNote(draggedNoteId, note.id, pos);
+      }, 0);
     }
   };
 

@@ -100,9 +100,13 @@ export const SubjectItemRow: React.FC<Props> = ({
       (!folderId ? e.dataTransfer.getData('text/plain') : '');
 
     if (folderId && onMoveFolderToSubject) {
-      onMoveFolderToSubject(folderId, subject.id);
+      setTimeout(() => {
+        onMoveFolderToSubject(folderId, subject.id);
+      }, 0);
     } else if (noteId && onMoveNoteToSubject) {
-      onMoveNoteToSubject(noteId, subject.id);
+      setTimeout(() => {
+        onMoveNoteToSubject(noteId, subject.id);
+      }, 0);
     }
   };
 
@@ -275,7 +279,9 @@ export const SubjectItemRow: React.FC<Props> = ({
                       e.dataTransfer.getData('application/udo-note-id') ||
                       e.dataTransfer.getData('text/plain');
                     if (noteId && onMoveNoteToFolder) {
-                      onMoveNoteToFolder(noteId, f.id);
+                      setTimeout(() => {
+                        onMoveNoteToFolder(noteId, f.id);
+                      }, 0);
                     }
                     setShowFolderSubmenu(false);
                     setDragOverFolderId(null);

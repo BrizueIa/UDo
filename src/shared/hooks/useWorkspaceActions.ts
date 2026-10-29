@@ -90,7 +90,9 @@ export function useWorkspaceActions({
       recordSnapshot(getSnapshot());
 
       const remainingNotes = notes.filter((n) => n.id !== draggedNoteId);
-      const targetFolderNotes = remainingNotes.filter((n) => n.folderId === targetFolderId);
+      const targetFolderNotes = remainingNotes
+        .filter((n) => n.folderId === targetFolderId)
+        .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
       const otherNotes = remainingNotes.filter((n) => n.folderId !== targetFolderId);
 
       let insertIndex = targetFolderNotes.length;

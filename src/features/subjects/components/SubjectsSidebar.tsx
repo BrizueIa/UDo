@@ -104,7 +104,9 @@ export const SubjectsSidebar: React.FC<Props> = ({
 
     const folderId = e.dataTransfer.getData('application/udo-folder-id');
     if (folderId && onConvertFolderToSubject) {
-      onConvertFolderToSubject(folderId);
+      setTimeout(() => {
+        onConvertFolderToSubject(folderId);
+      }, 0);
     }
   };
 

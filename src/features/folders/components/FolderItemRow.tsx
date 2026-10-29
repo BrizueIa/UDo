@@ -64,7 +64,9 @@ export const FolderItemRow: React.FC<Props> = ({
     setIsDragOver(false);
     const noteId = e.dataTransfer.getData('application/udo-note-id') || e.dataTransfer.getData('text/plain');
     if (noteId && onMoveNoteToFolder) {
-      onMoveNoteToFolder(noteId, folder.id);
+      setTimeout(() => {
+        onMoveNoteToFolder(noteId, folder.id);
+      }, 0);
     }
   };
 

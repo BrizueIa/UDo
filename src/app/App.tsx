@@ -333,6 +333,7 @@ export const App: React.FC = () => {
         >
           {currentNote ? (
             <NoteDetailView
+              key={currentNote.id}
               note={currentNote}
               notes={notes}
               folderName={currentFolder?.name || 'Notes'}
