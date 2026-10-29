@@ -87,9 +87,13 @@ export const VoiceRecorderButton: React.FC<Props> = ({ onAttachmentCreated, onEr
           ? Math.max(1, Math.round((Date.now() - startTimeRef.current) / 1000))
           : 1;
 
+        const now = new Date();
+        const timeLabel = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        const displayName = `${t('voiceRecorder.defaultAudioName') || 'Nota de voz'} (${timeLabel})`;
+
         onAttachmentCreated({
           id: `audio-${Date.now()}`,
-          name: fileName,
+          name: displayName,
           filePath: savedPath,
           mimeType: 'audio/webm',
           sizeBytes: audioBlob.size,
@@ -146,9 +150,13 @@ export const VoiceRecorderButton: React.FC<Props> = ({ onAttachmentCreated, onEr
     if (isNativeRecordingRef.current) {
       const savedPath = await attachmentsApi.stopNativeRecording();
       if (savedPath) {
+        const now = new Date();
+        const timeLabel = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+        const displayName = `${t('voiceRecorder.defaultAudioName') || 'Nota de voz'} (${timeLabel})`;
+
         onAttachmentCreated({
           id: `audio-${Date.now()}`,
-          name: `voice-${Date.now()}.wav`,
+          name: displayName,
           filePath: savedPath,
           mimeType: 'audio/wav',
           sizeBytes: 0,

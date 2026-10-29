@@ -349,6 +349,9 @@
     "saveRecording": "Guardar grabación",
     "cancelRecording": "Cancelar grabación",
     "deleteRecording": "Eliminar nota de voz",
+    "renameRecording": "Renombrar grabación",
+    "audioNamePlaceholder": "Nombre del audio...",
+    "defaultAudioName": "Nota de voz",
     "microphonePermissionError": "No se pudo acceder al micrófono. Por favor verifica los permisos."
   },
   "audioPlayer": {

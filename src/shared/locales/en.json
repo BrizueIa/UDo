@@ -349,6 +349,9 @@
     "saveRecording": "Save voice recording",
     "cancelRecording": "Cancel recording",
     "deleteRecording": "Delete voice note",
+    "renameRecording": "Rename recording",
+    "audioNamePlaceholder": "Audio title...",
+    "defaultAudioName": "Voice Note",
     "microphonePermissionError": "Could not access microphone. Please check permissions."
   },
   "audioPlayer": {

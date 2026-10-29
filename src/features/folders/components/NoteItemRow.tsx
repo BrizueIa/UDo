@@ -141,12 +141,6 @@ export const NoteItemRow: React.FC<Props> = ({
         >
           {renderRichTitle(note.title || t('note.titlePlaceholder'), 'note', 0, { ignoreSize: true })}
         </span>
-        {isSelected && (
-          <span
-            className="w-1.5 h-1.5 rounded-full bg-theme-accent shadow-[0_0_6px_var(--color-accent)] ring-1 ring-theme-accent/30 shrink-0 ml-1.5"
-            title={t('nav.activeNoteProject') || 'Nota activa'}
-          />
-        )}
       </div>
 
       {/* Pinned Note Badge */}

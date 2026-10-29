@@ -91,6 +91,10 @@ export const TrashModal: React.FC<Props> = ({
           return (n.sketches && n.sketches.length > 0) || false;
         }
 
+        if (raw === '.audio' || raw === 'audio') {
+          return (n.attachments && n.attachments.some((a) => a.kind === 'audio')) || false;
+        }
+
         const tokens = normalizeDiacritics(raw).split(/\s+/).filter(Boolean);
         const sub = subjects.find((s) => s.id === n.subjectId);
         const fol = folders.find((f) => f.id === n.folderId);
@@ -101,7 +105,7 @@ export const TrashModal: React.FC<Props> = ({
         const contentNorm = normalizeDiacritics(n.content);
         const tagsNorm = n.tags.map((t) => normalizeDiacritics(t)).join(' ');
         const sketchesNorm = (n.sketches || []).map((s) => normalizeDiacritics(s.title || '')).join(' ');
-        const attachmentsNorm = (n.attachments || []).map((a) => `${normalizeDiacritics(a.name || '')} ${normalizeDiacritics(a.extension || '')}`).join(' ');
+        const attachmentsNorm = (n.attachments || []).map((a) => `${normalizeDiacritics(a.name || '')} ${normalizeDiacritics(a.extension || '')} ${a.kind || ''}`).join(' ');
 
         const searchable = `${titleNorm} ${contentNorm} ${tagsNorm} ${subName} ${folName} ${sketchesNorm} ${attachmentsNorm}`;
         if (!tokens.every((token) => searchable.includes(token))) return false;

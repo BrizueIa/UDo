@@ -21,6 +21,7 @@ interface Props {
   onRemoveLink: (id: string) => void;
   onRemoveSketch: (id: string) => void;
   onRemoveAttachment?: (id: string) => void;
+  onRenameAttachment?: (id: string, newName: string) => void;
   onOpenSketchAnnotator: (sketch: SketchItem) => void;
 }
 
@@ -39,6 +40,7 @@ export const NoteAttachmentsDrawer: React.FC<Props> = ({
   onRemoveLink,
   onRemoveSketch,
   onRemoveAttachment,
+  onRenameAttachment,
   onOpenSketchAnnotator,
 }) => {
   const { t } = useTranslation();
@@ -83,6 +85,7 @@ export const NoteAttachmentsDrawer: React.FC<Props> = ({
                       key={audio.id}
                       attachment={audio}
                       onRemove={(id) => onRemoveAttachment?.(id)}
+                      onRename={onRenameAttachment}
                     />
                   ))}
                 </div>

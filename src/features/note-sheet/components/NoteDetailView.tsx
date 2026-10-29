@@ -127,10 +127,8 @@ export const NoteDetailView: React.FC<Props> = ({
     handleAttachFiles,
     handleAddAttachment,
     handleRemoveAttachment,
-  } = useNoteAttachments({
-    note,
-    onUpdateNote,
-  });
+    handleUpdateAttachment,
+  } = useNoteAttachments({ note, onUpdateNote });
 
   const handleToggleComplete = () => {
     const nextState = !note.isCompleted;
@@ -304,6 +302,7 @@ export const NoteDetailView: React.FC<Props> = ({
           onRemoveLink={handleRemoveLink}
           onRemoveSketch={handleRemoveSketch}
           onRemoveAttachment={handleRemoveAttachment}
+          onRenameAttachment={(id, name) => handleUpdateAttachment(id, { name })}
           onOpenSketchAnnotator={onOpenSketchAnnotator}
         />
 

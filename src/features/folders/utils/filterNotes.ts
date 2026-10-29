@@ -91,7 +91,7 @@ export function filterAndSortFolderNotes({
         const contentNorm = normalizeDiacritics(n.content);
         const tagsNorm = n.tags.map((t) => normalizeDiacritics(t)).join(' ');
         const sketchesNorm = (n.sketches || []).map((s) => normalizeDiacritics(s.title || '')).join(' ');
-        const attachmentsNorm = (n.attachments || []).map((a) => `${normalizeDiacritics(a.name || '')} ${normalizeDiacritics(a.extension || '')}`).join(' ');
+        const attachmentsNorm = (n.attachments || []).map((a) => `${normalizeDiacritics(a.name || '')} ${normalizeDiacritics(a.extension || '')} ${a.kind || ''}`).join(' ');
 
         const searchable = `${titleNorm} ${contentNorm} ${tagsNorm} ${sketchesNorm} ${attachmentsNorm}`;
         if (!tokens.every((token) => searchable.includes(token))) {

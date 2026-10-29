@@ -1,5 +1,5 @@
 import React from 'react';
-import { RotateCcw, Trash2, CheckSquare, Square, Palette, Paperclip } from 'lucide-react';
+import { RotateCcw, Trash2, CheckSquare, Square, Palette, Paperclip, Mic } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NoteItem, SubjectItem, FolderItem } from '../../../shared/types';
 import { formatRelativeTime } from '../../../shared/utils/formatTime';
@@ -47,15 +47,21 @@ export const TrashItemRow: React.FC<Props> = ({
           <div className="flex items-center space-x-1.5 truncate">
             <span className="text-xs font-medium truncate">{note.title || t('note.titlePlaceholder')}</span>
             {note.sketches && note.sketches.length > 0 && (
-              <span className="flex items-center space-x-0.5 text-[10px] text-pink-400 bg-pink-500/10 px-1 py-0.2 rounded font-mono shrink-0">
+              <span className="flex items-center space-x-0.5 text-[10px] text-pink-400 bg-pink-500/10 px-1 py-0.2 rounded font-mono shrink-0" title="Canvas">
                 <Palette size={10} />
                 <span>{note.sketches.length}</span>
               </span>
             )}
-            {note.attachments && note.attachments.length > 0 && (
-              <span className="flex items-center space-x-0.5 text-[10px] text-blue-400 bg-blue-500/10 px-1 py-0.2 rounded font-mono shrink-0">
+            {note.attachments && note.attachments.filter((a) => a.kind === 'audio').length > 0 && (
+              <span className="flex items-center space-x-0.5 text-[10px] text-rose-400 bg-rose-500/10 px-1 py-0.2 rounded font-mono shrink-0" title="Audio">
+                <Mic size={10} />
+                <span>{note.attachments.filter((a) => a.kind === 'audio').length}</span>
+              </span>
+            )}
+            {note.attachments && note.attachments.filter((a) => a.kind !== 'audio').length > 0 && (
+              <span className="flex items-center space-x-0.5 text-[10px] text-blue-400 bg-blue-500/10 px-1 py-0.2 rounded font-mono shrink-0" title="Archivos">
                 <Paperclip size={10} />
-                <span>{note.attachments.length}</span>
+                <span>{note.attachments.filter((a) => a.kind !== 'audio').length}</span>
               </span>
             )}
           </div>

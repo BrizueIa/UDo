@@ -98,11 +98,24 @@ export function useNoteAttachments({ note, onUpdateNote, onAttachImageFile }: Pr
     [note, onUpdateNote]
   );
 
+  const handleUpdateAttachment = useCallback(
+    (id: string, updates: Partial<NoteAttachment>) => {
+      const existing = note.attachments || [];
+      onUpdateNote({
+        ...note,
+        attachments: existing.map((a) => (a.id === id ? { ...a, ...updates } : a)),
+        updatedAt: new Date().toISOString(),
+      });
+    },
+    [note, onUpdateNote]
+  );
+
   return {
     blockedFileError,
     setBlockedFileError,
     handleAttachFiles,
     handleAddAttachment,
     handleRemoveAttachment,
+    handleUpdateAttachment,
   };
 }
