@@ -8,6 +8,7 @@ import { NoteFindBar } from './NoteFindBar';
 import { NoteMediaBar } from './NoteMediaBar';
 import { NoteContentHeader } from './NoteContentHeader';
 import { NoteTemplatePicker } from './NoteTemplatePicker';
+import { ImageAttachmentModal } from './ImageAttachmentModal';
 import { Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { playTaskCompleteSound } from '../../../shared/utils/soundEffects';
@@ -30,6 +31,8 @@ interface Props {
   onSelectTagFilter: (tag: string) => void;
   onOpenSketchAnnotator: (sketch: SketchItem) => void;
   onOpenWhiteboard: () => void;
+  onWorkspaceUndo?: () => void;
+  onWorkspaceRedo?: () => void;
 }
 
 export const NoteDetailView: React.FC<Props> = ({
@@ -48,6 +51,8 @@ export const NoteDetailView: React.FC<Props> = ({
   onSelectTagFilter,
   onOpenSketchAnnotator,
   onOpenWhiteboard,
+  onWorkspaceUndo,
+  onWorkspaceRedo,
 }) => {
   const { t } = useTranslation();
 
@@ -56,6 +61,7 @@ export const NoteDetailView: React.FC<Props> = ({
   const [newLinkTitle, setNewLinkTitle] = useState('');
   const [newLinkUrl, setNewLinkUrl] = useState('');
   const [isMediaDrawerOpen, setIsMediaDrawerOpen] = useState(true);
+  const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
   const [isStarterDismissed, setIsStarterDismissed] = useState(
     () => localStorage.getItem('udo_hide_starter_templates') === 'true'
   );
@@ -77,8 +83,10 @@ export const NoteDetailView: React.FC<Props> = ({
     setTotalMatches,
     handleTitleChange,
     handleContentChange,
+    handleUndoText,
+    handleRedoText,
     flushSave,
-  } = useNoteEditorState({ note, onUpdateNote });
+  } = useNoteEditorState({ note, onUpdateNote, onWorkspaceUndo, onWorkspaceRedo });
 
   const handleToggleComplete = () => {
     const nextState = !note.isCompleted;
@@ -183,7 +191,7 @@ export const NoteDetailView: React.FC<Props> = ({
     });
   };
 
-  const { handleDragOver, handleDrop } = useNoteMediaPaste({
+  const { handleDragOver, handleDrop, attachSketches, attachSingleSketch } = useNoteMediaPaste({
     note,
     onUpdateNote,
     onOpenMediaDrawer: () => setIsMediaDrawerOpen(true),
@@ -285,6 +293,7 @@ export const NoteDetailView: React.FC<Props> = ({
           onToggleMediaDrawer={() => setIsMediaDrawerOpen(!isMediaDrawerOpen)}
           onToggleAddLink={() => setShowLinkInput(!showLinkInput)}
           onOpenWhiteboard={onOpenWhiteboard}
+          onOpenAttachImageModal={() => setIsAttachmentModalOpen(true)}
         />
 
         {/* Attachments Drawer */}
@@ -317,6 +326,7 @@ export const NoteDetailView: React.FC<Props> = ({
             }}
             onInsertTask={handleInsertTask}
             onSelectTemplate={handleSelectTemplate}
+            onOpenAttachModal={() => setIsAttachmentModalOpen(true)}
           />
 
           {/* Quick Starter Templates when note content is empty (FR-23) */}
@@ -359,9 +369,19 @@ export const NoteDetailView: React.FC<Props> = ({
             onSelectNote={onSelectNote}
             onCreateNoteWithTitle={onCreateNoteWithTitle}
             onMatchCountCalculated={setTotalMatches}
+            onUndoText={handleUndoText}
+            onRedoText={handleRedoText}
+            onAttachSketches={attachSketches}
           />
         </div>
       </div>
+
+      {/* Manual Image Attachment Modal (FR-16) */}
+      <ImageAttachmentModal
+        isOpen={isAttachmentModalOpen}
+        onClose={() => setIsAttachmentModalOpen(false)}
+        onAttachSketch={attachSingleSketch}
+      />
     </div>
   );
 };

@@ -161,5 +161,10 @@ export function useNoteMediaPaste({ note, onUpdateNote, onOpenMediaDrawer }: Pro
     [attachSketches, t]
   );
 
-  return { handleDragOver, handleDrop };
+  return {
+    handleDragOver,
+    handleDrop,
+    attachSketches,
+    attachSingleSketch: (sketch: SketchItem) => attachSketches([sketch]),
+  };
 }

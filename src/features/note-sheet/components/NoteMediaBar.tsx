@@ -8,6 +8,7 @@ interface Props {
   onToggleMediaDrawer: () => void;
   onToggleAddLink: () => void;
   onOpenWhiteboard: () => void;
+  onOpenAttachImageModal?: () => void;
 }
 
 export const NoteMediaBar: React.FC<Props> = ({
@@ -16,6 +17,7 @@ export const NoteMediaBar: React.FC<Props> = ({
   onToggleMediaDrawer,
   onToggleAddLink,
   onOpenWhiteboard,
+  onOpenAttachImageModal,
 }) => {
   const { t } = useTranslation();
 
@@ -37,6 +39,16 @@ export const NoteMediaBar: React.FC<Props> = ({
       </button>
 
       <div className="flex items-center space-x-2">
+        {onOpenAttachImageModal && (
+          <button
+            onClick={onOpenAttachImageModal}
+            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.05] transition-colors text-[11px]"
+            title={t('note.attachImageModalTitle')}
+          >
+            <Paperclip size={12} className="text-theme-accent" />
+            <span>{t('note.attachImageBtn')}</span>
+          </button>
+        )}
         <button
           onClick={onToggleAddLink}
           className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.05] transition-colors text-[11px]"

@@ -93,7 +93,16 @@
     "deleteSketch": "Eliminar boceto",
     "save": "Guardar",
     "linkTitle": "Título del enlace",
-    "linkUrl": "URL (https://...)"
+    "linkUrl": "URL (https://...)",
+    "attachImageModalTitle": "Adjuntar Imagen",
+    "attachImageBtn": "Adjuntar",
+    "attachImagePrompt": "Arrastra o pega una imagen aquí",
+    "attachImageHint": "Soporta imágenes del portapapeles (Ctrl + V) o archivos PNG, JPG, WEBP, GIF, SVG",
+    "pasteClipboardBtn": "Pegar del portapapeles",
+    "browseFileBtn": "Elegir archivo del equipo...",
+    "changeImage": "Cambiar imagen",
+    "attachToNote": "Adjuntar a la nota",
+    "imageTitle": "Título de la imagen"
   },
   "templates": {
     "title": "Plantillas",

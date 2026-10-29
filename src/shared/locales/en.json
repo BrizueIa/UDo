@@ -93,7 +93,16 @@
     "deleteSketch": "Delete sketch",
     "save": "Save",
     "linkTitle": "Link title",
-    "linkUrl": "URL (https://...)"
+    "linkUrl": "URL (https://...)",
+    "attachImageModalTitle": "Attach Image",
+    "attachImageBtn": "Attach",
+    "attachImagePrompt": "Drag or paste an image here",
+    "attachImageHint": "Supports clipboard images (Ctrl + V) or PNG, JPG, WEBP, GIF, SVG files",
+    "pasteClipboardBtn": "Paste from clipboard",
+    "browseFileBtn": "Browse image from device...",
+    "changeImage": "Change image",
+    "attachToNote": "Attach to note",
+    "imageTitle": "Image title"
   },
   "templates": {
     "title": "Templates",
