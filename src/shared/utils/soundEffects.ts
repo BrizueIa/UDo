@@ -106,7 +106,8 @@ export function playKeyboardClickSound(
   const ctx = getAudioContext();
   if (!ctx) return;
   if (ctx.state === 'suspended') {
-    ctx.resume().catch(() => {});
+    ctx.resume().then(() => playKeyboardClickSound(keyOrForce, true)).catch(() => {});
+    return;
   }
 
   try {
@@ -119,45 +120,35 @@ export function playKeyboardClickSound(
     const isEnter = key === 'Enter';
     const isBackspace = key === 'Backspace' || key === 'Delete';
 
-    // Organic tactile pitch variation (±4%)
-    const jitter = 0.96 + Math.random() * 0.08;
-    const duration = isSpace ? 0.040 : 0.030;
-    const keyGain = isSpace ? 0.54 : isEnter ? 0.50 : isBackspace ? 0.44 : 0.48;
+    // Organic tactile pitch jitter (±3%)
+    const jitter = 0.97 + Math.random() * 0.06;
+    const duration = isSpace ? 0.055 : 0.048;
+    const keyGain = isSpace ? 0.50 : isEnter ? 0.46 : isBackspace ? 0.40 : 0.44;
 
-    const masterGain = ctx.createGain();
-    masterGain.gain.setValueAtTime(keyGain * volume, now);
-    masterGain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-    masterGain.connect(ctx.destination);
+    const startPitch = (isSpace ? 1200 : 1750) * jitter;
+    const midPitch = (isSpace ? 420 : 580) * jitter;
+    const endPitch = (isSpace ? 140 : 190) * jitter;
 
-    // Layer 1: Crisp "tic" tactile switch snap (high-frequency transient)
-    const ticOsc = ctx.createOscillator();
-    const ticGain = ctx.createGain();
-    ticOsc.type = 'triangle';
-    const ticStart = (isSpace ? 1500 : 1950) * jitter;
-    const ticEnd = (isSpace ? 700 : 900) * jitter;
-    ticOsc.frequency.setValueAtTime(ticStart, now);
-    ticOsc.frequency.exponentialRampToValueAtTime(ticEnd, now + 0.014);
-    ticGain.gain.setValueAtTime(0.70, now);
-    ticGain.gain.exponentialRampToValueAtTime(0.001, now + 0.014);
-    ticOsc.connect(ticGain);
-    ticGain.connect(masterGain);
-    ticOsc.start(now);
-    ticOsc.stop(now + 0.014);
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
 
-    // Layer 2: Tactile switch bottom-out body
-    const bodyOsc = ctx.createOscillator();
-    const bodyGain = ctx.createGain();
-    bodyOsc.type = 'sine';
-    const bodyStart = (isSpace ? 500 : 750) * jitter;
-    const bodyEnd = (isSpace ? 220 : 320) * jitter;
-    bodyOsc.frequency.setValueAtTime(bodyStart, now);
-    bodyOsc.frequency.exponentialRampToValueAtTime(bodyEnd, now + duration);
-    bodyGain.gain.setValueAtTime(0.55, now);
-    bodyGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-    bodyOsc.connect(bodyGain);
-    bodyGain.connect(masterGain);
-    bodyOsc.start(now);
-    bodyOsc.stop(now + duration);
+    osc.type = 'triangle';
+    // Stage 1 (0 to 8ms): snappy high-frequency tactile "tic" snap
+    osc.frequency.setValueAtTime(startPitch, now);
+    osc.frequency.exponentialRampToValueAtTime(midPitch, now + 0.008);
+    // Stage 2 (8ms to duration): solid mechanical switch body bottom-out
+    osc.frequency.exponentialRampToValueAtTime(endPitch, now + duration);
+
+    // Fast 1.5ms attack to prevent DC pop, followed by clean exponential decay
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(keyGain * volume, now + 0.0015);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + duration);
   } catch {
     // Audio context may be restricted
   }
@@ -343,16 +334,24 @@ export function attachGlobalSoundListeners(): () => void {
   };
 
   const handleKeyDown = (e: KeyboardEvent) => {
-    // Only ignore standalone modifier keydown so holding Shift/Ctrl alone doesn't trigger premature clicks
+    // Prevent duplicate triggers if both window and document receive the event
+    if ((e as unknown as { __udo_handled?: boolean }).__udo_handled) return;
+    (e as unknown as { __udo_handled?: boolean }).__udo_handled = true;
+
     if (MODIFIERS_ONLY.has(e.key)) return;
     playKeyboardClickSound(e.key);
   };
 
-  window.addEventListener('pointerdown', handlePointerDown, true);
-  window.addEventListener('keydown', handleKeyDown, true);
+  // Capture on both window and document to ensure 100% detection regardless of focused element
+  window.addEventListener('pointerdown', handlePointerDown, { capture: true, passive: true });
+  document.addEventListener('pointerdown', handlePointerDown, { capture: true, passive: true });
+  window.addEventListener('keydown', handleKeyDown, { capture: true, passive: true });
+  document.addEventListener('keydown', handleKeyDown, { capture: true, passive: true });
 
   return () => {
     window.removeEventListener('pointerdown', handlePointerDown, true);
+    document.removeEventListener('pointerdown', handlePointerDown, true);
     window.removeEventListener('keydown', handleKeyDown, true);
+    document.removeEventListener('keydown', handleKeyDown, true);
   };
 }
