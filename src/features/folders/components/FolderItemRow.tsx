@@ -9,7 +9,6 @@ import {
   X,
   Folder,
   FolderOpen,
-  FileText,
 } from 'lucide-react';
 import { FolderItem } from '../../../shared/types';
 import { useTranslation } from 'react-i18next';
@@ -233,14 +232,9 @@ export const FolderItemRow: React.FC<Props> = ({
         </span>
         {hasActiveNote && (
           <span
-            className="flex items-center space-x-1 px-1.5 py-0.5 rounded-[4px] bg-theme-accent/20 border border-theme-accent/40 text-theme-accent text-[10px] font-medium shrink-0 ml-1.5"
+            className="w-2 h-2 rounded-full bg-theme-accent shadow-[0_0_8px_var(--color-accent)] ring-1 ring-theme-accent/30 shrink-0 ml-1.5"
             title={t('nav.activeNoteProject')}
-          >
-            <FileText size={10} className="text-theme-accent shrink-0" />
-            <span className="font-mono text-[9px] uppercase tracking-wide">
-              {t('nav.activeNoteBadge')}
-            </span>
-          </span>
+          />
         )}
       </button>
 

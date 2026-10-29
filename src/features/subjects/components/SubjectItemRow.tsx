@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { SubjectItem, FolderItem } from '../../../shared/types';
-import { Pencil, Trash2, X, Check, Folder, FileText } from 'lucide-react';
+import { Pencil, Trash2, X, Check, Folder } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
@@ -276,14 +276,9 @@ export const SubjectItemRow: React.FC<Props> = ({
 
           {hasActiveNote && (
             <span
-              className="flex items-center space-x-1 px-1.5 py-0.5 rounded-[4px] bg-theme-accent/20 border border-theme-accent/40 text-theme-accent text-[10px] font-medium shrink-0"
+              className="w-2 h-2 rounded-full bg-theme-accent shadow-[0_0_8px_var(--color-accent)] ring-1 ring-theme-accent/30 shrink-0"
               title={t('nav.activeNoteProject')}
-            >
-              <FileText size={10} className="text-theme-accent shrink-0" />
-              <span className="hidden sm:inline font-mono text-[9px] uppercase tracking-wide">
-                {t('nav.activeNoteBadge')}
-              </span>
-            </span>
+            />
           )}
 
           {count > 0 && !isDeleting && (

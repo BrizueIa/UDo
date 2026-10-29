@@ -13,8 +13,7 @@ import { api } from '../shared/api/ipc';
 import {
   playTaskCompleteSound,
   playNoteCreatedSound,
-  playUiClickSound,
-  playKeyboardClickSound,
+  attachGlobalSoundListeners,
 } from '../shared/utils/soundEffects';
 import { TopBar } from './TopBar';
 import { SubjectsSidebar } from '../features/subjects/components/SubjectsSidebar';
@@ -179,32 +178,7 @@ export const App: React.FC = () => {
   });
 
   // Global Opera GX style sound feedback listeners (click & keyboard)
-  React.useEffect(() => {
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-      const clickable = target.closest('button, [role="button"], a, input[type="checkbox"], input[type="radio"], select');
-      if (clickable) {
-        playUiClickSound();
-      }
-    };
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (!target) return;
-      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable;
-      if (isInput && !['Shift', 'Control', 'Alt', 'Meta', 'Escape', 'Tab', 'CapsLock'].includes(e.key)) {
-        playKeyboardClickSound();
-      }
-    };
-
-    window.addEventListener('click', handleClick, true);
-    window.addEventListener('keydown', handleKeyDown, true);
-    return () => {
-      window.removeEventListener('click', handleClick, true);
-      window.removeEventListener('keydown', handleKeyDown, true);
-    };
-  }, []);
+  React.useEffect(() => attachGlobalSoundListeners(), []);
 
   if (isWidgetMode) {
     return (

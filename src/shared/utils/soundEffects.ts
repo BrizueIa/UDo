@@ -22,6 +22,18 @@ function getAudioContext(): AudioContext | null {
   return audioCtx;
 }
 
+// Proactive user interaction listener to unlock AudioContext on first user action
+if (typeof window !== 'undefined') {
+  const unlockAudio = () => {
+    const ctx = getAudioContext();
+    if (ctx && ctx.state === 'suspended') {
+      ctx.resume().catch(() => {});
+    }
+  };
+  window.addEventListener('pointerdown', unlockAudio, { passive: true, capture: true });
+  window.addEventListener('keydown', unlockAudio, { passive: true, capture: true });
+}
+
 export function isAudioMuted(): boolean {
   if (typeof window === 'undefined') return false;
   return localStorage.getItem(STORAGE_MUTE_KEY) === 'true';
@@ -55,8 +67,9 @@ export function setAudioVolume(vol: number): void {
 }
 
 export function isKeyboardSoundEnabled(): boolean {
-  if (typeof window === 'undefined') return false;
-  return localStorage.getItem(STORAGE_KEYBOARD_SOUND_KEY) === 'true';
+  if (typeof window === 'undefined') return true;
+  const val = localStorage.getItem(STORAGE_KEYBOARD_SOUND_KEY);
+  return val === null || val === 'true';
 }
 
 export function setKeyboardSoundEnabled(enabled: boolean): void {
@@ -65,8 +78,9 @@ export function setKeyboardSoundEnabled(enabled: boolean): void {
 }
 
 export function isClickSoundEnabled(): boolean {
-  if (typeof window === 'undefined') return false;
-  return localStorage.getItem(STORAGE_CLICK_SOUND_KEY) === 'true';
+  if (typeof window === 'undefined') return true;
+  const val = localStorage.getItem(STORAGE_CLICK_SOUND_KEY);
+  return val === null || val === 'true';
 }
 
 export function setClickSoundEnabled(enabled: boolean): void {
@@ -103,35 +117,38 @@ export function playKeyboardClickSound(force = false): void {
   if (!force && (isAudioMuted() || !isKeyboardSoundEnabled())) return;
   const ctx = getAudioContext();
   if (!ctx) return;
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+  }
 
   try {
     const volume = getAudioVolume();
     if (volume <= 0) return;
     const now = ctx.currentTime;
+    const duration = 0.048;
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     const filter = ctx.createBiquadFilter();
 
     osc.type = 'triangle';
-    // Slight pitch variation (900-1150Hz) for authentic mechanical switch feel
-    const pitch = 920 + Math.random() * 220;
+    // Slight pitch variation (700-860Hz) for authentic mechanical switch feel
+    const pitch = 700 + Math.random() * 160;
     osc.frequency.setValueAtTime(pitch, now);
-    osc.frequency.exponentialRampToValueAtTime(140, now + 0.02);
+    osc.frequency.exponentialRampToValueAtTime(110, now + duration);
 
-    filter.type = 'bandpass';
-    filter.frequency.setValueAtTime(1300, now);
-    filter.Q.setValueAtTime(3.5, now);
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(2600, now);
 
-    gain.gain.setValueAtTime(0.22 * volume, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+    gain.gain.setValueAtTime(0.5 * volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
     osc.connect(filter);
     filter.connect(gain);
     gain.connect(ctx.destination);
 
     osc.start(now);
-    osc.stop(now + 0.02);
+    osc.stop(now + duration);
   } catch {
     // Audio context may be restricted
   }
@@ -144,27 +161,31 @@ export function playUiClickSound(force = false): void {
   if (!force && (isAudioMuted() || !isClickSoundEnabled())) return;
   const ctx = getAudioContext();
   if (!ctx) return;
+  if (ctx.state === 'suspended') {
+    ctx.resume().catch(() => {});
+  }
 
   try {
     const volume = getAudioVolume();
     if (volume <= 0) return;
     const now = ctx.currentTime;
+    const duration = 0.038;
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
 
     osc.type = 'sine';
     osc.frequency.setValueAtTime(650, now);
-    osc.frequency.exponentialRampToValueAtTime(180, now + 0.018);
+    osc.frequency.exponentialRampToValueAtTime(160, now + duration);
 
-    gain.gain.setValueAtTime(0.18 * volume, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.018);
+    gain.gain.setValueAtTime(0.45 * volume, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
     osc.connect(gain);
     gain.connect(ctx.destination);
 
     osc.start(now);
-    osc.stop(now + 0.018);
+    osc.stop(now + duration);
   } catch {
     // Audio context may be restricted
   }
@@ -293,4 +314,46 @@ export function playTimerCompleteSound(force = false): void {
   } catch {
     // Audio context may be restricted
   }
+}
+
+/**
+ * Attaches global window listeners for tactile UI clicks and mechanical keyboard sounds
+ */
+export function attachGlobalSoundListeners(): () => void {
+  if (typeof window === 'undefined') return () => {};
+
+  const handleClick = (e: MouseEvent) => {
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+    const clickable = target.closest(
+      'button, [role="button"], a, input, select, .cursor-pointer, .cursor-grab'
+    );
+    if (clickable) {
+      playUiClickSound();
+    }
+  };
+
+  const handleKeyDown = (e: KeyboardEvent) => {
+    const target = e.target as HTMLElement | null;
+    if (!target) return;
+    const isInput =
+      target.tagName === 'INPUT' ||
+      target.tagName === 'TEXTAREA' ||
+      target.isContentEditable ||
+      target.getAttribute('contenteditable') === 'true';
+    if (
+      isInput &&
+      !['Shift', 'Control', 'Alt', 'Meta', 'Escape', 'Tab', 'CapsLock'].includes(e.key)
+    ) {
+      playKeyboardClickSound();
+    }
+  };
+
+  window.addEventListener('click', handleClick, true);
+  window.addEventListener('keydown', handleKeyDown, true);
+
+  return () => {
+    window.removeEventListener('click', handleClick, true);
+    window.removeEventListener('keydown', handleKeyDown, true);
+  };
 }
