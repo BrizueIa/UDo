@@ -53,6 +53,7 @@ export function useWorkspaceState() {
     handleBatchDeleteNotes,
     handleBatchToggleCompleteNotes,
     handleBatchMoveNotesToFolder,
+    handleBatchMoveNotesToSubject,
     handleToggleSubjectPrivate,
     handleDuplicateNote,
   } = useWorkspaceBatchActions({
@@ -379,6 +380,7 @@ export function useWorkspaceState() {
     handleBatchDeleteNotes,
     handleBatchToggleCompleteNotes,
     handleBatchMoveNotesToFolder,
+    handleBatchMoveNotesToSubject,
     handleToggleSubjectPrivate,
     handleDuplicateNote,
   };

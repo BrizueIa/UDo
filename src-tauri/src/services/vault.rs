@@ -65,8 +65,8 @@ pub fn set_vault_pin_db(
     new_pin: &str,
 ) -> Result<bool, String> {
     let clean_pin = new_pin.trim();
-    if clean_pin.len() != 6 || !clean_pin.chars().all(|c| c.is_ascii_digit()) {
-        return Err("PIN must be exactly 6 digits".to_string());
+    if clean_pin.len() < 4 || clean_pin.len() > 12 || !clean_pin.chars().all(|c| c.is_ascii_digit()) {
+        return Err("PIN must be between 4 and 12 digits".to_string());
     }
 
     let existing_hash = db.get_setting(PIN_SETTING_KEY).map_err(|e| e.to_string())?;

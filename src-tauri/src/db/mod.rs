@@ -11,16 +11,20 @@ pub struct DatabaseManager {
 }
 
 impl DatabaseManager {
-    pub fn new() -> Result<Self> {
-        let mut data_dir = dirs::data_local_dir().unwrap_or_else(|| PathBuf::from("."));
-        data_dir.push("udo");
-        fs::create_dir_all(&data_dir).ok();
-        
-        let db_path = data_dir.join("udo.db");
+    pub fn new_with_path(db_path: PathBuf) -> Result<Self> {
+        if let Some(parent) = db_path.parent() {
+            fs::create_dir_all(parent).ok();
+        }
         let manager = Self { db_path };
         let conn = manager.get_connection()?;
         migrations::init_schema(&conn)?;
         Ok(manager)
+    }
+
+    pub fn new() -> Result<Self> {
+        let mut data_dir = dirs::data_local_dir().unwrap_or_else(|| PathBuf::from("."));
+        data_dir.push("udo");
+        Self::new_with_path(data_dir.join("udo.db"))
     }
 
     pub fn get_connection(&self) -> Result<Connection> {

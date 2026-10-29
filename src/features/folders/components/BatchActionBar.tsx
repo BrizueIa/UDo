@@ -32,7 +32,7 @@ export const BatchActionBar: React.FC<Props> = ({
         initial={{ opacity: 0, y: 16, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: 16, scale: 0.95 }}
-        className="absolute bottom-3 left-3 right-3 z-40 bg-theme-card/95 backdrop-blur-md border border-theme-accent/40 rounded-xl shadow-2xl p-2 flex items-center justify-between gap-1 select-none ring-1 ring-theme-accent/20"
+        className="absolute bottom-3 left-3 right-3 z-40 bg-theme-sidebar border border-theme-accent/40 rounded-xl shadow-2xl p-2 flex items-center justify-between gap-1 select-none ring-1 ring-theme-accent/20"
       >
         <div className="flex items-center space-x-2 px-1">
           <span className="w-5 h-5 rounded-md bg-theme-accent text-white text-[11px] font-bold flex items-center justify-center shadow-xs">

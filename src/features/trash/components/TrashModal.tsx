@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { trashIpc } from '../api/trashIpc';
 import { NoteItem, SubjectItem, FolderItem } from '../../../shared/types';
+import { formatRelativeTime } from '../../../shared/utils/formatTime';
 
 interface Props {
   isOpen: boolean;
@@ -22,7 +23,7 @@ export const TrashModal: React.FC<Props> = ({
   onClose,
   onNotesRestored,
 }) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [deletedNotes, setDeletedNotes] = useState<NoteItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isConfirmingEmpty, setIsConfirmingEmpty] = useState(false);
@@ -102,14 +103,14 @@ export const TrashModal: React.FC<Props> = ({
         className="w-full max-w-2xl bg-theme-sidebar border border-theme-border rounded-2xl shadow-2xl flex flex-col h-[520px] max-h-[85vh] overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-theme-border">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-theme-border/60">
           <div className="flex items-center space-x-2.5">
-            <div className="p-2 rounded-xl bg-theme-hover text-rose-400">
-              <Trash2 size={18} />
+            <div className="w-8 h-8 rounded-xl bg-theme-hover flex items-center justify-center text-rose-400">
+              <Trash2 size={16} />
             </div>
             <div>
               <h3 className="text-sm font-bold text-theme-text">{t('trash.title') || 'Papelera de Reciclaje'}</h3>
-              <p className="text-xs text-theme-muted">
+              <p className="text-[11px] text-theme-muted">
                 {t('trash.noteCount', { count: deletedNotes.length }) || `${deletedNotes.length} notas eliminadas`}
               </p>
             </div>
@@ -120,7 +121,7 @@ export const TrashModal: React.FC<Props> = ({
               <button
                 type="button"
                 onClick={() => setIsConfirmingEmpty(true)}
-                className="px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-400 hover:bg-rose-500/15 transition-colors"
+                className="px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-400 hover:bg-rose-500/15 transition-colors cursor-pointer"
               >
                 {t('trash.empty') || 'Vaciar papelera'}
               </button>
@@ -128,7 +129,7 @@ export const TrashModal: React.FC<Props> = ({
             <button
               type="button"
               onClick={onClose}
-              className="p-1.5 rounded-lg text-theme-muted hover:text-theme-text hover:bg-theme-hover transition-colors"
+              className="p-1 rounded-lg text-theme-muted hover:text-theme-text hover:bg-theme-hover transition-colors cursor-pointer"
             >
               <X size={16} />
             </button>
@@ -142,24 +143,24 @@ export const TrashModal: React.FC<Props> = ({
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: 'auto', opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
-              className="bg-rose-500/10 border-b border-rose-500/20 px-6 py-2.5 flex items-center justify-between"
+              className="bg-rose-500/10 border-b border-rose-500/20 px-5 py-2.5 flex items-center justify-between"
             >
               <div className="flex items-center space-x-2 text-rose-400 text-xs font-medium">
-                <AlertTriangle size={15} />
+                <AlertTriangle size={14} />
                 <span>{t('trash.emptyConfirm') || '¿Eliminar permanentemente todas las notas de la papelera?'}</span>
               </div>
               <div className="flex items-center space-x-2">
                 <button
                   type="button"
                   onClick={() => setIsConfirmingEmpty(false)}
-                  className="px-2.5 py-1 text-xs text-theme-muted hover:text-theme-text transition-colors"
+                  className="px-2.5 py-1 text-xs text-theme-muted hover:text-theme-text transition-colors cursor-pointer"
                 >
                   {t('nav.cancel')}
                 </button>
                 <button
                   type="button"
                   onClick={handleEmptyTrash}
-                  className="px-3 py-1 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold transition-colors"
+                  className="px-3 py-1 rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-xs font-semibold transition-colors cursor-pointer"
                 >
                   {t('trash.confirmEmpty') || 'Sí, vaciar'}
                 </button>
@@ -168,20 +169,20 @@ export const TrashModal: React.FC<Props> = ({
           )}
         </AnimatePresence>
 
-        {/* Actions toolbar for selection */}
+        {/* Selection Toolbar */}
         {deletedNotes.length > 0 && (
-          <div className="px-6 py-2 bg-theme-column/40 border-b border-theme-border/60 flex items-center justify-between text-xs">
+          <div className="px-5 py-2 bg-theme-column/30 border-b border-theme-border/40 flex items-center justify-between text-xs">
             <button
               type="button"
               onClick={handleSelectAll}
-              className="flex items-center space-x-2 text-theme-muted hover:text-theme-text transition-colors"
+              className="flex items-center space-x-2 text-theme-muted hover:text-theme-text transition-colors cursor-pointer"
             >
               {selectedIds.size === deletedNotes.length ? (
                 <CheckSquare size={14} className="text-theme-accent" />
               ) : (
                 <Square size={14} />
               )}
-              <span>{t('trash.selectAll') || 'Seleccionar todo'}</span>
+              <span className="text-[11px] font-medium">{t('trash.selectAll') || 'Seleccionar todo'}</span>
             </button>
 
             {selectedIds.size > 0 && (
@@ -189,17 +190,17 @@ export const TrashModal: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={handleRestoreSelected}
-                  className="flex items-center space-x-1 px-2 py-1 rounded-lg text-theme-accent hover:bg-theme-accent/15 font-medium transition-colors"
+                  className="flex items-center space-x-1 px-2 py-0.5 rounded-lg text-theme-accent hover:bg-theme-accent/15 font-medium transition-colors cursor-pointer"
                 >
-                  <RotateCcw size={13} />
+                  <RotateCcw size={12} />
                   <span>{t('trash.restoreSelected', { count: selectedIds.size }) || `Restaurar (${selectedIds.size})`}</span>
                 </button>
                 <button
                   type="button"
                   onClick={handlePermanentlyDeleteSelected}
-                  className="flex items-center space-x-1 px-2 py-1 rounded-lg text-rose-400 hover:bg-rose-500/15 font-medium transition-colors"
+                  className="flex items-center space-x-1 px-2 py-0.5 rounded-lg text-rose-400 hover:bg-rose-500/15 font-medium transition-colors cursor-pointer"
                 >
-                  <Trash2 size={13} />
+                  <Trash2 size={12} />
                   <span>{t('trash.deleteSelected') || 'Eliminar'}</span>
                 </button>
               </div>
@@ -208,14 +209,14 @@ export const TrashModal: React.FC<Props> = ({
         )}
 
         {/* List of deleted notes */}
-        <div className="flex-1 overflow-y-auto px-6 py-3 space-y-1.5">
+        <div className="flex-1 overflow-y-auto px-4 py-2 space-y-0.5">
           {loading ? (
             <div className="flex items-center justify-center h-48 text-theme-muted text-xs">
               {t('settings.loading') || 'Cargando...'}
             </div>
           ) : deletedNotes.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-56 text-theme-muted space-y-2">
-              <Trash2 size={32} className="opacity-30" />
+              <Trash2 size={28} className="opacity-30" />
               <p className="text-xs">{t('trash.emptyState') || 'La papelera está vacía'}</p>
             </div>
           ) : (
@@ -223,41 +224,42 @@ export const TrashModal: React.FC<Props> = ({
               const isSelected = selectedIds.has(note.id);
               const subject = subjects.find((s) => s.id === note.subjectId);
               const folder = folders.find((f) => f.id === note.folderId);
+              const formattedTime = formatRelativeTime(note.updatedAt, i18n.language);
 
               return (
                 <div
                   key={note.id}
                   onClick={() => handleToggleSelect(note.id)}
-                  className={`flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer ${
+                  className={`group flex items-center justify-between px-3 py-2 rounded-xl border transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-theme-accent/15 border-theme-accent/50 text-theme-text'
-                      : 'bg-theme-card/60 hover:bg-theme-card border-theme-border/50 text-theme-text'
+                      ? 'bg-theme-accent/15 border-theme-accent/30 text-theme-text'
+                      : 'border-transparent hover:bg-theme-card/70 hover:border-theme-border/40 text-theme-text'
                   }`}
                 >
-                  <div className="flex items-center space-x-3 min-w-0 flex-1">
-                    <div className="text-theme-muted">
+                  <div className="flex items-center space-x-2.5 min-w-0 flex-1">
+                    <div className="text-theme-muted shrink-0">
                       {isSelected ? (
-                        <CheckSquare size={15} className="text-theme-accent" />
+                        <CheckSquare size={14} className="text-theme-accent" />
                       ) : (
-                        <Square size={15} />
+                        <Square size={14} />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="text-xs font-semibold truncate">{note.title || t('note.titlePlaceholder')}</div>
-                      <div className="text-[11px] text-theme-muted flex items-center space-x-2 mt-0.5">
+                      <div className="text-xs font-medium truncate">{note.title || t('note.titlePlaceholder')}</div>
+                      <div className="text-[11px] text-theme-muted flex items-center space-x-1.5 mt-0.5 truncate">
                         {subject && (
-                          <span className="flex items-center space-x-1 truncate">
+                          <span className="flex items-center space-x-1 truncate shrink-0">
                             <span className="w-2 h-2 rounded-full" style={{ backgroundColor: subject.color }} />
-                            <span>{subject.name}</span>
+                            <span className="truncate">{subject.name}</span>
                           </span>
                         )}
-                        {folder && <span>/ {folder.name}</span>}
-                        <span>• {note.updatedAt}</span>
+                        {folder && <span className="truncate">/ {folder.name}</span>}
+                        <span className="shrink-0">• {formattedTime}</span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-1 ml-2">
+                  <div className="flex items-center space-x-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       type="button"
                       onClick={(e) => {
@@ -265,9 +267,9 @@ export const TrashModal: React.FC<Props> = ({
                         handleRestoreSingle(note.id);
                       }}
                       title={t('trash.restore') || 'Restaurar'}
-                      className="p-1.5 rounded-lg text-theme-muted hover:text-theme-accent hover:bg-theme-accent/15 transition-colors"
+                      className="p-1 rounded-md text-theme-muted hover:text-theme-accent hover:bg-theme-accent/15 transition-colors cursor-pointer"
                     >
-                      <RotateCcw size={14} />
+                      <RotateCcw size={13} />
                     </button>
                     <button
                       type="button"
@@ -276,9 +278,9 @@ export const TrashModal: React.FC<Props> = ({
                         trashIpc.permanentlyDeleteNotes([note.id]).then(() => loadDeletedNotes());
                       }}
                       title={t('trash.permanentlyDelete') || 'Eliminar definitivamente'}
-                      className="p-1.5 rounded-lg text-theme-muted hover:text-rose-400 hover:bg-rose-500/15 transition-colors"
+                      className="p-1 rounded-md text-theme-muted hover:text-rose-400 hover:bg-rose-500/15 transition-colors cursor-pointer"
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={13} />
                     </button>
                   </div>
                 </div>

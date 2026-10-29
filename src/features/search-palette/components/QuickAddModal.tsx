@@ -22,20 +22,24 @@ export const QuickAddModal: React.FC<Props> = ({
   const [selectedFolderIndex, setSelectedFolderIndex] = useState(0);
   const [isFolderDropdownOpen, setIsFolderDropdownOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const availableFolders = folders.length > 0 ? folders : [];
+  const prevIsOpenRef = useRef(false);
 
   useEffect(() => {
-    if (isOpen) {
+    // Only reset when modal transitions from closed to open
+    if (isOpen && !prevIsOpenRef.current) {
       setTitle('');
       setIsFolderDropdownOpen(false);
-      const defIdx = availableFolders.findIndex((f) => f.id === defaultFolderId || f.subjectId === defaultSubjectId);
+      const defIdx = folders.findIndex(
+        (f) => f.id === defaultFolderId || f.subjectId === defaultSubjectId
+      );
       setSelectedFolderIndex(defIdx >= 0 ? defIdx : 0);
       setTimeout(() => inputRef.current?.focus(), 50);
     }
-  }, [isOpen, defaultFolderId, defaultSubjectId, availableFolders]);
+    prevIsOpenRef.current = isOpen;
+  }, [isOpen, defaultFolderId, defaultSubjectId, folders]);
 
   if (!isOpen) return null;
-  const currentFolder = availableFolders[selectedFolderIndex];
+  const currentFolder = folders[selectedFolderIndex] || folders[0];
   const currentSubject = subjects.find((s) => s.id === currentFolder?.subjectId);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -43,15 +47,22 @@ export const QuickAddModal: React.FC<Props> = ({
       e.preventDefault();
       if (isFolderDropdownOpen) setIsFolderDropdownOpen(false);
       else onClose();
-    } else if (e.key === 'Tab' || e.key === 'ArrowDown') {
+    } else if (e.key === 'Tab') {
       e.preventDefault();
-      if (availableFolders.length > 0) {
-        setSelectedFolderIndex((prev) => e.shiftKey ? (prev - 1 + availableFolders.length) % availableFolders.length : (prev + 1) % availableFolders.length);
+      if (folders.length > 0) {
+        setSelectedFolderIndex((prev) =>
+          e.shiftKey ? (prev - 1 + folders.length) % folders.length : (prev + 1) % folders.length
+        );
+      }
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      if (folders.length > 0) {
+        setSelectedFolderIndex((prev) => (prev + 1) % folders.length);
       }
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      if (availableFolders.length > 0) {
-        setSelectedFolderIndex((prev) => (prev - 1 + availableFolders.length) % availableFolders.length);
+      if (folders.length > 0) {
+        setSelectedFolderIndex((prev) => (prev - 1 + folders.length) % folders.length);
       }
     } else if (e.key === 'Enter') {
       e.preventDefault();
@@ -112,7 +123,7 @@ export const QuickAddModal: React.FC<Props> = ({
               {/* Folders Dropdown Menu */}
               {isFolderDropdownOpen && (
                 <div className="absolute left-0 top-full mt-2 w-64 max-h-52 overflow-y-auto bg-theme-card border border-white/[0.1] rounded-xl shadow-2xl p-1 z-50">
-                  {availableFolders.map((f, idx) => {
+                  {folders.map((f, idx) => {
                     const subj = subjects.find((s) => s.id === f.subjectId);
                     return (
                       <button

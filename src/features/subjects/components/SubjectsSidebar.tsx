@@ -29,8 +29,10 @@ interface Props {
   getSubjectNoteCount: (id: string) => number;
   onMoveNoteToFolder?: (noteId: string, folderId: string) => void;
   onMoveNoteToSubject?: (noteId: string, subjectId: string) => void;
+  onBatchMoveNotesToSubject?: (noteIds: string[], subjectId: string) => void;
   onMoveFolderToSubject?: (folderId: string, subjectId: string) => void;
   onConvertFolderToSubject?: (folderId: string) => void;
+  onFocusColumn?: () => void;
 }
 
 export const SubjectsSidebar: React.FC<Props> = ({
@@ -51,8 +53,10 @@ export const SubjectsSidebar: React.FC<Props> = ({
   getSubjectNoteCount,
   onMoveNoteToFolder,
   onMoveNoteToSubject,
+  onBatchMoveNotesToSubject,
   onMoveFolderToSubject,
   onConvertFolderToSubject,
+  onFocusColumn,
 }) => {
   const { t } = useTranslation();
   const { openContextMenu } = useContextMenu();
@@ -154,6 +158,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
 
   return (
     <aside
+      onClick={() => onFocusColumn?.()}
       onDragOver={handleAsideDragOver}
       onDragLeave={handleAsideDragLeave}
       onDrop={handleAsideDrop}
@@ -162,17 +167,36 @@ export const SubjectsSidebar: React.FC<Props> = ({
       } ${isDropOverEmptySpace ? 'bg-theme-accent/5' : ''}`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-theme-border/50">
-        <span className="text-xs font-semibold tracking-wider text-theme-muted uppercase">
+      <div className="flex items-center justify-between px-3 py-3 border-b border-theme-border/50">
+        <span className="text-xs font-semibold tracking-wider text-theme-muted uppercase truncate">
           {t('nav.subjects')}
         </span>
-        <button
-          onClick={handleStartCreate}
-          className="p-1 rounded-md text-theme-muted hover:text-theme-text hover:bg-theme-hover transition-colors"
-          title={t('nav.addSubject')}
-        >
-          <Plus size={15} />
-        </button>
+        <div className="flex items-center space-x-1 shrink-0">
+          {onToggleVault && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleVault();
+              }}
+              className={`p-1 rounded-md transition-colors ${
+                isVaultUnlocked
+                  ? 'text-theme-accent hover:bg-theme-accent/15'
+                  : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover'
+              }`}
+              title={`${isVaultUnlocked ? t('vault.unlocked') : t('vault.locked')} (Ctrl+L)`}
+            >
+              {isVaultUnlocked ? <Unlock size={14} /> : <Lock size={14} />}
+            </button>
+          )}
+          <button
+            onClick={handleStartCreate}
+            className="p-1 rounded-md text-theme-muted hover:text-theme-text hover:bg-theme-hover transition-colors"
+            title={t('nav.addSubject')}
+          >
+            <Plus size={15} />
+          </button>
+        </div>
       </div>
 
       {/* Creation Form */}
@@ -251,6 +275,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
             onDeleteSubject={onDeleteSubject}
             onMoveNoteToFolder={onMoveNoteToFolder}
             onMoveNoteToSubject={onMoveNoteToSubject}
+            onBatchMoveNotesToSubject={onBatchMoveNotesToSubject}
             onMoveFolderToSubject={onMoveFolderToSubject}
             onContextMenu={(e) => handleSubjectContextMenu(e, subject)}
           />
@@ -279,6 +304,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
                   onDeleteSubject={onDeleteSubject}
                   onMoveNoteToFolder={onMoveNoteToFolder}
                   onMoveNoteToSubject={onMoveNoteToSubject}
+                  onBatchMoveNotesToSubject={onBatchMoveNotesToSubject}
                   onMoveFolderToSubject={onMoveFolderToSubject}
                   onContextMenu={(e) => handleSubjectContextMenu(e, subject)}
                 />
@@ -288,32 +314,16 @@ export const SubjectsSidebar: React.FC<Props> = ({
         )}
       </div>
 
-      {/* Footer Controls: Private Vault & Trash */}
-      <div className="px-2.5 py-2 border-t border-theme-border/60 flex items-center justify-between text-xs bg-theme-column/30 select-none">
-        <button
-          type="button"
-          onClick={onToggleVault}
-          className={`flex items-center space-x-1.5 px-2 py-1 rounded-lg transition-colors cursor-pointer ${
-            isVaultUnlocked
-              ? 'text-theme-accent hover:bg-theme-accent/15'
-              : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover'
-          }`}
-          title={`${isVaultUnlocked ? t('vault.unlocked') : t('vault.locked')} (Ctrl+L)`}
-        >
-          {isVaultUnlocked ? <Unlock size={14} /> : <Lock size={14} />}
-          <span className="text-[11px] font-medium hidden sm:inline">
-            {isVaultUnlocked ? t('vault.unlocked') || 'Bóveda abierta' : t('vault.title') || 'Bóveda'}
-          </span>
-        </button>
-
+      {/* Footer: Integrated Trash Button */}
+      <div className="px-2 py-1.5 border-t border-theme-border/60 bg-theme-column/30 select-none">
         <button
           type="button"
           onClick={onOpenTrash}
-          className="flex items-center space-x-1 px-2 py-1 rounded-lg text-theme-muted hover:text-rose-400 hover:bg-rose-500/15 transition-colors cursor-pointer"
-          title={t('trash.title') || 'Papelera'}
+          className="w-full flex items-center space-x-2 px-2.5 py-1.5 rounded-lg text-theme-muted hover:text-theme-text hover:bg-theme-hover transition-colors cursor-pointer group text-xs"
+          title={t('trash.title') || 'Papelera de Reciclaje'}
         >
-          <Trash2 size={14} />
-          <span className="text-[11px] font-medium hidden sm:inline">{t('trash.title') || 'Papelera'}</span>
+          <Trash2 size={14} className="group-hover:text-rose-400 transition-colors shrink-0" />
+          <span className="text-[11px] font-medium truncate">{t('trash.title') || 'Papelera de Reciclaje'}</span>
         </button>
       </div>
 

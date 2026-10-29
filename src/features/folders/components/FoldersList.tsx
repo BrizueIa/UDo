@@ -88,15 +88,27 @@ export const FoldersList: React.FC<Props> = ({
       .map((n) => n.id);
   }, [notes, currentSubject]);
 
+  const allVisibleFolderIds = useMemo(() => {
+    return folders.map((f) => f.id);
+  }, [folders]);
+
   const {
     selectedNoteIds,
+    selectedFolderIds,
     clearSelection,
     handleNoteClick,
+    handleFolderClick,
     handleContainerMouseDown,
     marqueeRect,
   } = useMultiSelection({
     allVisibleNoteIds,
-    onBatchDelete: onBatchDeleteNotes,
+    allVisibleFolderIds,
+    onBatchDelete: (noteIds, folderIds) => {
+      if (noteIds.length > 0) onBatchDeleteNotes?.(noteIds);
+      if (folderIds && folderIds.length > 0) {
+        folderIds.forEach((fId) => onDeleteFolder(fId));
+      }
+    },
   });
 
   const { handleNoteContextMenu, handleFolderContextMenu } = useFoldersContextMenu({
@@ -208,14 +220,17 @@ export const FoldersList: React.FC<Props> = ({
                   folder={folder}
                   noteCount={folderNotes.length}
                   isSelected={isFolderSelected}
+                  isMultiSelected={selectedFolderIds.has(folder.id)}
                   hasActiveNote={folder.id === activeNoteFolderId}
                   onSelectFolder={() => onSelectFolder(folder.id)}
+                  onSelectWithEvent={(e) => handleFolderClick(folder.id, e)}
                   onToggleExpand={() => onToggleFolderExpand(folder.id)}
                   onAddNote={() => onAddNote(folder.id)}
                   onUpdateFolder={onUpdateFolder}
                   onDeleteFolder={() => onDeleteFolder(folder.id)}
                   onReorderFolder={onReorderFolder}
                   onContextMenu={(e) => handleFolderContextMenu(e, folder)}
+                  onBatchMoveNotesToFolder={onBatchMoveNotesToFolder}
                   onMoveNoteToFolder={(noteId) => {
                     setTimeout(() => {
                       if (onReorderOrMoveNote) {
@@ -332,11 +347,17 @@ export const FoldersList: React.FC<Props> = ({
         )}
 
         <BatchActionBar
-          selectedCount={selectedNoteIds.size}
+          selectedCount={selectedNoteIds.size + selectedFolderIds.size}
           folders={folders}
           onToggleCompleteAll={() => onBatchToggleCompleteNotes?.(Array.from(selectedNoteIds))}
           onMoveAllToFolder={(folderId) => onBatchMoveNotesToFolder?.(Array.from(selectedNoteIds), folderId)}
-          onDeleteAll={() => onBatchDeleteNotes?.(Array.from(selectedNoteIds))}
+          onDeleteAll={() => {
+            if (selectedNoteIds.size > 0) onBatchDeleteNotes?.(Array.from(selectedNoteIds));
+            if (selectedFolderIds.size > 0) {
+              selectedFolderIds.forEach((fId) => onDeleteFolder(fId));
+            }
+            clearSelection();
+          }}
           onClearSelection={clearSelection}
         />
         <MarqueeSelectionBox rect={marqueeRect} />

@@ -1,28 +1,48 @@
+use std::path::PathBuf;
 use udo_lib::db::DatabaseManager;
 use udo_lib::models::{NoteItem, SubjectItem};
 use udo_lib::services::vault;
 
+fn create_temp_db(name: &str) -> (DatabaseManager, PathBuf) {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let path = std::env::temp_dir().join(format!("udo-test-{}-{}.db", name, now));
+    let db = DatabaseManager::new_with_path(path.clone()).expect("Failed to initialize test DB");
+    (db, path)
+}
+
 #[test]
 fn test_vault_pin_service() {
-    let db = DatabaseManager::new().expect("Failed to initialize DatabaseManager");
+    let (db, path) = create_temp_db("vault-pin");
 
-    // Setting an invalid PIN should fail
+    // Initially no PIN
+    assert!(!vault::has_vault_pin_db(&db).expect("Failed to check PIN existence"));
+
+    // Setting an invalid PIN should fail (<4 digits or non-numeric or >12 digits)
     assert!(vault::set_vault_pin_db(&db, None, "123").is_err());
     assert!(vault::set_vault_pin_db(&db, None, "abcdef").is_err());
-    assert!(vault::set_vault_pin_db(&db, None, "1234567").is_err());
+    assert!(vault::set_vault_pin_db(&db, None, "1234567890123").is_err());
 
-    // Valid 6-digit PIN
-    vault::set_vault_pin_db(&db, None, "654321").expect("Failed to set 6-digit PIN");
+    // Valid 4-digit PIN
+    vault::set_vault_pin_db(&db, None, "1234").expect("Failed to set 4-digit PIN");
     assert!(vault::has_vault_pin_db(&db).expect("Failed to check PIN existence"));
+    assert!(vault::verify_vault_pin_db(&db, "1234").expect("Verification failed"));
+    assert!(!vault::verify_vault_pin_db(&db, "0000").expect("Wrong PIN should fail"));
 
-    // Verify PIN
-    assert!(vault::verify_vault_pin_db(&db, "654321").expect("Verification failed"));
-    assert!(!vault::verify_vault_pin_db(&db, "000000").expect("Verification should fail for wrong PIN"));
+    // Change to 8-digit PIN
+    assert!(vault::set_vault_pin_db(&db, Some("wrong"), "87654321").is_err());
+    vault::set_vault_pin_db(&db, Some("1234"), "87654321").expect("Failed to change PIN");
+    assert!(vault::verify_vault_pin_db(&db, "87654321").expect("Verification failed"));
+
+    // Cleanup
+    std::fs::remove_file(path).ok();
 }
 
 #[test]
 fn test_vault_privacy_filtering_and_trash() {
-    let db = DatabaseManager::new().expect("Failed to initialize DatabaseManager");
+    let (db, path) = create_temp_db("vault-trash");
     let initial = db.get_initial_data().expect("Failed to load initial data");
 
     // Create a private subject
@@ -95,4 +115,7 @@ fn test_vault_privacy_filtering_and_trash() {
     db.permanently_delete_notes(&[secret_note.id.clone()]).expect("Failed to permanently delete");
     let final_trash = db.get_deleted_notes(true).expect("Failed to get trash");
     assert!(!final_trash.iter().any(|n| n.id == secret_note.id));
+
+    // Cleanup
+    std::fs::remove_file(path).ok();
 }

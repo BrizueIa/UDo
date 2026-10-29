@@ -23,6 +23,7 @@ interface Props {
   onDeleteSubject: (id: string) => void;
   onMoveNoteToFolder?: (noteId: string, folderId: string) => void;
   onMoveNoteToSubject?: (noteId: string, subjectId: string) => void;
+  onBatchMoveNotesToSubject?: (noteIds: string[], subjectId: string) => void;
   onMoveFolderToSubject?: (folderId: string, subjectId: string) => void;
   onContextMenu?: (e: React.MouseEvent) => void;
 }
@@ -38,6 +39,7 @@ export const SubjectItemRow: React.FC<Props> = ({
   onDeleteSubject,
   onMoveNoteToFolder,
   onMoveNoteToSubject,
+  onBatchMoveNotesToSubject,
   onMoveFolderToSubject,
   onContextMenu,
 }) => {
@@ -109,11 +111,17 @@ export const SubjectItemRow: React.FC<Props> = ({
     }
 
     const noteIdsRaw = e.dataTransfer.getData('application/udo-note-ids');
-    if (noteIdsRaw && onMoveNoteToSubject) {
+    if (noteIdsRaw) {
       try {
         const ids: string[] = JSON.parse(noteIdsRaw);
-        ids.forEach((id) => onMoveNoteToSubject(id, subject.id));
-        return;
+        if (ids.length > 0) {
+          if (onBatchMoveNotesToSubject) {
+            onBatchMoveNotesToSubject(ids, subject.id);
+          } else if (onMoveNoteToSubject) {
+            ids.forEach((id) => onMoveNoteToSubject(id, subject.id));
+          }
+          return;
+        }
       } catch {
         // fallback
       }

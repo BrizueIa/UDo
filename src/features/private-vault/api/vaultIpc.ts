@@ -50,8 +50,8 @@ export const vaultIpc = {
       }
     }
 
-    if (newPin.length !== 6 || !/^\d{6}$/.test(newPin)) {
-      throw new Error('PIN must be 6 digits');
+    if (newPin.length < 4 || newPin.length > 12 || !/^\d{4,12}$/.test(newPin)) {
+      throw new Error('PIN must be between 4 and 12 digits');
     }
 
     localStorage.setItem(WEB_PIN_KEY, btoa(`udo_${newPin}_salt`));

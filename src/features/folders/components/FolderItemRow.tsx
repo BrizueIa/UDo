@@ -20,13 +20,16 @@ interface Props {
   folder: FolderItem;
   noteCount: number;
   isSelected?: boolean;
+  isMultiSelected?: boolean;
   hasActiveNote?: boolean;
   onSelectFolder?: () => void;
+  onSelectWithEvent?: (e: React.MouseEvent) => void;
   onToggleExpand: () => void;
   onAddNote: () => void;
   onUpdateFolder: (folder: FolderItem) => void;
   onDeleteFolder: () => void;
   onMoveNoteToFolder?: (noteId: string, folderId: string) => void;
+  onBatchMoveNotesToFolder?: (noteIds: string[], folderId: string) => void;
   onReorderFolder?: (draggedFolderId: string, targetFolderId: string, position: 'before' | 'after') => void;
   onContextMenu?: (e: React.MouseEvent) => void;
 }
@@ -35,13 +38,16 @@ export const FolderItemRow: React.FC<Props> = ({
   folder,
   noteCount,
   isSelected = false,
+  isMultiSelected = false,
   hasActiveNote = false,
   onSelectFolder,
+  onSelectWithEvent,
   onToggleExpand,
   onAddNote,
   onUpdateFolder,
   onDeleteFolder,
   onMoveNoteToFolder,
+  onBatchMoveNotesToFolder,
   onReorderFolder,
   onContextMenu,
 }) => {
@@ -61,7 +67,9 @@ export const FolderItemRow: React.FC<Props> = ({
 
   const handleDragOver = (e: React.DragEvent) => {
     const isFolder = e.dataTransfer.types.includes('application/udo-folder-id');
-    const isNote = e.dataTransfer.types.includes('application/udo-note-id');
+    const isNote =
+      e.dataTransfer.types.includes('application/udo-note-id') ||
+      e.dataTransfer.types.includes('application/udo-note-ids');
 
     if (isFolder) {
       e.preventDefault();
@@ -113,11 +121,17 @@ export const FolderItemRow: React.FC<Props> = ({
     }
 
     const noteIdsRaw = e.dataTransfer.getData('application/udo-note-ids');
-    if (noteIdsRaw && onMoveNoteToFolder) {
+    if (noteIdsRaw) {
       try {
         const ids: string[] = JSON.parse(noteIdsRaw);
-        ids.forEach((id) => onMoveNoteToFolder(id, folder.id));
-        return;
+        if (ids.length > 0) {
+          if (onBatchMoveNotesToFolder) {
+            onBatchMoveNotesToFolder(ids, folder.id);
+          } else if (onMoveNoteToFolder) {
+            ids.forEach((id) => onMoveNoteToFolder(id, folder.id));
+          }
+          return;
+        }
       } catch {
         // fallback
       }
@@ -197,9 +211,16 @@ export const FolderItemRow: React.FC<Props> = ({
 
   return (
     <div
+      data-folder-id={folder.id}
       draggable
       onDragStart={handleDragStart}
-      onClick={onSelectFolder}
+      onClick={(e) => {
+        if (onSelectWithEvent && (e.ctrlKey || e.metaKey || e.shiftKey)) {
+          onSelectWithEvent(e);
+        } else {
+          onSelectFolder?.();
+        }
+      }}
       onContextMenu={onContextMenu}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -207,6 +228,8 @@ export const FolderItemRow: React.FC<Props> = ({
       className={`group relative flex items-center justify-between px-2 py-1.5 rounded-md cursor-grab active:cursor-grabbing hover:translate-x-0.5 transition-all select-none border ${
         isDragOverNote
           ? 'bg-theme-accent/25 border-theme-accent ring-2 ring-theme-accent/60 scale-[1.01] shadow-md'
+          : isMultiSelected
+          ? 'bg-theme-accent/20 border-theme-accent/60 text-theme-text font-semibold ring-1 ring-theme-accent/40 shadow-xs'
           : isSelected
           ? 'bg-theme-card border-theme-accent/50 text-theme-text font-semibold shadow-xs'
           : 'hover:bg-theme-hover/50 text-theme-text border-transparent'

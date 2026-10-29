@@ -111,7 +111,7 @@ export const ContextMenuProvider: React.FC<{ children: React.ReactNode }> = ({ c
               top: `${menu.y}px`,
               zIndex: 9999,
             }}
-            className="w-56 bg-theme-card/95 backdrop-blur-md border border-theme-border rounded-xl shadow-2xl py-1.5 select-none text-xs"
+            className="w-56 bg-theme-sidebar border border-theme-border rounded-xl shadow-2xl py-1.5 select-none text-xs"
           >
             {menu.items.map((item) => {
               if (item.separator) {
@@ -168,7 +168,7 @@ export const ContextMenuProvider: React.FC<{ children: React.ReactNode }> = ({ c
                     <motion.div
                       initial={{ opacity: 0, x: -4 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="absolute left-full top-0 ml-1 w-48 bg-theme-card/95 backdrop-blur-md border border-theme-border rounded-xl shadow-2xl py-1.5 z-50 text-xs"
+                      className="absolute left-full top-0 ml-1 w-48 bg-theme-sidebar border border-theme-border rounded-xl shadow-2xl py-1.5 z-50 text-xs"
                     >
                       {item.submenu!.map((sub) => (
                         <button

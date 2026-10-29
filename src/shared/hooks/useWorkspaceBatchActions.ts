@@ -92,6 +92,17 @@ export function useWorkspaceBatchActions({
     [folders, recordSnapshot, getSnapshot, setNotes]
   );
 
+  const handleBatchMoveNotesToSubject = useCallback(
+    (ids: string[], targetSubjectId: string) => {
+      if (!ids || ids.length === 0) return;
+      const targetFolders = folders.filter((f) => f.subjectId === targetSubjectId);
+      if (targetFolders.length === 0) return;
+      const targetFolderId = targetFolders[0].id;
+      handleBatchMoveNotesToFolder(ids, targetFolderId);
+    },
+    [folders, handleBatchMoveNotesToFolder]
+  );
+
   const handleToggleSubjectPrivate = useCallback(
     (subject: SubjectItem) => {
       recordSnapshot(getSnapshot());
@@ -130,6 +141,7 @@ export function useWorkspaceBatchActions({
     handleBatchDeleteNotes,
     handleBatchToggleCompleteNotes,
     handleBatchMoveNotesToFolder,
+    handleBatchMoveNotesToSubject,
     handleToggleSubjectPrivate,
     handleDuplicateNote,
   };

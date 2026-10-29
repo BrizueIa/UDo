@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Lock, KeyRound, Delete, X, AlertCircle } from 'lucide-react';
+import { Lock, KeyRound, Delete, X, AlertCircle, CornerDownLeft } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { vaultIpc } from '../api/vaultIpc';
@@ -16,11 +16,12 @@ interface Props {
 export const VaultPinModal: React.FC<Props> = ({ isOpen, mode, onClose, onSuccess }) => {
   const { t } = useTranslation();
   const [pin, setPin] = useState('');
-  const [stage, setStage] = useState<'enter' | 'confirm' | 'current' | 'new'>('enter');
+  const [stage, setStage] = useState<'enter' | 'confirm' | 'current' | 'new' | 'confirm_new'>('enter');
   const [tempFirstPin, setTempFirstPin] = useState('');
   const [currentPinAttempt, setCurrentPinAttempt] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [shake, setShake] = useState(false);
+  const [effectiveMode, setEffectiveMode] = useState<VaultModalMode>(mode);
 
   useEffect(() => {
     if (isOpen) {
@@ -28,7 +29,17 @@ export const VaultPinModal: React.FC<Props> = ({ isOpen, mode, onClose, onSucces
       setErrorMessage('');
       setTempFirstPin('');
       setCurrentPinAttempt('');
-      setStage(mode === 'change' ? 'current' : 'enter');
+
+      // Verify if a PIN actually exists when opening
+      vaultIpc.hasVaultPin().then((exists) => {
+        if (!exists && mode === 'unlock') {
+          setEffectiveMode('setup');
+          setStage('enter');
+        } else {
+          setEffectiveMode(mode);
+          setStage(mode === 'change' ? 'current' : 'enter');
+        }
+      });
     }
   }, [isOpen, mode]);
 
@@ -41,73 +52,78 @@ export const VaultPinModal: React.FC<Props> = ({ isOpen, mode, onClose, onSucces
     }, 500);
   }, []);
 
-  const handleCompletePin = useCallback(
-    async (completedPin: string) => {
-      if (mode === 'unlock') {
-        const ok = await vaultIpc.verifyVaultPin(completedPin);
-        if (ok) {
-          onSuccess();
-          onClose();
+  const handleSubmit = useCallback(async () => {
+    if (pin.length < 4) {
+      triggerError(t('vault.pinMinLength') || 'Mínimo 4 dígitos requeridos');
+      return;
+    }
+
+    if (effectiveMode === 'unlock') {
+      const ok = await vaultIpc.verifyVaultPin(pin);
+      if (ok) {
+        onSuccess();
+        onClose();
+      } else {
+        triggerError(t('vault.invalidPin') || 'PIN incorrecto');
+      }
+    } else if (effectiveMode === 'setup') {
+      if (stage === 'enter') {
+        setTempFirstPin(pin);
+        setPin('');
+        setStage('confirm');
+      } else if (stage === 'confirm') {
+        if (pin !== tempFirstPin) {
+          triggerError(t('vault.pinMismatch') || 'Los PINs no coinciden');
+          setStage('enter');
+          setTempFirstPin('');
         } else {
-          triggerError(t('vault.invalidPin'));
-        }
-      } else if (mode === 'setup') {
-        if (stage === 'enter') {
-          setTempFirstPin(completedPin);
-          setPin('');
-          setStage('confirm');
-        } else if (stage === 'confirm') {
-          if (completedPin !== tempFirstPin) {
-            triggerError(t('vault.pinMismatch'));
-            setStage('enter');
-            setTempFirstPin('');
-          } else {
-            try {
-              await vaultIpc.setVaultPin(null, completedPin);
-              onSuccess();
-              onClose();
-            } catch {
-              triggerError(t('vault.invalidPin'));
-            }
-          }
-        }
-      } else if (mode === 'change') {
-        if (stage === 'current') {
-          const ok = await vaultIpc.verifyVaultPin(completedPin);
-          if (ok) {
-            setCurrentPinAttempt(completedPin);
-            setPin('');
-            setStage('new');
-          } else {
-            triggerError(t('vault.invalidPin'));
-          }
-        } else if (stage === 'new') {
           try {
-            await vaultIpc.setVaultPin(currentPinAttempt, completedPin);
+            await vaultIpc.setVaultPin(null, pin);
             onSuccess();
             onClose();
           } catch {
-            triggerError(t('vault.invalidPin'));
+            triggerError(t('vault.invalidPin') || 'PIN inválido');
           }
         }
       }
-    },
-    [mode, stage, tempFirstPin, currentPinAttempt, onSuccess, onClose, triggerError, t]
-  );
-
-  const handleInputDigit = useCallback(
-    (digit: string) => {
-      if (pin.length < 6) {
-        const next = pin + digit;
-        setPin(next);
-        setErrorMessage('');
-        if (next.length === 6) {
-          setTimeout(() => handleCompletePin(next), 80);
+    } else if (effectiveMode === 'change') {
+      if (stage === 'current') {
+        const ok = await vaultIpc.verifyVaultPin(pin);
+        if (ok) {
+          setCurrentPinAttempt(pin);
+          setPin('');
+          setStage('new');
+        } else {
+          triggerError(t('vault.invalidPin') || 'PIN incorrecto');
+        }
+      } else if (stage === 'new') {
+        setTempFirstPin(pin);
+        setPin('');
+        setStage('confirm_new');
+      } else if (stage === 'confirm_new') {
+        if (pin !== tempFirstPin) {
+          triggerError(t('vault.pinMismatch') || 'Los PINs no coinciden');
+          setStage('new');
+          setTempFirstPin('');
+        } else {
+          try {
+            await vaultIpc.setVaultPin(currentPinAttempt, pin);
+            onSuccess();
+            onClose();
+          } catch {
+            triggerError(t('vault.invalidPin') || 'PIN inválido');
+          }
         }
       }
-    },
-    [pin, handleCompletePin]
-  );
+    }
+  }, [pin, effectiveMode, stage, tempFirstPin, currentPinAttempt, onSuccess, onClose, triggerError, t]);
+
+  const handleInputDigit = useCallback((digit: string) => {
+    if (pin.length < 12) {
+      setPin((prev) => prev + digit);
+      setErrorMessage('');
+    }
+  }, [pin.length]);
 
   const handleDeleteDigit = useCallback(() => {
     setPin((prev) => prev.slice(0, -1));
@@ -119,17 +135,18 @@ export const VaultPinModal: React.FC<Props> = ({ isOpen, mode, onClose, onSucces
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onClose();
       else if (e.key === 'Backspace') handleDeleteDigit();
+      else if (e.key === 'Enter') handleSubmit();
       else if (/^\d$/.test(e.key)) handleInputDigit(e.key);
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose, handleDeleteDigit, handleInputDigit]);
+  }, [isOpen, onClose, handleDeleteDigit, handleInputDigit, handleSubmit]);
 
   if (!isOpen) return null;
 
   const getHeaderInfo = () => {
-    if (mode === 'unlock') return { title: t('vault.unlockTitle'), sub: t('vault.enterPin') };
-    if (mode === 'setup') {
+    if (effectiveMode === 'unlock') return { title: t('vault.unlockTitle'), sub: t('vault.enterPin') };
+    if (effectiveMode === 'setup') {
       return {
         title: t('vault.setupTitle'),
         sub: stage === 'enter' ? t('vault.enterNewPin') : t('vault.confirmPin'),
@@ -137,11 +154,17 @@ export const VaultPinModal: React.FC<Props> = ({ isOpen, mode, onClose, onSucces
     }
     return {
       title: t('vault.changeTitle'),
-      sub: stage === 'current' ? t('vault.enterCurrentPin') : t('vault.enterNewPin'),
+      sub:
+        stage === 'current'
+          ? t('vault.enterCurrentPin')
+          : stage === 'new'
+          ? t('vault.enterNewPin')
+          : t('vault.confirmPin'),
     };
   };
 
   const { title, sub } = getHeaderInfo();
+  const canSubmit = pin.length >= 4 && pin.length <= 12;
 
   return (
     <div
@@ -162,29 +185,28 @@ export const VaultPinModal: React.FC<Props> = ({ isOpen, mode, onClose, onSucces
         </button>
 
         <div className="w-12 h-12 rounded-2xl bg-theme-accent/15 border border-theme-accent/30 text-theme-accent flex items-center justify-center mb-3">
-          {mode === 'unlock' ? <Lock size={22} /> : <KeyRound size={22} />}
+          {effectiveMode === 'unlock' ? <Lock size={22} /> : <KeyRound size={22} />}
         </div>
 
         <h3 className="text-sm font-bold text-theme-text">{title}</h3>
         <p className="text-xs text-theme-muted mt-1 text-center">{sub}</p>
 
-        {/* 6 Digit Display Boxes */}
-        <div className="flex items-center space-x-2 my-5">
-          {Array.from({ length: 6 }).map((_, i) => {
-            const hasDigit = i < pin.length;
-            return (
-              <div
-                key={i}
-                className={`w-9 h-11 rounded-lg border flex items-center justify-center text-lg font-semibold transition-all ${
-                  hasDigit
-                    ? 'border-theme-accent bg-theme-card text-theme-text shadow-xs'
-                    : 'border-theme-border/70 bg-theme-column text-transparent'
-                }`}
-              >
-                {hasDigit ? '•' : ''}
-              </div>
-            );
-          })}
+        {/* Dynamic PIN Dots & Display */}
+        <div className="flex flex-col items-center my-4 w-full">
+          <div className="h-10 px-4 py-1.5 rounded-xl bg-theme-column/60 border border-theme-border/60 flex items-center justify-center space-x-1.5 min-w-[140px] max-w-full">
+            {pin.length === 0 ? (
+              <span className="text-xs text-theme-muted/50 font-mono tracking-widest">••••</span>
+            ) : (
+              Array.from({ length: pin.length }).map((_, i) => (
+                <span key={i} className="w-2.5 h-2.5 rounded-full bg-theme-accent inline-block shadow-xs animate-in zoom-in-75 duration-100" />
+              ))
+            )}
+          </div>
+          <div className="text-[11px] text-theme-muted mt-1.5 font-medium">
+            {pin.length < 4
+              ? t('vault.pinMinLength') || 'Mínimo 4 dígitos'
+              : `${pin.length} / 12 dígitos`}
+          </div>
         </div>
 
         {/* Error message */}
@@ -216,10 +238,10 @@ export const VaultPinModal: React.FC<Props> = ({ isOpen, mode, onClose, onSucces
           ))}
           <button
             type="button"
-            onClick={() => setPin('')}
-            className="h-11 rounded-xl bg-theme-card/60 hover:bg-theme-hover border border-theme-border/60 text-theme-muted text-[11px] font-medium transition-all active:scale-95 flex items-center justify-center"
+            onClick={handleDeleteDigit}
+            className="h-11 rounded-xl bg-theme-card/60 hover:bg-theme-hover border border-theme-border/60 text-theme-muted hover:text-rose-400 transition-all active:scale-95 flex items-center justify-center"
           >
-            {t('nav.clearFilter') || 'Clear'}
+            <Delete size={15} />
           </button>
           <button
             type="button"
@@ -230,10 +252,15 @@ export const VaultPinModal: React.FC<Props> = ({ isOpen, mode, onClose, onSucces
           </button>
           <button
             type="button"
-            onClick={handleDeleteDigit}
-            className="h-11 rounded-xl bg-theme-card/60 hover:bg-theme-hover border border-theme-border/60 text-theme-muted hover:text-rose-400 transition-all active:scale-95 flex items-center justify-center"
+            disabled={!canSubmit}
+            onClick={handleSubmit}
+            className={`h-11 rounded-xl border font-semibold text-xs transition-all active:scale-95 shadow-xs flex items-center justify-center ${
+              canSubmit
+                ? 'bg-theme-accent text-white border-transparent cursor-pointer hover:bg-theme-accent/90'
+                : 'bg-theme-card/40 text-theme-muted/40 border-theme-border/40 cursor-not-allowed'
+            }`}
           >
-            <Delete size={15} />
+            <CornerDownLeft size={15} />
           </button>
         </div>
       </motion.div>

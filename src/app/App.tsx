@@ -38,7 +38,7 @@ export const App: React.FC = () => {
     handleAddSubject, handleUpdateSubject, handleDeleteSubject, getSubjectNoteCount,
     handleWorkspaceUndo, handleWorkspaceRedo, reloadWorkspaceData,
     handleBatchDeleteNotes, handleBatchToggleCompleteNotes, handleBatchMoveNotesToFolder,
-    handleToggleSubjectPrivate, handleDuplicateNote,
+    handleBatchMoveNotesToSubject, handleToggleSubjectPrivate, handleDuplicateNote,
   } = useWorkspaceState();
 
   const vault = useVaultState();
@@ -282,8 +282,10 @@ export const App: React.FC = () => {
             getSubjectNoteCount={getSubjectNoteCount}
             onMoveNoteToFolder={handleMoveNoteToFolder}
             onMoveNoteToSubject={handleMoveNoteToSubject}
+            onBatchMoveNotesToSubject={handleBatchMoveNotesToSubject}
             onMoveFolderToSubject={handleMoveFolderToSubject}
             onConvertFolderToSubject={handleConvertFolderToSubject}
+            onFocusColumn={() => setActiveColumn(1)}
           />
         )}
 

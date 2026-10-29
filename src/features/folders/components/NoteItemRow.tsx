@@ -31,18 +31,19 @@ export const NoteItemRow: React.FC<Props> = ({
   const [dropPosition, setDropPosition] = useState<'before' | 'after' | null>(null);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-    if (isMultiSelected && multiSelectedIds.length > 1) {
-      e.dataTransfer.setData('application/udo-note-ids', JSON.stringify(multiSelectedIds));
-      e.dataTransfer.setData('text/plain', multiSelectedIds.join(','));
-    } else {
-      e.dataTransfer.setData('application/udo-note-id', note.id);
-      e.dataTransfer.setData('text/plain', note.id);
-    }
+    const targetIds = isMultiSelected && multiSelectedIds.length > 1 ? multiSelectedIds : [note.id];
+    e.dataTransfer.setData('application/udo-note-ids', JSON.stringify(targetIds));
+    e.dataTransfer.setData('application/udo-note-id', note.id);
+    e.dataTransfer.setData('text/plain', targetIds.join(','));
     e.dataTransfer.effectAllowed = 'move';
   };
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    if (e.dataTransfer.types.includes('application/udo-note-id') || e.dataTransfer.types.includes('text/plain')) {
+    if (
+      e.dataTransfer.types.includes('application/udo-note-id') ||
+      e.dataTransfer.types.includes('application/udo-note-ids') ||
+      e.dataTransfer.types.includes('text/plain')
+    ) {
       e.preventDefault();
       e.stopPropagation();
       e.dataTransfer.dropEffect = 'move';

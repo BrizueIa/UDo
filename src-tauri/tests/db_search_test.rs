@@ -3,7 +3,12 @@ use udo_lib::models::NoteItem;
 
 #[test]
 fn test_database_init_and_search() {
-    let db = DatabaseManager::new().expect("Failed to initialize DatabaseManager");
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .unwrap()
+        .as_nanos();
+    let temp_path = std::env::temp_dir().join(format!("udo-search-test-{}.db", now));
+    let db = DatabaseManager::new_with_path(temp_path.clone()).expect("Failed to initialize test DatabaseManager");
     let initial = db.get_initial_data().expect("Failed to load initial data");
     assert!(!initial.subjects.is_empty(), "Subjects should not be empty");
 
@@ -82,4 +87,6 @@ fn test_database_init_and_search() {
         !search_after_delete.iter().any(|n| n.id == new_note.id),
         "Soft-deleted note should be excluded from search"
     );
+
+    std::fs::remove_file(temp_path).ok();
 }
