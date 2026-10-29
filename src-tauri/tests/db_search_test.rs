@@ -23,6 +23,7 @@ fn test_database_init_and_search() {
         updated_at: "2026-10-27T00:00:00Z".to_string(),
         due_date: None,
         focus_minutes: None,
+        order: Some(0),
     };
     db.save_note(&test_calculo_note).expect("Failed to save test calculo note");
 
@@ -61,6 +62,7 @@ fn test_database_init_and_search() {
         updated_at: "2026-10-27T00:00:00Z".to_string(),
         due_date: None,
         focus_minutes: None,
+        order: Some(0),
     };
 
     db.save_note(&new_note).expect("Failed to save note");

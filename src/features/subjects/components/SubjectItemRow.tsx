@@ -161,22 +161,14 @@ export const SubjectItemRow: React.FC<Props> = ({
         onDrop={handleDrop}
         whileHover={{ x: 2 }}
         whileTap={{ scale: 0.98 }}
-        className={`group relative w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer select-none ${
+        className={`group relative w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer select-none border ${
           isDragOver
             ? 'bg-theme-accent/25 ring-2 ring-theme-accent/70 border-theme-accent scale-[1.02] shadow-md text-theme-text font-bold'
             : isSelected
-            ? 'text-theme-text font-semibold'
-            : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover/40'
+            ? 'bg-theme-card border-theme-accent/40 shadow-sm text-theme-text font-semibold'
+            : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover/40 border-transparent'
         }`}
       >
-        {isSelected && !isDragOver && (
-          <motion.div
-            layoutId="active-subject-pill"
-            className="absolute inset-0 bg-theme-card border border-theme-accent/40 rounded-lg shadow-sm pointer-events-none"
-            transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-          />
-        )}
-
         <div className="relative z-10 flex items-center space-x-2.5 min-w-0 flex-1">
           <span
             className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm transition-transform group-hover:scale-110"

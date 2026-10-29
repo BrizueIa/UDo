@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { CheckCircle2, Circle, Pin } from 'lucide-react';
 import { NoteItem } from '../../../shared/types';
 import { useTranslation } from 'react-i18next';
@@ -52,6 +51,9 @@ export const NoteItemRow: React.FC<Props> = ({
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
+    const isFolder = e.dataTransfer.types.includes('application/udo-folder-id');
+    if (isFolder) return;
+
     const draggedNoteId =
       e.dataTransfer.getData('application/udo-note-id') || e.dataTransfer.getData('text/plain');
     const pos = dropPosition || 'after';
@@ -70,10 +72,10 @@ export const NoteItemRow: React.FC<Props> = ({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onClick={onSelect}
-      className={`group relative flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-grab active:cursor-grabbing hover:translate-x-0.5 active:scale-[0.98] transition-all select-none ${
+      className={`group relative flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-grab active:cursor-grabbing hover:translate-x-0.5 active:scale-[0.98] transition-all select-none border ${
         isSelected
-          ? 'text-theme-text font-medium'
-          : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover/40'
+          ? 'bg-theme-card border-theme-accent/50 text-theme-text font-medium shadow-sm'
+          : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover/40 border-transparent'
       }`}
     >
       {/* Drop position indicator lines */}
@@ -82,15 +84,6 @@ export const NoteItemRow: React.FC<Props> = ({
       )}
       {dropPosition === 'after' && (
         <div className="absolute bottom-0 left-1 right-1 h-0.5 bg-theme-accent rounded-full z-30 shadow-xs" />
-      )}
-
-      {/* Sliding Active Pill */}
-      {isSelected && (
-        <motion.div
-          layoutId="active-note-pill"
-          className="absolute inset-0 bg-theme-card border border-theme-accent/50 rounded-lg shadow-sm pointer-events-none"
-          transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-        />
       )}
 
       <div className="relative z-10 flex items-center space-x-2 min-w-0 flex-1">

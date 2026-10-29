@@ -268,7 +268,11 @@ export const FoldersList: React.FC<Props> = ({
                       }}
                       onDrop={(e) => {
                         e.preventDefault();
+                        e.stopPropagation();
                         setDragOverFolderNotesId(null);
+                        const isFolder = e.dataTransfer.types.includes('application/udo-folder-id');
+                        if (isFolder) return;
+
                         const noteId =
                           e.dataTransfer.getData('application/udo-note-id') ||
                           e.dataTransfer.getData('text/plain');

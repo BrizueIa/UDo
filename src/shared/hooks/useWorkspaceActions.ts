@@ -43,51 +43,53 @@ export function useWorkspaceActions({
     selectedNoteId,
   });
 
-  const handleMoveNoteToFolder = (noteId: string, targetFolderId: string) => {
-    const targetFolder = folders.find((f) => f.id === targetFolderId);
-    if (!targetFolder) return;
+  const handleMoveNoteToFolder = async (noteId: string, targetFolderId: string) => {
+    try {
+      if (!noteId || !targetFolderId) return;
+      const targetFolder = folders.find((f) => f.id === targetFolderId);
+      if (!targetFolder) return;
+      const targetNote = notes.find((n) => n.id === noteId);
+      if (!targetNote || targetNote.folderId === targetFolderId) return;
 
-    recordSnapshot(getSnapshot());
+      recordSnapshot(getSnapshot());
 
-    setNotes((prev) =>
-      prev.map((n) => {
-        if (n.id === noteId) {
-          const updated = {
-            ...n,
-            folderId: targetFolderId,
-            subjectId: targetFolder.subjectId,
-            updatedAt: new Date().toISOString(),
-          };
-          api.saveNote(updated);
-          return updated;
-        }
-        return n;
-      })
-    );
-    setSelectedFolderId(targetFolderId);
-    setSelectedSubjectId(targetFolder.subjectId);
-    setSelectedNoteId(noteId);
+      const updated: NoteItem = {
+        ...targetNote,
+        folderId: targetFolderId,
+        subjectId: targetFolder.subjectId,
+        updatedAt: new Date().toISOString(),
+      };
+
+      setNotes((prev) => prev.map((n) => (n.id === noteId ? updated : n)));
+      setSelectedFolderId(targetFolderId);
+      setSelectedSubjectId(targetFolder.subjectId);
+      setSelectedNoteId(noteId);
+
+      await api.saveNote(updated).catch((err) => console.error('Failed to save note move:', err));
+    } catch (err) {
+      console.error('Error in handleMoveNoteToFolder:', err);
+    }
   };
 
-  const handleReorderOrMoveNote = (
+  const handleReorderOrMoveNote = async (
     draggedNoteId: string,
     targetFolderId: string,
     targetNoteId?: string,
     position: 'before' | 'after' = 'after'
   ) => {
-    const targetFolder = folders.find((f) => f.id === targetFolderId);
-    if (!targetFolder) return;
+    try {
+      if (!draggedNoteId || !targetFolderId) return;
+      if (targetNoteId && draggedNoteId === targetNoteId) return;
 
-    recordSnapshot(getSnapshot());
+      const targetFolder = folders.find((f) => f.id === targetFolderId);
+      if (!targetFolder) return;
 
-    setNotes((prev) => {
-      const draggedNote = prev.find((n) => n.id === draggedNoteId);
-      if (!draggedNote) return prev;
+      const draggedNote = notes.find((n) => n.id === draggedNoteId);
+      if (!draggedNote) return;
 
-      // Filter out dragged note from current list
-      const remainingNotes = prev.filter((n) => n.id !== draggedNoteId);
+      recordSnapshot(getSnapshot());
 
-      // Get all notes in target folder
+      const remainingNotes = notes.filter((n) => n.id !== draggedNoteId);
       const targetFolderNotes = remainingNotes.filter((n) => n.folderId === targetFolderId);
       const otherNotes = remainingNotes.filter((n) => n.folderId !== targetFolderId);
 
@@ -109,116 +111,142 @@ export function useWorkspaceActions({
       const reorderedFolderNotes = [...targetFolderNotes];
       reorderedFolderNotes.splice(insertIndex, 0, updatedDraggedNote);
 
-      // Update order index for all notes in target folder
-      const finalizedFolderNotes = reorderedFolderNotes.map((n, idx) => {
-        const withOrder = { ...n, order: idx };
-        api.saveNote(withOrder);
-        return withOrder;
-      });
+      const finalizedFolderNotes = reorderedFolderNotes.map((n, idx) => ({
+        ...n,
+        order: idx,
+      }));
 
-      return [...otherNotes, ...finalizedFolderNotes];
-    });
+      setNotes([...otherNotes, ...finalizedFolderNotes]);
+      setSelectedFolderId(targetFolderId);
+      setSelectedSubjectId(targetFolder.subjectId);
+      setSelectedNoteId(draggedNoteId);
 
-    setSelectedFolderId(targetFolderId);
-    setSelectedSubjectId(targetFolder.subjectId);
-    setSelectedNoteId(draggedNoteId);
-  };
-
-  const handleMoveNoteToSubject = (noteId: string, targetSubjectId: string) => {
-    recordSnapshot(getSnapshot());
-
-    const subjectFolders = folders.filter((f) => f.subjectId === targetSubjectId);
-    let targetFolder = subjectFolders[0];
-
-    if (!targetFolder) {
-      const newFolder: FolderItem = {
-        id: `folder-${Date.now()}`,
-        subjectId: targetSubjectId,
-        name: 'General',
-        isExpanded: true,
-        order: 0,
-      };
-      setFolders((prev) => [...prev, newFolder]);
-      api.saveFolder(newFolder);
-      targetFolder = newFolder;
+      for (const noteToSave of finalizedFolderNotes) {
+        await api.saveNote(noteToSave).catch((err) => console.error('Failed to save note order:', err));
+      }
+    } catch (err) {
+      console.error('Error during handleReorderOrMoveNote:', err);
     }
-
-    setNotes((prev) =>
-      prev.map((n) => {
-        if (n.id === noteId) {
-          const updated = {
-            ...n,
-            subjectId: targetSubjectId,
-            folderId: targetFolder.id,
-            updatedAt: new Date().toISOString(),
-          };
-          api.saveNote(updated);
-          return updated;
-        }
-        return n;
-      })
-    );
-    setSelectedSubjectId(targetSubjectId);
-    setSelectedFolderId(targetFolder.id);
-    setSelectedNoteId(noteId);
   };
 
-  const handleMoveFolderToSubject = (folderId: string, targetSubjectId: string) => {
-    const folder = folders.find((f) => f.id === folderId);
-    if (!folder || folder.subjectId === targetSubjectId) return;
+  const handleMoveNoteToSubject = async (noteId: string, targetSubjectId: string) => {
+    try {
+      if (!noteId || !targetSubjectId) return;
+      const targetNote = notes.find((n) => n.id === noteId);
+      if (!targetNote || targetNote.subjectId === targetSubjectId) return;
 
-    recordSnapshot(getSnapshot());
+      recordSnapshot(getSnapshot());
 
-    const updatedFolder = { ...folder, subjectId: targetSubjectId };
-    setFolders((prev) => prev.map((f) => (f.id === folderId ? updatedFolder : f)));
-    api.saveFolder(updatedFolder);
+      const subjectFolders = folders.filter((f) => f.subjectId === targetSubjectId);
+      let targetFolder = subjectFolders[0];
 
-    setNotes((prev) =>
-      prev.map((n) => {
-        if (n.folderId === folderId) {
-          const updatedNote = { ...n, subjectId: targetSubjectId, updatedAt: new Date().toISOString() };
-          api.saveNote(updatedNote);
-          return updatedNote;
-        }
-        return n;
-      })
-    );
-    setSelectedSubjectId(targetSubjectId);
-    setSelectedFolderId(folderId);
+      if (!targetFolder) {
+        const newFolder: FolderItem = {
+          id: `folder-${Date.now()}`,
+          subjectId: targetSubjectId,
+          name: 'General',
+          isExpanded: true,
+          order: 0,
+        };
+        setFolders((prev) => [...prev, newFolder]);
+        await api.saveFolder(newFolder).catch(console.error);
+        targetFolder = newFolder;
+      }
+
+      const updated: NoteItem = {
+        ...targetNote,
+        subjectId: targetSubjectId,
+        folderId: targetFolder.id,
+        updatedAt: new Date().toISOString(),
+      };
+
+      setNotes((prev) => prev.map((n) => (n.id === noteId ? updated : n)));
+      setSelectedSubjectId(targetSubjectId);
+      setSelectedFolderId(targetFolder.id);
+      setSelectedNoteId(noteId);
+
+      await api.saveNote(updated).catch(console.error);
+    } catch (err) {
+      console.error('Error in handleMoveNoteToSubject:', err);
+    }
   };
 
-  const handleConvertFolderToSubject = (folderId: string) => {
-    const folder = folders.find((f) => f.id === folderId);
-    if (!folder) return;
+  const handleMoveFolderToSubject = async (folderId: string, targetSubjectId: string) => {
+    try {
+      if (!folderId || !targetSubjectId) return;
+      const folder = folders.find((f) => f.id === folderId);
+      if (!folder || folder.subjectId === targetSubjectId) return;
 
-    recordSnapshot(getSnapshot());
+      recordSnapshot(getSnapshot());
 
-    const colors = ['#f97316', '#10b981', '#6366f1', '#ec4899', '#3b82f6', '#eab308', '#8b5cf6', '#14b8a6'];
-    const newSubject: SubjectItem = {
-      id: `sub-${Date.now()}`,
-      name: folder.name,
-      color: colors[subjects.length % colors.length],
-      order: subjects.length,
-    };
-    setSubjects((prev) => [...prev, newSubject]);
-    api.saveSubject(newSubject);
+      const updatedFolder = { ...folder, subjectId: targetSubjectId };
+      setFolders((prev) => prev.map((f) => (f.id === folderId ? updatedFolder : f)));
+      await api.saveFolder(updatedFolder).catch(console.error);
 
-    const updatedFolder = { ...folder, subjectId: newSubject.id };
-    setFolders((prev) => prev.map((f) => (f.id === folderId ? updatedFolder : f)));
-    api.saveFolder(updatedFolder);
+      const notesToUpdate: NoteItem[] = [];
+      setNotes((prev) =>
+        prev.map((n) => {
+          if (n.folderId === folderId) {
+            const updatedNote = { ...n, subjectId: targetSubjectId, updatedAt: new Date().toISOString() };
+            notesToUpdate.push(updatedNote);
+            return updatedNote;
+          }
+          return n;
+        })
+      );
+      setSelectedSubjectId(targetSubjectId);
+      setSelectedFolderId(folderId);
 
-    setNotes((prev) =>
-      prev.map((n) => {
-        if (n.folderId === folderId) {
-          const updatedNote = { ...n, subjectId: newSubject.id, updatedAt: new Date().toISOString() };
-          api.saveNote(updatedNote);
-          return updatedNote;
-        }
-        return n;
-      })
-    );
-    setSelectedSubjectId(newSubject.id);
-    setSelectedFolderId(folderId);
+      for (const n of notesToUpdate) {
+        await api.saveNote(n).catch(console.error);
+      }
+    } catch (err) {
+      console.error('Error in handleMoveFolderToSubject:', err);
+    }
+  };
+
+  const handleConvertFolderToSubject = async (folderId: string) => {
+    try {
+      if (!folderId) return;
+      const folder = folders.find((f) => f.id === folderId);
+      if (!folder) return;
+
+      recordSnapshot(getSnapshot());
+
+      const colors = ['#f97316', '#10b981', '#6366f1', '#ec4899', '#3b82f6', '#eab308', '#8b5cf6', '#14b8a6'];
+      const newSubject: SubjectItem = {
+        id: `sub-${Date.now()}`,
+        name: folder.name,
+        color: colors[subjects.length % colors.length],
+        order: subjects.length,
+      };
+      setSubjects((prev) => [...prev, newSubject]);
+      await api.saveSubject(newSubject).catch(console.error);
+
+      const updatedFolder = { ...folder, subjectId: newSubject.id };
+      setFolders((prev) => prev.map((f) => (f.id === folderId ? updatedFolder : f)));
+      await api.saveFolder(updatedFolder).catch(console.error);
+
+      const notesToUpdate: NoteItem[] = [];
+      setNotes((prev) =>
+        prev.map((n) => {
+          if (n.folderId === folderId) {
+            const updatedNote = { ...n, subjectId: newSubject.id, updatedAt: new Date().toISOString() };
+            notesToUpdate.push(updatedNote);
+            return updatedNote;
+          }
+          return n;
+        })
+      );
+      setSelectedSubjectId(newSubject.id);
+      setSelectedFolderId(folderId);
+
+      for (const n of notesToUpdate) {
+        await api.saveNote(n).catch(console.error);
+      }
+    } catch (err) {
+      console.error('Error in handleConvertFolderToSubject:', err);
+    }
   };
 
   return {

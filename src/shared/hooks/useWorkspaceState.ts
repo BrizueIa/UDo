@@ -281,26 +281,34 @@ export function useWorkspaceState() {
   };
 
   const handleWorkspaceUndo = async () => {
-    const prev = await undo(getSnapshot());
-    if (prev) {
-      setSubjects(prev.subjects);
-      setFolders(prev.folders);
-      setNotes(prev.notes);
-      setSelectedSubjectId(prev.selectedSubjectId);
-      setSelectedFolderId(prev.selectedFolderId);
-      setSelectedNoteId(prev.selectedNoteId);
+    try {
+      const prev = await undo(getSnapshot());
+      if (prev) {
+        setSubjects(prev.subjects);
+        setFolders(prev.folders);
+        setNotes(prev.notes);
+        setSelectedSubjectId(prev.selectedSubjectId);
+        setSelectedFolderId(prev.selectedFolderId);
+        setSelectedNoteId(prev.selectedNoteId);
+      }
+    } catch (err) {
+      console.error('handleWorkspaceUndo error:', err);
     }
   };
 
   const handleWorkspaceRedo = async () => {
-    const next = await redo(getSnapshot());
-    if (next) {
-      setSubjects(next.subjects);
-      setFolders(next.folders);
-      setNotes(next.notes);
-      setSelectedSubjectId(next.selectedSubjectId);
-      setSelectedFolderId(next.selectedFolderId);
-      setSelectedNoteId(next.selectedNoteId);
+    try {
+      const next = await redo(getSnapshot());
+      if (next) {
+        setSubjects(next.subjects);
+        setFolders(next.folders);
+        setNotes(next.notes);
+        setSelectedSubjectId(next.selectedSubjectId);
+        setSelectedFolderId(next.selectedFolderId);
+        setSelectedNoteId(next.selectedNoteId);
+      }
+    } catch (err) {
+      console.error('handleWorkspaceRedo error:', err);
     }
   };
 

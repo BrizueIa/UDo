@@ -21,7 +21,9 @@ impl DatabaseManager {
 
     fn get_connection(&self) -> Result<Connection> {
         let conn = Connection::open(&self.db_path)?;
-        conn.execute_batch("PRAGMA foreign_keys = ON;")?;
+        conn.execute_batch(
+            "PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000; PRAGMA synchronous = NORMAL;",
+        )?;
         Ok(conn)
     }
 
@@ -124,16 +126,13 @@ impl DatabaseManager {
         // Seed default 3D, Lotería app, StardewValley matching reference screenshot
         conn.execute(
             "INSERT INTO subjects (id, name, color, sort_order) VALUES 
-            ('subj-3d', '3D', '#f97316', 0),
-            ('subj-loteria', 'Lotería app', '#10b981', 1),
-            ('subj-stardew', 'StardewValley', '#6366f1', 2);",
+            ('subj-3d', '3D', '#f97316', 0), ('subj-loteria', 'Lotería app', '#10b981', 1), ('subj-stardew', 'StardewValley', '#6366f1', 2);",
             [],
         )?;
 
         conn.execute(
             "INSERT INTO folders (id, subject_id, name, is_expanded, sort_order) VALUES 
-            ('fold-plantas', 'subj-3d', 'Plantas', 1, 0),
-            ('fold-eucce', 'subj-3d', 'EUCCE', 0, 1);",
+            ('fold-plantas', 'subj-3d', 'Plantas', 1, 0), ('fold-eucce', 'subj-3d', 'EUCCE', 0, 1);",
             [],
         )?;
 
