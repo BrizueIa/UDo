@@ -50,6 +50,14 @@ export const App: React.FC = () => {
   const { soundMuted, soundVolume, handleToggleAudioMute, handleVolumeChange } = useAudioState();
   const modalState = useAppModalState();
 
+  const [showBreadcrumbs, setShowBreadcrumbs] = useState<boolean>(
+    () => localStorage.getItem('udo_show_breadcrumbs') !== 'false'
+  );
+  const handleToggleBreadcrumbs = (show: boolean) => {
+    setShowBreadcrumbs(show);
+    localStorage.setItem('udo_show_breadcrumbs', String(show));
+  };
+
   const noteSubject = subjects.find((s) => s.id === currentNote?.subjectId);
   const noteFolder = folders.find((f) => f.id === currentNote?.folderId);
   const handleRevealLocation = () => {
@@ -261,6 +269,8 @@ export const App: React.FC = () => {
         onToggleFolders={toggleFolders}
         onToggleZenMode={() => setIsZenMode((p) => !p)}
         onOpenTimerModal={() => modalState.setIsTimerModalOpen(true)}
+        showBreadcrumbs={showBreadcrumbs}
+        onToggleBreadcrumbs={handleToggleBreadcrumbs}
       />
 
       <main className="flex-1 flex overflow-hidden">
@@ -269,15 +279,9 @@ export const App: React.FC = () => {
             subjects={subjects}
             folders={folders}
             selectedSubjectId={selectedSubjectId}
+            activeNoteSubjectId={currentNote?.subjectId}
             isFocused={activeColumn === 1}
-            onSelectSubject={(id) => {
-              setSelectedSubjectId(id);
-              setActiveColumn(1);
-              if (currentNote && currentNote.subjectId !== id) {
-                const subNotes = notes.filter((n) => n.subjectId === id);
-                if (subNotes.length > 0) setSelectedNoteId(subNotes[0].id);
-              }
-            }}
+            onSelectSubject={(id) => { setSelectedSubjectId(id); setActiveColumn(1); }}
             onAddSubject={handleAddSubject}
             onUpdateSubject={handleUpdateSubject}
             onDeleteSubject={handleDeleteSubject}
@@ -296,6 +300,7 @@ export const App: React.FC = () => {
             notes={notes}
             selectedFolderId={selectedFolderId}
             selectedNoteId={selectedNoteId}
+            activeNoteFolderId={currentNote?.folderId}
             filter={filter}
             searchQuery={searchQuery}
             activeTagFilter={activeTagFilter}
@@ -331,6 +336,7 @@ export const App: React.FC = () => {
               subjectName={noteSubject?.name}
               subjectColor={noteSubject?.color}
               onRevealLocation={handleRevealLocation}
+              showBreadcrumbs={showBreadcrumbs}
               activeTagFilter={activeTagFilter}
               activeTimerFormatted={
                 (focusTimer.isRunning || focusTimer.isPaused) &&

@@ -28,7 +28,9 @@
     "clearFilter": "Clear filter",
     "toggleSidebars": "Toggle Sidebars (F11)",
     "toggleSubjects": "Toggle Projects Sidebar",
-    "toggleFolders": "Toggle Folders List"
+    "toggleFolders": "Toggle Folders List",
+    "activeNoteProject": "Contains active open note",
+    "activeNoteBadge": "open"
   },
   "folders": {
     "addFolder": "New Folder",
@@ -297,6 +299,9 @@
     "audioDevicesDesc": "Configure your input and output devices for voice notes and playback.",
     "viewShortcuts": "View keyboard shortcuts",
     "close": "Close",
+    "interfaceTitle": "Interface & Navigation",
+    "showBreadcrumbs": "Show note location breadcrumb",
+    "showBreadcrumbsDesc": "Displays project and folder path above the note title with quick navigation.",
     "audioFeedback": "Sound Effects on Task Completion",
     "autoBackup": "Daily Local Backups",
     "exportData": "Export All Data (JSON)",

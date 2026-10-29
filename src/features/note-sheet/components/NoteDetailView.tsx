@@ -27,6 +27,7 @@ interface Props {
   subjectName?: string;
   subjectColor?: string;
   onRevealLocation?: () => void;
+  showBreadcrumbs?: boolean;
   activeTagFilter?: string | null;
   activeTimerFormatted?: string;
   isTimerRunning?: boolean;
@@ -50,6 +51,7 @@ export const NoteDetailView: React.FC<Props> = ({
   subjectName,
   subjectColor,
   onRevealLocation,
+  showBreadcrumbs,
   activeTagFilter,
   activeTimerFormatted,
   isTimerRunning,
@@ -250,6 +252,7 @@ export const NoteDetailView: React.FC<Props> = ({
             subjectColor={subjectColor}
             folderName={folderName}
             onRevealLocation={onRevealLocation}
+            showBreadcrumbs={showBreadcrumbs}
             onTitleChange={handleTitleChange}
             onBlur={flushSave}
             isFindBarOpen={isFindBarOpen}

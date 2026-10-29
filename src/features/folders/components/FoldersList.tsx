@@ -14,6 +14,7 @@ interface Props {
   notes: NoteItem[];
   selectedFolderId?: string;
   selectedNoteId: string;
+  activeNoteFolderId?: string;
   filter: ViewFilter;
   searchQuery?: string;
   activeTagFilter?: string | null;
@@ -47,6 +48,7 @@ export const FoldersList: React.FC<Props> = ({
   notes,
   selectedFolderId,
   selectedNoteId,
+  activeNoteFolderId,
   filter,
   searchQuery = '',
   activeTagFilter,
@@ -234,6 +236,7 @@ export const FoldersList: React.FC<Props> = ({
                   folder={folder}
                   noteCount={folderNotes.length}
                   isSelected={isFolderSelected}
+                  hasActiveNote={folder.id === activeNoteFolderId}
                   onSelectFolder={() => onSelectFolder(folder.id)}
                   onToggleExpand={() => onToggleFolderExpand(folder.id)}
                   onAddNote={() => onAddNote(folder.id)}

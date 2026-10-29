@@ -52,7 +52,8 @@ export const TopBarSearch: React.FC<Props> = ({
           onChange={(e) => onSearchChange(e.target.value)}
           onKeyDown={handleSearchKeyDown}
           placeholder={t('nav.searchPlaceholder')}
-          className="w-full bg-theme-card/70 hover:bg-theme-card focus:bg-theme-card text-xs text-theme-text placeholder-theme-muted pl-8 pr-16 py-1.5 rounded-lg outline-none border border-white/[0.06] hover:border-theme-accent/40 focus:border-theme-accent/60 transition-all shadow-inner"
+          style={{ backgroundColor: 'var(--color-bg-card)' }}
+          className="w-full bg-theme-card hover:bg-theme-hover focus:bg-theme-card text-xs text-theme-text placeholder-theme-muted pl-8 pr-16 py-1.5 rounded-lg outline-none border border-theme-border/60 hover:border-theme-accent/50 focus:border-theme-accent/70 transition-all shadow-inner"
         />
         <div className="absolute right-2.5 flex items-center space-x-1">
           {searchQuery && (

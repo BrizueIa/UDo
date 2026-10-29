@@ -29,6 +29,8 @@ interface Props {
   audioVolume: number;
   onVolumeChange: (vol: number) => void;
   onToggleAudioMute: () => void;
+  showBreadcrumbs?: boolean;
+  onToggleBreadcrumbs?: (show: boolean) => void;
   onOpenShortcuts?: () => void;
   initialTab?: 'appearance' | 'audio' | 'shortcuts' | 'language';
 }
@@ -47,6 +49,8 @@ export const SettingsModal: React.FC<Props> = ({
   audioVolume,
   onVolumeChange,
   onToggleAudioMute,
+  showBreadcrumbs = true,
+  onToggleBreadcrumbs,
   initialTab = 'appearance',
 }) => {
   const { t, i18n } = useTranslation();
@@ -139,15 +143,40 @@ export const SettingsModal: React.FC<Props> = ({
           <div className="flex-1 p-5 overflow-y-auto min-h-0">
             {/* Appearance Tab */}
             {activeTab === 'appearance' && (
-              <ThemeSettingsPanel
-                currentTheme={currentTheme}
-                currentAccent={currentAccent}
-                customThemes={customThemes}
-                onSelectTheme={onSelectTheme}
-                onSelectAccent={onSelectAccent}
-                onImportCustomTheme={onImportCustomTheme}
-                onDeleteCustomTheme={onDeleteCustomTheme}
-              />
+              <div className="space-y-5">
+                <ThemeSettingsPanel
+                  currentTheme={currentTheme}
+                  currentAccent={currentAccent}
+                  customThemes={customThemes}
+                  onSelectTheme={onSelectTheme}
+                  onSelectAccent={onSelectAccent}
+                  onImportCustomTheme={onImportCustomTheme}
+                  onDeleteCustomTheme={onDeleteCustomTheme}
+                />
+
+                {/* Interface Preferences: Breadcrumbs toggle */}
+                <div className="pt-3 border-t border-theme-border/60">
+                  <div className="text-xs font-semibold text-theme-muted uppercase tracking-wider mb-2">
+                    {t('settings.interfaceTitle')}
+                  </div>
+                  <label className="flex items-center justify-between p-3 rounded-xl bg-theme-card border border-theme-border/60 cursor-pointer hover:border-theme-accent/40 transition-colors">
+                    <div className="space-y-0.5 pr-4">
+                      <div className="text-xs font-medium text-theme-text">
+                        {t('settings.showBreadcrumbs')}
+                      </div>
+                      <div className="text-[11px] text-theme-muted">
+                        {t('settings.showBreadcrumbsDesc')}
+                      </div>
+                    </div>
+                    <input
+                      type="checkbox"
+                      checked={showBreadcrumbs}
+                      onChange={(e) => onToggleBreadcrumbs?.(e.target.checked)}
+                      className="w-4 h-4 rounded text-theme-accent focus:ring-theme-accent/40 bg-theme-column border-theme-border cursor-pointer accent-[#5551f5]"
+                    />
+                  </label>
+                </div>
+              </div>
             )}
 
             {/* Audio & Sound Tab */}

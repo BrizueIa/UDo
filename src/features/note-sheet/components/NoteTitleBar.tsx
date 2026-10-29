@@ -13,6 +13,7 @@ interface Props {
   subjectColor?: string;
   folderName?: string;
   onRevealLocation?: () => void;
+  showBreadcrumbs?: boolean;
   onTitleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onBlur: () => void;
   isFindBarOpen: boolean;
@@ -31,6 +32,7 @@ export const NoteTitleBar: React.FC<Props> = ({
   subjectColor,
   folderName,
   onRevealLocation,
+  showBreadcrumbs = true,
   onTitleChange,
   onBlur,
   isFindBarOpen,
@@ -58,7 +60,7 @@ export const NoteTitleBar: React.FC<Props> = ({
   return (
     <div className="space-y-1">
       {/* Subtle Breadcrumb: Project > Folder */}
-      {(subjectName || folderName) && (
+      {showBreadcrumbs && (subjectName || folderName) && (
         <div className="flex items-center space-x-1 text-xs text-theme-muted select-none">
           <button
             type="button"

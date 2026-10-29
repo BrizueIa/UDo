@@ -28,7 +28,9 @@
     "clearFilter": "Limpiar filtro",
     "toggleSidebars": "Mostrar/Ocultar paneles laterales (F11)",
     "toggleSubjects": "Alternar barra de Proyectos",
-    "toggleFolders": "Alternar lista de Carpetas"
+    "toggleFolders": "Alternar lista de Carpetas",
+    "activeNoteProject": "Contiene la nota activa en edición",
+    "activeNoteBadge": "abierta"
   },
   "folders": {
     "addFolder": "Nueva Carpeta",
@@ -297,6 +299,9 @@
     "audioDevicesDesc": "Configura tus dispositivos de entrada y salida para grabaciones de voz y reproducción.",
     "viewShortcuts": "Ver atajos de teclado",
     "close": "Cerrar",
+    "interfaceTitle": "Interfaz y Navegación",
+    "showBreadcrumbs": "Mostrar migas de pan (Breadcrumb)",
+    "showBreadcrumbsDesc": "Muestra la ruta de proyecto y carpeta sobre el título de la nota con navegación rápida.",
     "audioFeedback": "Efectos de sonido al completar tareas",
     "autoBackup": "Copias de seguridad diarias",
     "exportData": "Exportar Datos (JSON)",

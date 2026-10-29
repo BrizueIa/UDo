@@ -14,6 +14,7 @@ interface Props {
   subjects: SubjectItem[];
   folders: FolderItem[];
   selectedSubjectId: string;
+  activeNoteSubjectId?: string;
   isFocused?: boolean;
   onSelectSubject: (id: string) => void;
   onAddSubject: (name: string, color: string) => void;
@@ -30,6 +31,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
   subjects,
   folders,
   selectedSubjectId,
+  activeNoteSubjectId,
   isFocused = false,
   onSelectSubject,
   onAddSubject,
@@ -201,6 +203,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
             key={subject.id}
             subject={subject}
             isSelected={subject.id === selectedSubjectId}
+            hasActiveNote={subject.id === activeNoteSubjectId}
             count={getSubjectNoteCount(subject.id)}
             folders={folders}
             onSelectSubject={onSelectSubject}

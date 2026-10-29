@@ -37,6 +37,8 @@ interface Props {
   isSidebarCollapsed?: boolean;
   isFoldersCollapsed?: boolean;
   isZenMode?: boolean;
+  showBreadcrumbs?: boolean;
+  onToggleBreadcrumbs?: (show: boolean) => void;
   onVolumeChange: (vol: number) => void;
   onSearchChange: (q: string) => void;
   onOpenSearchPalette: (initialQuery?: string) => void;
@@ -71,6 +73,8 @@ export const TopBar: React.FC<Props> = ({
   isSidebarCollapsed = false,
   isFoldersCollapsed = false,
   isZenMode = false,
+  showBreadcrumbs = true,
+  onToggleBreadcrumbs,
   onVolumeChange,
   onSearchChange,
   onOpenSearchPalette,
@@ -286,6 +290,8 @@ export const TopBar: React.FC<Props> = ({
         audioVolume={audioVolume}
         onVolumeChange={onVolumeChange}
         onToggleAudioMute={onToggleAudioMute}
+        showBreadcrumbs={showBreadcrumbs}
+        onToggleBreadcrumbs={onToggleBreadcrumbs}
       />
     </header>
   );
