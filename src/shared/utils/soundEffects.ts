@@ -121,8 +121,8 @@ export function playKeyboardClickSound(
 
     // Organic tactile pitch variation (±4%)
     const jitter = 0.96 + Math.random() * 0.08;
-    const duration = isSpace ? 0.038 : 0.028;
-    const keyGain = isSpace ? 0.26 : isEnter ? 0.24 : isBackspace ? 0.20 : 0.22;
+    const duration = isSpace ? 0.040 : 0.030;
+    const keyGain = isSpace ? 0.54 : isEnter ? 0.50 : isBackspace ? 0.44 : 0.48;
 
     const masterGain = ctx.createGain();
     masterGain.gain.setValueAtTime(keyGain * volume, now);
@@ -133,26 +133,26 @@ export function playKeyboardClickSound(
     const ticOsc = ctx.createOscillator();
     const ticGain = ctx.createGain();
     ticOsc.type = 'triangle';
-    const ticStart = (isSpace ? 1400 : 1850) * jitter;
-    const ticEnd = (isSpace ? 650 : 850) * jitter;
+    const ticStart = (isSpace ? 1500 : 1950) * jitter;
+    const ticEnd = (isSpace ? 700 : 900) * jitter;
     ticOsc.frequency.setValueAtTime(ticStart, now);
-    ticOsc.frequency.exponentialRampToValueAtTime(ticEnd, now + 0.012);
-    ticGain.gain.setValueAtTime(0.55, now);
-    ticGain.gain.exponentialRampToValueAtTime(0.001, now + 0.012);
+    ticOsc.frequency.exponentialRampToValueAtTime(ticEnd, now + 0.014);
+    ticGain.gain.setValueAtTime(0.70, now);
+    ticGain.gain.exponentialRampToValueAtTime(0.001, now + 0.014);
     ticOsc.connect(ticGain);
     ticGain.connect(masterGain);
     ticOsc.start(now);
-    ticOsc.stop(now + 0.012);
+    ticOsc.stop(now + 0.014);
 
     // Layer 2: Tactile switch bottom-out body
     const bodyOsc = ctx.createOscillator();
     const bodyGain = ctx.createGain();
     bodyOsc.type = 'sine';
-    const bodyStart = (isSpace ? 480 : 720) * jitter;
-    const bodyEnd = (isSpace ? 200 : 300) * jitter;
+    const bodyStart = (isSpace ? 500 : 750) * jitter;
+    const bodyEnd = (isSpace ? 220 : 320) * jitter;
     bodyOsc.frequency.setValueAtTime(bodyStart, now);
     bodyOsc.frequency.exponentialRampToValueAtTime(bodyEnd, now + duration);
-    bodyGain.gain.setValueAtTime(0.45, now);
+    bodyGain.gain.setValueAtTime(0.55, now);
     bodyGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
     bodyOsc.connect(bodyGain);
     bodyGain.connect(masterGain);
