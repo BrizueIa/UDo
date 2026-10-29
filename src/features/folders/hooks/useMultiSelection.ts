@@ -273,11 +273,20 @@ export function useMultiSelection({
 
       if (
         (e.key === 'Delete' || e.key === 'Backspace') &&
-        (selectedNoteIds.size > 0 || selectedFolderIds.size > 0)
+        (selectedNoteIds.size > 0 || selectedFolderIds.size > 0 || (e.key === 'Delete' && activeNoteId))
       ) {
-        if (selectedNoteIds.size > 1 || selectedFolderIds.size > 0) {
+        const notesToDelete =
+          selectedNoteIds.size > 0
+            ? Array.from(selectedNoteIds)
+            : activeNoteId
+            ? [activeNoteId]
+            : [];
+        const foldersToDelete = Array.from(selectedFolderIds);
+
+        if (notesToDelete.length > 0 || foldersToDelete.length > 0) {
           e.preventDefault();
-          onBatchDelete?.(Array.from(selectedNoteIds), Array.from(selectedFolderIds));
+          onBatchDelete?.(notesToDelete, foldersToDelete);
+          clearSelection();
         }
         return;
       }

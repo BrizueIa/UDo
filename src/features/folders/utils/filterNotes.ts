@@ -86,18 +86,15 @@ export function filterAndSortFolderNotes({
           ) ?? false;
         }
 
-        const matchTitle = normalizeDiacritics(n.title).includes(query);
-        const matchContent = normalizeDiacritics(n.content).includes(query);
-        const matchTags = n.tags.some((tag) => normalizeDiacritics(tag).includes(query));
-        const matchAttachments = n.attachments?.some((a) =>
-          normalizeDiacritics(a.name || '').includes(query) ||
-          normalizeDiacritics(a.extension || '').includes(query)
-        );
-        const matchSketches = n.sketches?.some((s) =>
-          normalizeDiacritics(s.title || '').includes(query)
-        );
+        const tokens = query.split(/\s+/).filter(Boolean);
+        const titleNorm = normalizeDiacritics(n.title);
+        const contentNorm = normalizeDiacritics(n.content);
+        const tagsNorm = n.tags.map((t) => normalizeDiacritics(t)).join(' ');
+        const sketchesNorm = (n.sketches || []).map((s) => normalizeDiacritics(s.title || '')).join(' ');
+        const attachmentsNorm = (n.attachments || []).map((a) => `${normalizeDiacritics(a.name || '')} ${normalizeDiacritics(a.extension || '')}`).join(' ');
 
-        if (!matchTitle && !matchContent && !matchTags && !matchAttachments && !matchSketches) {
+        const searchable = `${titleNorm} ${contentNorm} ${tagsNorm} ${sketchesNorm} ${attachmentsNorm}`;
+        if (!tokens.every((token) => searchable.includes(token))) {
           return false;
         }
       }

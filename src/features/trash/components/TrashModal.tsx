@@ -86,15 +86,25 @@ export const TrashModal: React.FC<Props> = ({
       if (activeTab === 'month' && !isWithinDays(n.updatedAt, 30)) return false;
 
       if (searchQuery.trim()) {
-        const q = normalizeDiacritics(searchQuery.trim());
-        const matchTitle = normalizeDiacritics(n.title).includes(q);
-        const matchContent = normalizeDiacritics(n.content).includes(q);
-        const matchTags = n.tags.some((tag) => normalizeDiacritics(tag).includes(q));
+        const raw = searchQuery.trim().toLowerCase();
+        if (raw === '.canvas' || raw === 'canvas' || raw === '.sketch') {
+          return (n.sketches && n.sketches.length > 0) || false;
+        }
+
+        const tokens = normalizeDiacritics(raw).split(/\s+/).filter(Boolean);
         const sub = subjects.find((s) => s.id === n.subjectId);
         const fol = folders.find((f) => f.id === n.folderId);
-        const matchSub = sub ? normalizeDiacritics(sub.name).includes(q) : false;
-        const matchFol = fol ? normalizeDiacritics(fol.name).includes(q) : false;
-        if (!matchTitle && !matchContent && !matchTags && !matchSub && !matchFol) return false;
+
+        const subName = sub ? normalizeDiacritics(sub.name) : '';
+        const folName = fol ? normalizeDiacritics(fol.name) : '';
+        const titleNorm = normalizeDiacritics(n.title);
+        const contentNorm = normalizeDiacritics(n.content);
+        const tagsNorm = n.tags.map((t) => normalizeDiacritics(t)).join(' ');
+        const sketchesNorm = (n.sketches || []).map((s) => normalizeDiacritics(s.title || '')).join(' ');
+        const attachmentsNorm = (n.attachments || []).map((a) => `${normalizeDiacritics(a.name || '')} ${normalizeDiacritics(a.extension || '')}`).join(' ');
+
+        const searchable = `${titleNorm} ${contentNorm} ${tagsNorm} ${subName} ${folName} ${sketchesNorm} ${attachmentsNorm}`;
+        if (!tokens.every((token) => searchable.includes(token))) return false;
       }
       return true;
     });

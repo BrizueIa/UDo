@@ -76,7 +76,7 @@ export const CanvasToolbar: React.FC<CanvasToolbarProps> = ({
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
           placeholder={t('canvas.titlePlaceholder')}
-          className="bg-theme-card/60 hover:bg-theme-card text-theme-text font-semibold text-xs px-2.5 py-1.5 rounded-lg border border-theme-border/60 focus:border-theme-accent outline-none transition-colors w-44"
+          className="bg-theme-card hover:bg-theme-hover text-theme-text font-semibold text-xs px-2.5 py-1.5 rounded-lg border border-white/[0.08] focus:border-theme-accent outline-none transition-colors w-44"
         />
       </div>
 

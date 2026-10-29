@@ -173,27 +173,38 @@ pub fn search_notes(conn: &Connection, query: &str, include_private: bool) -> Re
         }
     }
 
-    // 5. Fallback to comprehensive LIKE query across title, content, tags, attachments, and sketches
-    let like_pattern = format!("%{}%", trimmed);
-    let like_sql = format!(
-        "{} AND (
-             title LIKE ?2 OR
-             content LIKE ?2 OR
-             tags_json LIKE ?2 OR
-             attachments_json LIKE ?2 OR
-             sketches_json LIKE ?2
-         )
-         ORDER BY is_pinned DESC, sort_order ASC, updated_at DESC
-         LIMIT 50",
-        base_sql
-    );
-    let mut stmt = conn.prepare(&like_sql)?;
+    // 5. Fallback to multi-token LIKE query across title, content, tags, attachments, and sketches
+    let raw_tokens: Vec<&str> = trimmed.split_whitespace().collect();
+    if !raw_tokens.is_empty() {
+        let mut token_clauses = Vec::new();
+        let mut params_vec: Vec<rusqlite::types::Value> = vec![rusqlite::types::Value::Integer(inc_priv_int as i64)];
 
-    let notes = stmt
-        .query_map(params![inc_priv_int, like_pattern], map_note_row)?
-        .collect::<Result<Vec<_>, _>>()?;
+        for (idx, token) in raw_tokens.iter().enumerate() {
+            let p_idx = idx + 2;
+            token_clauses.push(format!(
+                "(title LIKE ?{0} OR content LIKE ?{0} OR tags_json LIKE ?{0} OR attachments_json LIKE ?{0} OR sketches_json LIKE ?{0})",
+                p_idx
+            ));
+            params_vec.push(rusqlite::types::Value::Text(format!("%{}%", token)));
+        }
 
-    Ok(notes)
+        let like_sql = format!(
+            "{} AND {} ORDER BY is_pinned DESC, sort_order ASC, updated_at DESC LIMIT 50",
+            base_sql,
+            token_clauses.join(" AND ")
+        );
+
+        let mut stmt = conn.prepare(&like_sql)?;
+        let notes = stmt
+            .query_map(rusqlite::params_from_iter(params_vec.iter()), map_note_row)?
+            .collect::<Result<Vec<_>, _>>()?;
+
+        if !notes.is_empty() {
+            return Ok(notes);
+        }
+    }
+
+    Ok(Vec::new())
 }
 
 pub fn save_note(conn: &Connection, note: &NoteItem) -> Result<()> {
