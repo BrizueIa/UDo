@@ -98,14 +98,10 @@ export const NoteItemRow: React.FC<Props> = ({
         isMultiSelected
           ? 'bg-theme-accent/15 border-theme-accent/30 text-theme-text font-medium shadow-xs'
           : isSelected
-          ? 'bg-theme-card text-theme-text font-semibold shadow-xs border-theme-accent/40 pl-3.5'
+          ? 'bg-theme-card text-theme-text font-semibold shadow-xs border-theme-accent/30'
           : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover/40 border-transparent'
       }`}
     >
-      {/* Active Note Left Accent Indicator */}
-      {isSelected && (
-        <span className="absolute left-1 top-2 bottom-2 w-1 rounded-full bg-theme-accent shadow-[0_0_8px_var(--color-accent)] z-20" />
-      )}
       {/* Drop position indicator lines */}
       {dropPosition === 'before' && (
         <div className="absolute top-0 left-1 right-1 h-0.5 bg-theme-accent rounded-full z-30 shadow-xs" />
@@ -143,12 +139,18 @@ export const NoteItemRow: React.FC<Props> = ({
         </span>
       </div>
 
-      {/* Pinned Note Badge */}
-      {note.isPinned && (
-        <span className="relative z-10">
-          <Pin size={11} className="text-amber-400 rotate-45 flex-shrink-0 ml-1 fill-amber-400/30" />
-        </span>
-      )}
+      {/* Right container: Pinned Note Badge + Active Note Dot */}
+      <div className="relative z-10 flex items-center space-x-1.5 flex-shrink-0">
+        {note.isPinned && (
+          <Pin size={11} className="text-amber-400 rotate-45 flex-shrink-0 fill-amber-400/30" />
+        )}
+        {isSelected && (
+          <span
+            className="w-2 h-2 rounded-full bg-theme-accent shadow-[0_0_8px_var(--color-accent)] ring-1 ring-theme-accent/30 shrink-0"
+            title={t('nav.activeNoteProject') || 'Nota activa'}
+          />
+        )}
+      </div>
     </div>
   );
 };

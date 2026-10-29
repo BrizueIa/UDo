@@ -267,21 +267,24 @@ export const FolderItemRow: React.FC<Props> = ({
         <span className="text-[11px] text-theme-muted font-mono ml-1">
           ({noteCount})
         </span>
+      </button>
+
+      {/* Right container: Active Folder Dot + Folder Actions */}
+      <div className="flex items-center space-x-1.5 flex-shrink-0">
         {hasActiveNote && (
           <span
-            className="w-2 h-2 rounded-full bg-theme-accent shadow-[0_0_8px_var(--color-accent)] ring-1 ring-theme-accent/30 shrink-0 ml-1.5"
+            className="w-2 h-2 rounded-full bg-theme-accent shadow-[0_0_8px_var(--color-accent)] ring-1 ring-theme-accent/30 shrink-0"
             title={t('nav.activeNoteProject')}
           />
         )}
-      </button>
 
-      {/* Folder Actions (visible on hover or when selected) */}
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className={`flex items-center space-x-0.5 transition-opacity ${
-          isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-        }`}
-      >
+        {/* Folder Actions (visible on hover or when selected) */}
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className={`flex items-center space-x-0.5 transition-opacity ${
+            isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}
+        >
         <button
           onClick={onAddNote}
           className="p-1 text-theme-muted hover:text-theme-accent rounded"
@@ -334,6 +337,7 @@ export const FolderItemRow: React.FC<Props> = ({
             <Trash2 size={12} />
           </button>
         )}
+        </div>
       </div>
     </div>
   );
