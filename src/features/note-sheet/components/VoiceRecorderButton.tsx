@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Square, Trash2 } from 'lucide-react';
+import { Mic, Square, Trash2, Sliders } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NoteAttachment } from '../../../shared/types';
 import { attachmentsApi } from '../../../shared/api/attachmentsApi';
+import { AudioDeviceSettingsModal } from './AudioDeviceSettingsModal';
 
 interface Props {
   onAttachmentCreated: (attachment: NoteAttachment) => void;
@@ -13,12 +14,14 @@ export const VoiceRecorderButton: React.FC<Props> = ({ onAttachmentCreated, onEr
   const { t } = useTranslation();
   const [isRecording, setIsRecording] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
   const timerIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const isCancelledRef = useRef<boolean>(false);
+  const isNativeRecordingRef = useRef<boolean>(false);
 
   useEffect(() => {
     return () => {
@@ -34,8 +37,16 @@ export const VoiceRecorderButton: React.FC<Props> = ({ onAttachmentCreated, onEr
   };
 
   const startRecording = async () => {
+    const selectedInputId = localStorage.getItem('udo:audio-input-device-id') || '';
+    isCancelledRef.current = false;
+    isNativeRecordingRef.current = false;
+
+    // 1. Try Browser / WebKit getUserMedia
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const constraints: MediaStreamConstraints = {
+        audio: selectedInputId ? { deviceId: { exact: selectedInputId } } : true,
+      };
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
 
       const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
@@ -45,7 +56,6 @@ export const VoiceRecorderButton: React.FC<Props> = ({ onAttachmentCreated, onEr
       const recorder = new MediaRecorder(stream, { mimeType });
       mediaRecorderRef.current = recorder;
       audioChunksRef.current = [];
-      isCancelledRef.current = false;
 
       recorder.ondataavailable = (event) => {
         if (event.data && event.data.size > 0) {
@@ -73,7 +83,7 @@ export const VoiceRecorderButton: React.FC<Props> = ({ onAttachmentCreated, onEr
 
         const savedPath = await attachmentsApi.saveAttachmentFile(fileName, uint8Array);
 
-        const newAttachment: NoteAttachment = {
+        onAttachmentCreated({
           id: `audio-${Date.now()}`,
           name: fileName,
           filePath: savedPath,
@@ -83,38 +93,65 @@ export const VoiceRecorderButton: React.FC<Props> = ({ onAttachmentCreated, onEr
           kind: 'audio',
           durationSeconds: elapsedSeconds,
           createdAt: new Date().toISOString(),
-        };
-
-        onAttachmentCreated(newAttachment);
+        });
         audioChunksRef.current = [];
       };
 
       recorder.start(250);
       setIsRecording(true);
       setElapsedSeconds(0);
-
-      timerIntervalRef.current = setInterval(() => {
-        setElapsedSeconds((prev) => prev + 1);
-      }, 1000);
-    } catch (err) {
-      console.error('Error starting audio recording:', err);
-      onError?.(t('voiceRecorder.microphonePermissionError'));
+      timerIntervalRef.current = setInterval(() => setElapsedSeconds((p) => p + 1), 1000);
+      return;
+    } catch (webErr) {
+      console.warn('Web getUserMedia failed, attempting native recording fallback...', webErr);
     }
+
+    // 2. Native OS Fallback via pw-record / arecord (Linux)
+    const nativeStarted = await attachmentsApi.startNativeRecording(selectedInputId);
+    if (nativeStarted) {
+      isNativeRecordingRef.current = true;
+      setIsRecording(true);
+      setElapsedSeconds(0);
+      timerIntervalRef.current = setInterval(() => setElapsedSeconds((p) => p + 1), 1000);
+      return;
+    }
+
+    onError?.(t('voiceRecorder.microphonePermissionError'));
   };
 
-  const stopAndSave = () => {
+  const stopAndSave = async () => {
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
     }
     isCancelledRef.current = false;
     setIsRecording(false);
+
+    if (isNativeRecordingRef.current) {
+      const savedPath = await attachmentsApi.stopNativeRecording();
+      if (savedPath) {
+        onAttachmentCreated({
+          id: `audio-${Date.now()}`,
+          name: `voice-${Date.now()}.wav`,
+          filePath: savedPath,
+          mimeType: 'audio/wav',
+          sizeBytes: 0,
+          extension: 'wav',
+          kind: 'audio',
+          durationSeconds: elapsedSeconds,
+          createdAt: new Date().toISOString(),
+        });
+      }
+      isNativeRecordingRef.current = false;
+      return;
+    }
+
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
   };
 
-  const cancelRecording = () => {
+  const cancelRecording = async () => {
     if (timerIntervalRef.current) {
       clearInterval(timerIntervalRef.current);
       timerIntervalRef.current = null;
@@ -122,6 +159,13 @@ export const VoiceRecorderButton: React.FC<Props> = ({ onAttachmentCreated, onEr
     isCancelledRef.current = true;
     setIsRecording(false);
     setElapsedSeconds(0);
+
+    if (isNativeRecordingRef.current) {
+      await attachmentsApi.cancelNativeRecording();
+      isNativeRecordingRef.current = false;
+      return;
+    }
+
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
       mediaRecorderRef.current.stop();
     }
@@ -158,14 +202,29 @@ export const VoiceRecorderButton: React.FC<Props> = ({ onAttachmentCreated, onEr
   }
 
   return (
-    <button
-      type="button"
-      onClick={startRecording}
-      className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.05] transition-colors text-[11px] cursor-pointer"
-      title={t('voiceRecorder.recordVoiceNote')}
-    >
-      <Mic size={12} className="text-red-400" />
-      <span>{t('voiceRecorder.record')}</span>
-    </button>
+    <div className="flex items-center space-x-0.5">
+      <button
+        type="button"
+        onClick={startRecording}
+        className="flex items-center space-x-1 px-2.5 py-1 rounded-l-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.05] transition-colors text-[11px] cursor-pointer"
+        title={t('voiceRecorder.recordVoiceNote')}
+      >
+        <Mic size={12} className="text-red-400" />
+        <span>{t('voiceRecorder.record')}</span>
+      </button>
+      <button
+        type="button"
+        onClick={() => setIsSettingsOpen(true)}
+        className="px-1.5 py-1 rounded-r-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border-t border-r border-b border-white/[0.05] transition-colors text-[11px] cursor-pointer"
+        title={t('audioSettings.title')}
+      >
+        <Sliders size={11} />
+      </button>
+
+      <AudioDeviceSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+      />
+    </div>
   );
 };

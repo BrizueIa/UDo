@@ -7,10 +7,15 @@ pub mod services;
 use tauri::Manager;
 use db::DatabaseManager;
 use tauri_plugin_global_shortcut::ShortcutState;
+use tauri::webview::{PermissionKind, PermissionResponse};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
+        .on_permission_request(|_webview, kind| match kind {
+            PermissionKind::Microphone => PermissionResponse::Allow,
+            _ => PermissionResponse::Default,
+        })
         .plugin(tauri_plugin_notification::init())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
@@ -24,14 +29,11 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
-            // Initialize DatabaseManager once and register into Tauri state
             let db = DatabaseManager::new().map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
             app.manage(db);
+            app.manage(services::native_audio::NativeAudioState::default());
 
-            // Initialize System Tray and menu
             window::setup_tray(app)?;
-
-            // Register global shortcuts
             window::setup_shortcuts(app)?;
 
             Ok(())
@@ -61,6 +63,10 @@ pub fn run() {
             services::attachments::open_attachment_native,
             services::attachments::read_attachment_base64,
             services::attachments::delete_attachment_file,
+            services::native_audio::get_system_audio_devices,
+            services::native_audio::start_native_recording,
+            services::native_audio::stop_native_recording,
+            services::native_audio::cancel_native_recording,
         ])
         .run(tauri::generate_context!())
         .expect("error while running UDo application");

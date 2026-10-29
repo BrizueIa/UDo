@@ -33,6 +33,15 @@ export const AudioAttachmentCard: React.FC<Props> = ({ attachment, onRemove }) =
     return () => { isMounted = false; };
   }, [attachment.filePath]);
 
+  useEffect(() => {
+    const selectedOutputId = localStorage.getItem('udo:audio-output-device-id');
+    if (audioRef.current && selectedOutputId && 'setSinkId' in HTMLMediaElement.prototype) {
+      (audioRef.current as unknown as { setSinkId: (id: string) => Promise<void> })
+        .setSinkId(selectedOutputId)
+        .catch(() => {});
+    }
+  }, [audioSrc]);
+
   const formatTime = (secs: number) => {
     if (isNaN(secs) || secs < 0) return '0:00';
     const m = Math.floor(secs / 60);

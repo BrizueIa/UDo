@@ -288,5 +288,17 @@
     "play": "Reproducir",
     "pause": "Pausar",
     "speed": "Velocidad de reproducción"
+  },
+  "audioSettings": {
+    "title": "Configuración de Dispositivos de Audio",
+    "inputDevice": "Dispositivo de Entrada (Micrófono)",
+    "defaultInput": "Micrófono predeterminado del sistema",
+    "testMic": "Probar Micrófono",
+    "testingMic": "Escuchando...",
+    "outputDevice": "Dispositivo de Salida (Altavoces / Auriculares)",
+    "defaultOutput": "Altavoz predeterminado del sistema",
+    "testSound": "Probar sonido del altavoz",
+    "configure": "Configurar",
+    "done": "Guardar y Cerrar"
   }
 }

@@ -288,5 +288,17 @@
     "play": "Play",
     "pause": "Pause",
     "speed": "Playback speed"
+  },
+  "audioSettings": {
+    "title": "Audio Device Configuration",
+    "inputDevice": "Input Device (Microphone)",
+    "defaultInput": "System Default Microphone",
+    "testMic": "Test Microphone",
+    "testingMic": "Listening...",
+    "outputDevice": "Output Device (Speakers / Headphones)",
+    "defaultOutput": "System Default Speaker",
+    "testSound": "Test Speaker Sound",
+    "configure": "Configure",
+    "done": "Save & Close"
   }
 }

@@ -1,5 +1,10 @@
 const isTauri = typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window;
 
+export interface AudioDeviceOption {
+  id: string;
+  name: string;
+}
+
 export const attachmentsApi = {
   isTauri,
 
@@ -15,7 +20,6 @@ export const attachmentsApi = {
         console.warn('Tauri save_attachment_file failed, falling back to data URL', err);
       }
     }
-    // Browser fallback: Create a Blob URL
     const blob = new Blob([bytes as unknown as BlobPart]);
     return URL.createObjectURL(blob);
   },
@@ -30,7 +34,6 @@ export const attachmentsApi = {
         console.warn('Tauri open_attachment_native failed', err);
       }
     }
-    // Browser fallback: open link / download
     if (filePath) {
       window.open(filePath, '_blank');
     }
@@ -58,6 +61,54 @@ export const attachmentsApi = {
       }
     } else if (filePath && filePath.startsWith('blob:')) {
       URL.revokeObjectURL(filePath);
+    }
+  },
+
+  async getSystemAudioDevices(): Promise<{ inputs: AudioDeviceOption[]; outputs: AudioDeviceOption[] }> {
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        return await invoke('get_system_audio_devices');
+      } catch (err) {
+        console.warn('Tauri get_system_audio_devices failed', err);
+      }
+    }
+    return { inputs: [], outputs: [] };
+  },
+
+  async startNativeRecording(targetDevice?: string): Promise<boolean> {
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('start_native_recording', { targetDevice: targetDevice || null });
+        return true;
+      } catch (err) {
+        console.warn('Tauri start_native_recording failed', err);
+      }
+    }
+    return false;
+  },
+
+  async stopNativeRecording(): Promise<string | null> {
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        return await invoke<string>('stop_native_recording');
+      } catch (err) {
+        console.warn('Tauri stop_native_recording failed', err);
+      }
+    }
+    return null;
+  },
+
+  async cancelNativeRecording(): Promise<void> {
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('cancel_native_recording');
+      } catch (err) {
+        console.warn('Tauri cancel_native_recording failed', err);
+      }
     }
   },
 };

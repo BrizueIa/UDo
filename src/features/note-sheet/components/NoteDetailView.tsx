@@ -9,6 +9,7 @@ import { NoteMediaBar } from './NoteMediaBar';
 import { NoteContentHeader } from './NoteContentHeader';
 import { NoteTemplatePicker } from './NoteTemplatePicker';
 import { ImageAttachmentModal } from './ImageAttachmentModal';
+import { AudioDeviceSettingsModal } from './AudioDeviceSettingsModal';
 import { AlertTriangle, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { playTaskCompleteSound } from '../../../shared/utils/soundEffects';
@@ -62,6 +63,7 @@ export const NoteDetailView: React.FC<Props> = ({
   // Attachments inputs & drawer state
   const [isMediaDrawerOpen, setIsMediaDrawerOpen] = useState(true);
   const [isAttachmentModalOpen, setIsAttachmentModalOpen] = useState(false);
+  const [isAudioSettingsOpen, setIsAudioSettingsOpen] = useState(false);
   const [isStarterDismissed, setIsStarterDismissed] = useState(
     () => localStorage.getItem('udo_hide_starter_templates') === 'true'
   );
@@ -210,13 +212,24 @@ export const NoteDetailView: React.FC<Props> = ({
             <AlertTriangle size={15} className="shrink-0 text-red-400" />
             <span className="truncate">{blockedFileError}</span>
           </div>
-          <button
-            type="button"
-            onClick={() => setBlockedFileError(null)}
-            className="p-1 hover:bg-red-500/20 rounded transition-colors cursor-pointer text-red-300 shrink-0 ml-2"
-          >
-            <X size={13} />
-          </button>
+          <div className="flex items-center space-x-2 shrink-0 ml-2">
+            {(blockedFileError.includes('mic') || blockedFileError.includes('Mic') || blockedFileError.includes('permis')) && (
+              <button
+                type="button"
+                onClick={() => setIsAudioSettingsOpen(true)}
+                className="px-2 py-0.5 rounded bg-red-500/20 hover:bg-red-500/30 text-red-200 text-[11px] font-medium transition-colors cursor-pointer"
+              >
+                {t('audioSettings.configure')}
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => setBlockedFileError(null)}
+              className="p-1 hover:bg-red-500/20 rounded transition-colors cursor-pointer text-red-300"
+            >
+              <X size={13} />
+            </button>
+          </div>
         </div>
       )}
 
@@ -350,6 +363,12 @@ export const NoteDetailView: React.FC<Props> = ({
         isOpen={isAttachmentModalOpen}
         onClose={() => setIsAttachmentModalOpen(false)}
         onAttachSketch={attachSingleSketch}
+      />
+
+      {/* Audio Input/Output Device Settings Modal */}
+      <AudioDeviceSettingsModal
+        isOpen={isAudioSettingsOpen}
+        onClose={() => setIsAudioSettingsOpen(false)}
       />
     </div>
   );
