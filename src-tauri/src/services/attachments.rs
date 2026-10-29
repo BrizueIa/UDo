@@ -92,8 +92,19 @@ pub fn save_attachment_from_path(source_path: String) -> Result<AttachmentInfo, 
     fs::copy(path, &target_path)
         .map_err(|e| format!("Failed to copy attachment file: {}", e))?;
 
+    let clean_name = if let Some(idx) = file_name.find('_') {
+        let prefix = &file_name[..idx];
+        if prefix.len() >= 10 && prefix.chars().all(|c| c.is_ascii_digit()) {
+            file_name[idx + 1..].to_string()
+        } else {
+            file_name.clone()
+        }
+    } else {
+        file_name.clone()
+    };
+
     Ok(AttachmentInfo {
-        name: file_name,
+        name: clean_name,
         file_path: target_path.to_string_lossy().to_string(),
         mime_type: mime,
         size_bytes,

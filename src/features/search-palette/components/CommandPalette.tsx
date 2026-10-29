@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { NoteItem, SubjectItem, FolderItem } from '../../../shared/types';
-import { Search, Hash, FileText, CornerDownLeft, ArrowUpDown } from 'lucide-react';
+import { Search, Hash, FileText, CornerDownLeft, ArrowUpDown, Paperclip } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../../shared/api/ipc';
-import { buildDiacriticRegex } from '../../../shared/utils/diacritics';
+import { buildDiacriticRegex, normalizeDiacritics } from '../../../shared/utils/diacritics';
 import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
 
 interface Props {
@@ -144,6 +144,12 @@ export const CommandPalette: React.FC<Props> = ({
               const subject = subjects.find((s) => s.id === note.subjectId);
               const folder = folders.find((f) => f.id === note.folderId);
               const snippet = getContentSnippet(note.content, query.trim());
+              const normQ = normalizeDiacritics(query.trim().toLowerCase());
+              const matchingAttachment = normQ ? note.attachments?.find((a) =>
+                normalizeDiacritics(a.name || '').toLowerCase().includes(normQ) ||
+                (normQ.startsWith('.') && a.extension?.toLowerCase() === normQ.slice(1)) ||
+                a.extension?.toLowerCase() === normQ
+              ) : undefined;
 
               return (
                 <div
@@ -164,7 +170,13 @@ export const CommandPalette: React.FC<Props> = ({
                       <span className="text-xs font-medium text-theme-text truncate">
                         {renderRichTitle(note.title || t('note.untitled', 'Untitled note'))}
                       </span>
-                      {note.tags.length > 0 && (
+                      {matchingAttachment && (
+                        <span className="flex items-center space-x-1 text-[11px] text-theme-accent bg-theme-accent/10 px-1.5 py-0.5 rounded-md border border-theme-accent/20 truncate">
+                          <Paperclip size={10} className="shrink-0" />
+                          <span className="truncate max-w-[120px]">{matchingAttachment.name}</span>
+                        </span>
+                      )}
+                      {note.tags.length > 0 && !matchingAttachment && (
                         <span className="flex items-center space-x-0.5 text-[11px] text-theme-muted">
                           <Hash size={11} />
                           <span>{note.tags[0]}</span>

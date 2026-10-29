@@ -57,8 +57,48 @@ pub fn search_notes(conn: &Connection, query: &str, include_private: bool) -> Re
     }
 
     let inc_priv_int = if include_private { 1 } else { 0 };
+    let lower = trimmed.to_lowercase();
+    let ext_candidate = lower.strip_prefix('.').unwrap_or(&lower);
 
-    // Tokenize query for SQLite FTS5 prefix matching
+    let base_sql = "
+        SELECT id, folder_id, subject_id, title, content,
+               is_completed, is_pinned, tags_json, links_json,
+               sketches_json, created_at, updated_at, due_date,
+               focus_minutes, sort_order, attachments_json
+        FROM notes
+        WHERE is_deleted = 0
+          AND (?1 = 1 OR subject_id NOT IN (SELECT id FROM subjects WHERE is_private = 1))
+    ";
+
+    // 1. Check for special queries: .canvas, canvas, .sketch
+    if lower == ".canvas" || lower == "canvas" || lower == ".sketch" {
+        let sql = format!("{} AND (sketches_json IS NOT NULL AND sketches_json != '[]' AND sketches_json != '') ORDER BY is_pinned DESC, updated_at DESC LIMIT 50", base_sql);
+        let mut stmt = conn.prepare(&sql)?;
+        let notes = stmt.query_map(params![inc_priv_int], map_note_row)?.collect::<Result<Vec<_>, _>>()?;
+        return Ok(notes);
+    }
+
+    // 2. Check for audio queries: .audio, audio
+    if lower == ".audio" || lower == "audio" {
+        let sql = format!("{} AND (attachments_json LIKE '%\"kind\":\"audio\"%' OR attachments_json LIKE '%.mp3%' OR attachments_json LIKE '%.wav%' OR attachments_json LIKE '%.webm%' OR attachments_json LIKE '%.m4a%') ORDER BY is_pinned DESC, updated_at DESC LIMIT 50", base_sql);
+        let mut stmt = conn.prepare(&sql)?;
+        let notes = stmt.query_map(params![inc_priv_int], map_note_row)?.collect::<Result<Vec<_>, _>>()?;
+        return Ok(notes);
+    }
+
+    // 3. Check for dot extensions: .pdf, .png, etc.
+    if trimmed.starts_with('.') && ext_candidate.len() >= 2 {
+        let ext_pattern = format!("%\"extension\":\"{}\"%", ext_candidate);
+        let dot_ext_pattern = format!("%{}%", trimmed);
+        let sql = format!("{} AND (attachments_json LIKE ?2 OR attachments_json LIKE ?3) ORDER BY is_pinned DESC, updated_at DESC LIMIT 50", base_sql);
+        let mut stmt = conn.prepare(&sql)?;
+        let notes = stmt.query_map(params![inc_priv_int, ext_pattern, dot_ext_pattern], map_note_row)?.collect::<Result<Vec<_>, _>>()?;
+        if !notes.is_empty() {
+            return Ok(notes);
+        }
+    }
+
+    // 4. Tokenize query for SQLite FTS5 prefix matching
     let tokens: Vec<String> = trimmed
         .split_whitespace()
         .map(|token| {
@@ -101,27 +141,24 @@ pub fn search_notes(conn: &Connection, query: &str, include_private: bool) -> Re
         }
     }
 
-    // Fallback to LIKE query across title, content and tags
+    // 5. Fallback to comprehensive LIKE query across title, content, tags, attachments, and sketches
     let like_pattern = format!("%{}%", trimmed);
-    let mut stmt = conn.prepare(
-        "SELECT id, folder_id, subject_id, title, content,
-                is_completed, is_pinned, tags_json, links_json,
-                sketches_json, created_at, updated_at, due_date,
-                focus_minutes, sort_order, attachments_json
-         FROM notes
-         WHERE is_deleted = 0
-           AND (?2 = 1 OR subject_id NOT IN (SELECT id FROM subjects WHERE is_private = 1))
-           AND (
-             title LIKE ?1 OR
-             content LIKE ?1 OR
-             tags_json LIKE ?1
+    let like_sql = format!(
+        "{} AND (
+             title LIKE ?2 OR
+             content LIKE ?2 OR
+             tags_json LIKE ?2 OR
+             attachments_json LIKE ?2 OR
+             sketches_json LIKE ?2
          )
          ORDER BY is_pinned DESC, sort_order ASC, updated_at DESC
          LIMIT 50",
-    )?;
+        base_sql
+    );
+    let mut stmt = conn.prepare(&like_sql)?;
 
     let notes = stmt
-        .query_map(params![like_pattern, inc_priv_int], map_note_row)?
+        .query_map(params![inc_priv_int, like_pattern], map_note_row)?
         .collect::<Result<Vec<_>, _>>()?;
 
     Ok(notes)
@@ -179,7 +216,11 @@ pub fn save_note(conn: &Connection, note: &NoteItem) -> Result<()> {
 }
 
 pub fn delete_note(conn: &Connection, id: &str) -> Result<()> {
-    conn.execute("UPDATE notes SET is_deleted = 1 WHERE id = ?1", params![id])?;
+    let now = chrono::Utc::now().to_rfc3339();
+    conn.execute(
+        "UPDATE notes SET is_deleted = 1, updated_at = ?2 WHERE id = ?1",
+        params![id, now],
+    )?;
     Ok(())
 }
 

@@ -8,6 +8,7 @@ import {
   isBlockedExtension,
   isImageFile,
   getFileExtension,
+  cleanAttachmentName,
 } from '../../../shared/utils/fileAttachments';
 import {
   fileToDataUrl,
@@ -59,7 +60,8 @@ export const AttachmentModal: React.FC<Props> = ({
           continue;
         }
 
-        const fileName = p.replace(/\\/g, '/').split('/').pop() || 'file';
+        const rawName = p.replace(/\\/g, '/').split('/').pop() || 'file';
+        const fileName = cleanAttachmentName(rawName);
         const isImg = isImageFile(p);
         let previewDataUrl: string | undefined;
 
@@ -122,7 +124,7 @@ export const AttachmentModal: React.FC<Props> = ({
 
         items.push({
           id: `staged-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-          name: file.name,
+          name: cleanAttachmentName(file.name),
           sourceType: 'file',
           file,
           previewDataUrl,
@@ -245,7 +247,7 @@ export const AttachmentModal: React.FC<Props> = ({
           const isAudio = ['mp3', 'wav', 'webm', 'ogg', 'm4a', 'flac'].includes(saved.extension);
           onAttachmentCreated({
             id: `attach-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            name: chosenTitle || saved.name,
+            name: cleanAttachmentName(chosenTitle || saved.name),
             filePath: saved.filePath,
             mimeType: saved.mimeType,
             sizeBytes: saved.sizeBytes,
@@ -266,7 +268,7 @@ export const AttachmentModal: React.FC<Props> = ({
           const isAudio = ['mp3', 'wav', 'webm', 'ogg', 'm4a', 'flac'].includes(item.extension);
           onAttachmentCreated({
             id: `attach-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
-            name: chosenTitle || item.name,
+            name: cleanAttachmentName(chosenTitle || item.name),
             filePath: savedPath,
             mimeType: item.file.type || 'application/octet-stream',
             sizeBytes: item.sizeBytes,

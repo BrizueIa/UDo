@@ -83,3 +83,8 @@ export function formatFileSize(bytes: number): string {
 export function sanitizeFileName(name: string): string {
   return name.replace(/[^\w.-]/g, '_');
 }
+
+export function cleanAttachmentName(name: string): string {
+  if (!name) return '';
+  return name.replace(/^\d{10,}_/, '');
+}

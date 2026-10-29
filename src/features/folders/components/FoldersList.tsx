@@ -82,11 +82,34 @@ export const FoldersList: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
 
-  const allVisibleNoteIds = useMemo(() => {
-    return notes
-      .filter((n) => currentSubject && n.subjectId === currentSubject.id)
-      .map((n) => n.id);
-  }, [notes, currentSubject]);
+  const currentFolderNoteIds = useMemo(() => {
+    const targetFolderId = selectedFolderId || activeNoteFolderId || folders[0]?.id;
+    if (!targetFolderId) return [];
+    const folderNotes = notes.filter((n) => n.folderId === targetFolderId);
+    return filterAndSortFolderNotes({
+      notes: folderNotes,
+      filter,
+      searchQuery,
+      activeTagFilter,
+    }).map((n) => n.id);
+  }, [notes, selectedFolderId, activeNoteFolderId, folders, filter, searchQuery, activeTagFilter]);
+
+  const orderedVisibleNoteIds = useMemo(() => {
+    const ids: string[] = [];
+    folders.forEach((f) => {
+      if (f.isExpanded) {
+        const folderNotes = notes.filter((n) => n.folderId === f.id);
+        const filtered = filterAndSortFolderNotes({
+          notes: folderNotes,
+          filter,
+          searchQuery,
+          activeTagFilter,
+        });
+        filtered.forEach((n) => ids.push(n.id));
+      }
+    });
+    return ids;
+  }, [folders, notes, filter, searchQuery, activeTagFilter]);
 
   const allVisibleFolderIds = useMemo(() => {
     return folders.map((f) => f.id);
@@ -101,8 +124,10 @@ export const FoldersList: React.FC<Props> = ({
     handleContainerMouseDown,
     marqueeRect,
   } = useMultiSelection({
-    allVisibleNoteIds,
+    allVisibleNoteIds: orderedVisibleNoteIds,
+    currentFolderNoteIds,
     allVisibleFolderIds,
+    activeNoteId: selectedNoteId,
     onBatchDelete: (noteIds, folderIds) => {
       if (noteIds.length > 0) onBatchDeleteNotes?.(noteIds);
       if (folderIds && folderIds.length > 0) {

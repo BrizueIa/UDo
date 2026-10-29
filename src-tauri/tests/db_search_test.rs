@@ -88,5 +88,82 @@ fn test_database_init_and_search() {
         "Soft-deleted note should be excluded from search"
     );
 
+    // Test advanced search by attachment name and extension
+    let note_with_cv = NoteItem {
+        id: "note-test-attachment-cv".to_string(),
+        folder_id: initial.folders[0].id.clone(),
+        subject_id: initial.subjects[0].id.clone(),
+        title: "Nota con Documentos".to_string(),
+        content: "Sin palabras clave en texto.".to_string(),
+        is_completed: false,
+        is_pinned: false,
+        tags: vec![],
+        links: vec![],
+        sketches: vec![udo_lib::models::SketchItem {
+            id: "sk-1".to_string(),
+            title: "Boceto de Circuito".to_string(),
+            data_url: "data:...".to_string(),
+            created_at: "2026-10-27T00:00:00Z".to_string(),
+        }],
+        attachments: vec![
+            udo_lib::models::NoteAttachment {
+                id: "att-cv-1".to_string(),
+                name: "CV_BrizuelaGonzalezGustavoAdrian.pdf".to_string(),
+                file_path: "/dummy/path/CV_BrizuelaGonzalezGustavoAdrian.pdf".to_string(),
+                mime_type: "application/pdf".to_string(),
+                size_bytes: 1024,
+                extension: "pdf".to_string(),
+                kind: "file".to_string(),
+                duration_seconds: None,
+                created_at: "2026-10-27T00:00:00Z".to_string(),
+            },
+            udo_lib::models::NoteAttachment {
+                id: "att-voice-1".to_string(),
+                name: "voice-note.webm".to_string(),
+                file_path: "/dummy/path/voice-note.webm".to_string(),
+                mime_type: "audio/webm".to_string(),
+                size_bytes: 2048,
+                extension: "webm".to_string(),
+                kind: "audio".to_string(),
+                duration_seconds: Some(5.0),
+                created_at: "2026-10-27T00:00:00Z".to_string(),
+            },
+        ],
+        created_at: "2026-10-27T00:00:00Z".to_string(),
+        updated_at: "2026-10-27T00:00:00Z".to_string(),
+        due_date: None,
+        focus_minutes: None,
+        order: Some(0),
+    };
+    db.save_note(&note_with_cv).expect("Failed to save note with attachments");
+
+    // 1. Search by attachment filename "cv"
+    let search_cv = db.search_notes("cv", true).expect("Search 'cv' failed");
+    assert!(
+        search_cv.iter().any(|n| n.id == "note-test-attachment-cv"),
+        "Search for 'cv' should find note with CV attachment"
+    );
+
+    // 2. Search by extension ".pdf"
+    let search_pdf = db.search_notes(".pdf", true).expect("Search '.pdf' failed");
+    assert!(
+        search_pdf.iter().any(|n| n.id == "note-test-attachment-cv"),
+        "Search for '.pdf' should find note with PDF attachment"
+    );
+
+    // 3. Search by audio ".audio"
+    let search_audio = db.search_notes(".audio", true).expect("Search '.audio' failed");
+    assert!(
+        search_audio.iter().any(|n| n.id == "note-test-attachment-cv"),
+        "Search for '.audio' should find note with audio attachment"
+    );
+
+    // 4. Search by canvas ".canvas"
+    let search_canvas = db.search_notes(".canvas", true).expect("Search '.canvas' failed");
+    assert!(
+        search_canvas.iter().any(|n| n.id == "note-test-attachment-cv"),
+        "Search for '.canvas' should find note with sketches"
+    );
+
     std::fs::remove_file(temp_path).ok();
 }

@@ -71,15 +71,36 @@ export const api = {
     const state = getLocalState();
     const q = normalizeDiacritics(query.trim());
     if (!q) return [];
+    const lowerRaw = query.trim().toLowerCase();
+    const extCandidate = lowerRaw.startsWith('.') ? lowerRaw.slice(1) : lowerRaw;
     const privateSubIds = new Set(
       state.subjects.filter((s) => s.isPrivate).map((s) => s.id)
     );
     return state.notes.filter((n) => {
       if (!includePrivate && privateSubIds.has(n.subjectId)) return false;
+
+      if (lowerRaw === '.canvas' || lowerRaw === 'canvas' || lowerRaw === '.sketch') {
+        return (n.sketches && n.sketches.length > 0) ?? false;
+      }
+      if (lowerRaw === '.audio' || lowerRaw === 'audio') {
+        return n.attachments?.some(
+          (a) => a.kind === 'audio' || ['mp3', 'wav', 'webm', 'm4a', 'ogg'].includes(a.extension?.toLowerCase())
+        ) ?? false;
+      }
+      if (lowerRaw.startsWith('.') && extCandidate.length >= 2) {
+        return n.attachments?.some(
+          (a) =>
+            a.extension?.toLowerCase() === extCandidate ||
+            a.name?.toLowerCase().endsWith(`.${extCandidate}`)
+        ) ?? false;
+      }
+
       return (
         normalizeDiacritics(n.title).includes(q) ||
         normalizeDiacritics(n.content).includes(q) ||
-        n.tags.some((tag) => normalizeDiacritics(tag).includes(q))
+        n.tags.some((tag) => normalizeDiacritics(tag).includes(q)) ||
+        n.attachments?.some((a) => normalizeDiacritics(a.name || '').includes(q)) ||
+        n.sketches?.some((s) => normalizeDiacritics(s.title || '').includes(q))
       );
     });
   },

@@ -4,6 +4,7 @@ import {
   formatFileSize,
   getFileCategory,
   getFileExtension,
+  cleanAttachmentName,
 } from '../../../shared/utils/fileAttachments';
 import { attachmentsApi } from '../../../shared/api/attachmentsApi';
 import {
@@ -96,7 +97,7 @@ export const FileAttachmentCard: React.FC<Props> = ({ attachment, onRemove }) =>
       onClick={handleOpen}
       onContextMenu={handleContextMenu}
       className="group relative flex items-center space-x-3 px-3 py-2 rounded-xl bg-theme-card/60 hover:bg-theme-card border border-white/[0.06] hover:border-white/[0.14] transition-all shadow-xs hover:shadow-md w-64 cursor-pointer select-none"
-      title={`${t('attachments.openWithSystemApp')}: ${attachment.name}`}
+      title={`${t('attachments.openWithSystemApp')}: ${cleanAttachmentName(attachment.name)}`}
     >
       <div className="w-9 h-9 rounded-lg bg-theme-column/80 border border-white/[0.04] flex items-center justify-center shrink-0">
         {renderIcon()}
@@ -104,7 +105,7 @@ export const FileAttachmentCard: React.FC<Props> = ({ attachment, onRemove }) =>
 
       <div className="flex-1 min-w-0">
         <div className="text-xs font-medium text-theme-text truncate group-hover:text-theme-accent transition-colors flex items-center gap-1">
-          <span className="truncate">{attachment.name}</span>
+          <span className="truncate">{cleanAttachmentName(attachment.name)}</span>
           <ExternalLink size={10} className="opacity-0 group-hover:opacity-60 shrink-0 transition-opacity" />
         </div>
         <div className="text-[10px] text-theme-muted flex items-center space-x-1.5 mt-0.5">

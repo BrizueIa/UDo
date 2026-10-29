@@ -226,13 +226,13 @@ export function useKeyboardShortcuts({
           return;
         }
 
-        // j / k or ↓ / ↑: Navigate items in active column (FR-08)
-        if (e.key.toLowerCase() === 'j' || e.key === 'ArrowDown') {
+        // j / k or ↓ / ↑: Navigate items in active column (FR-08) - only without Shift
+        if (!e.shiftKey && (e.key.toLowerCase() === 'j' || e.key === 'ArrowDown')) {
           e.preventDefault();
           onNavigateVertical('down');
           return;
         }
-        if (e.key.toLowerCase() === 'k' || e.key === 'ArrowUp') {
+        if (!e.shiftKey && (e.key.toLowerCase() === 'k' || e.key === 'ArrowUp')) {
           e.preventDefault();
           onNavigateVertical('up');
           return;

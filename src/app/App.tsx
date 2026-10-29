@@ -43,15 +43,20 @@ export const App: React.FC = () => {
 
   const vault = useVaultState();
 
+  const isPrivateNote = !vault.isVaultUnlocked && subjects.some((s) => s.id === currentNote?.subjectId && s.isPrivate);
+  const effectiveCurrentNote = isPrivateNote ? undefined : currentNote;
+
   useEffect(() => {
     if (!vault.isVaultUnlocked) {
-      const selectedSub = subjects.find((s) => s.id === selectedSubjectId);
-      if (selectedSub?.isPrivate) {
-        const firstPublic = subjects.find((s) => !s.isPrivate);
-        if (firstPublic) setSelectedSubjectId(firstPublic.id);
+      const isSubPrivate = subjects.some((s) => s.id === selectedSubjectId && s.isPrivate);
+      if (isPrivateNote || isSubPrivate) {
+        const pub = subjects.find((s) => !s.isPrivate);
+        setSelectedSubjectId(pub?.id || '');
+        setSelectedFolderId(folders.find((f) => f.subjectId === pub?.id)?.id || '');
+        setSelectedNoteId(notes.find((n) => n.subjectId === pub?.id)?.id || '');
       }
     }
-  }, [vault.isVaultUnlocked, subjects, selectedSubjectId, setSelectedSubjectId]);
+  }, [vault.isVaultUnlocked, subjects, folders, notes, selectedSubjectId, isPrivateNote, setSelectedSubjectId, setSelectedFolderId, setSelectedNoteId]);
 
   const [filter, setFilter] = useState<ViewFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -71,13 +76,13 @@ export const App: React.FC = () => {
     localStorage.setItem('udo_show_breadcrumbs', String(show));
   };
 
-  const noteSubject = subjects.find((s) => s.id === currentNote?.subjectId);
-  const noteFolder = folders.find((f) => f.id === currentNote?.folderId);
+  const noteSubject = subjects.find((s) => s.id === effectiveCurrentNote?.subjectId);
+  const noteFolder = folders.find((f) => f.id === effectiveCurrentNote?.folderId);
   const handleRevealLocation = () => {
-    if (!currentNote) return;
-    setSelectedSubjectId(currentNote.subjectId);
-    setSelectedFolderId(currentNote.folderId);
-    handleToggleFolderExpand(currentNote.folderId);
+    if (!effectiveCurrentNote) return;
+    setSelectedSubjectId(effectiveCurrentNote.subjectId);
+    setSelectedFolderId(effectiveCurrentNote.folderId);
+    handleToggleFolderExpand(effectiveCurrentNote.folderId);
   };
 
   const handleSprintCompleted = useCallback(
@@ -146,14 +151,14 @@ export const App: React.FC = () => {
   );
 
   const handleSaveSketch = useCallback((updatedSketch: SketchItem) => {
-    if (!currentNote) return;
-    const exists = currentNote.sketches.some((s) => s.id === updatedSketch.id);
+    if (!effectiveCurrentNote) return;
+    const exists = effectiveCurrentNote.sketches.some((s) => s.id === updatedSketch.id);
     const newSketches = exists
-      ? currentNote.sketches.map((s) => (s.id === updatedSketch.id ? updatedSketch : s))
-      : [...currentNote.sketches, updatedSketch];
-    handleUpdateNote({ ...currentNote, sketches: newSketches });
+      ? effectiveCurrentNote.sketches.map((s) => (s.id === updatedSketch.id ? updatedSketch : s))
+      : [...effectiveCurrentNote.sketches, updatedSketch];
+    handleUpdateNote({ ...effectiveCurrentNote, sketches: newSketches });
     modalState.setActiveSketch(null);
-  }, [currentNote, handleUpdateNote, modalState]);
+  }, [effectiveCurrentNote, handleUpdateNote, modalState]);
 
   const handleQuickAddSave = (title: string, folderId: string, subjectId: string) => {
     setSelectedSubjectId(subjectId);
@@ -268,7 +273,7 @@ export const App: React.FC = () => {
             subjects={subjects}
             folders={folders}
             selectedSubjectId={selectedSubjectId}
-            activeNoteSubjectId={currentNote?.subjectId}
+            activeNoteSubjectId={effectiveCurrentNote?.subjectId}
             isFocused={activeColumn === 1}
             isVaultUnlocked={vault.isVaultUnlocked}
             onToggleVault={vault.handleToggleVault}
@@ -296,7 +301,7 @@ export const App: React.FC = () => {
             notes={notes}
             selectedFolderId={selectedFolderId}
             selectedNoteId={selectedNoteId}
-            activeNoteFolderId={currentNote?.folderId}
+            activeNoteFolderId={effectiveCurrentNote?.folderId}
             filter={filter}
             searchQuery={searchQuery}
             activeTagFilter={activeTagFilter}
@@ -326,10 +331,10 @@ export const App: React.FC = () => {
             activeColumn === 3 ? 'ring-1 ring-inset ring-theme-accent/20' : ''
           }`}
         >
-          {currentNote ? (
+          {effectiveCurrentNote ? (
             <NoteDetailView
-              key={currentNote.id}
-              note={currentNote}
+              key={effectiveCurrentNote.id}
+              note={effectiveCurrentNote}
               notes={notes}
               folderName={noteFolder?.name || currentFolder?.name || 'Notes'}
               folders={currentSubjectFolders}
@@ -340,11 +345,11 @@ export const App: React.FC = () => {
               activeTagFilter={activeTagFilter}
               activeTimerFormatted={
                 (focusTimer.isRunning || focusTimer.isPaused) &&
-                focusTimer.noteId === currentNote.id
+                focusTimer.noteId === effectiveCurrentNote.id
                   ? focusTimer.formattedTime
                   : undefined
               }
-              isTimerRunning={focusTimer.isRunning && focusTimer.noteId === currentNote.id}
+              isTimerRunning={focusTimer.isRunning && focusTimer.noteId === effectiveCurrentNote.id}
               onOpenFocusTimer={() => modalState.setIsTimerModalOpen(true)}
               onUpdateNote={handleUpdateNote}
               onDeleteNote={handleDeleteNote}
@@ -368,7 +373,7 @@ export const App: React.FC = () => {
       </main>
 
       <AppModals
-        currentNote={currentNote}
+        currentNote={effectiveCurrentNote}
         notes={notes}
         subjects={subjects}
         folders={folders}
