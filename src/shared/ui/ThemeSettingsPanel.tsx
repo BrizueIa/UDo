@@ -188,7 +188,7 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
                         onMouseLeave={restoreTheme}
                         className={`flex items-center justify-between p-2.5 rounded-xl text-xs transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-theme-card text-theme-text font-semibold border border-theme-accent/60 shadow-sm ring-1 ring-theme-accent/20'
+                            ? 'bg-theme-card text-theme-text font-medium border border-white/[0.12] shadow-xs'
                             : 'bg-theme-card/50 hover:bg-theme-card text-theme-muted hover:text-theme-text border border-white/[0.05] hover:border-theme-accent/30'
                         }`}
                       >
@@ -237,7 +237,7 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
                         onMouseLeave={restoreTheme}
                         className={`flex items-center justify-between p-2.5 rounded-xl text-xs transition-all cursor-pointer ${
                           isSelected
-                            ? 'bg-theme-card text-theme-text font-semibold border border-theme-accent/60 shadow-sm ring-1 ring-theme-accent/20'
+                            ? 'bg-theme-card text-theme-text font-medium border border-white/[0.12] shadow-xs'
                             : 'bg-theme-card/50 hover:bg-theme-card text-theme-muted hover:text-theme-text border border-white/[0.05] hover:border-theme-accent/30'
                         }`}
                       >
@@ -262,7 +262,7 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
             )}
 
             {customThemes.length > 0 && (
-              <div className="pt-2 border-t border-theme-border/40 space-y-1.5">
+              <div className="pt-2 border-t border-white/[0.06] space-y-1.5">
                 <div className="flex items-center space-x-2 px-1 text-[11px] font-bold text-theme-muted uppercase tracking-wider">
                   <div className="flex items-center space-x-1.5">
                     <Sparkles size={11} className="text-theme-muted" />
@@ -281,7 +281,7 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
                         onMouseLeave={restoreTheme}
                         className={`flex items-center justify-between p-2.5 rounded-xl text-xs transition-all group ${
                           isSelected
-                            ? 'bg-theme-card text-theme-text font-semibold border border-theme-accent/60 shadow-sm ring-1 ring-theme-accent/20'
+                            ? 'bg-theme-card text-theme-text font-medium border border-white/[0.12] shadow-xs'
                             : 'bg-theme-card/50 hover:bg-theme-card text-theme-muted hover:text-theme-text border border-white/[0.05] hover:border-theme-accent/30'
                         }`}
                       >

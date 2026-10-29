@@ -32,7 +32,7 @@ export const TrashItemRow: React.FC<Props> = ({
       className={`group flex items-center justify-between px-3 py-2 rounded-xl border transition-all cursor-pointer ${
         isSelected
           ? 'bg-theme-accent/15 border-theme-accent/30 text-theme-text'
-          : 'border-transparent hover:bg-theme-card/70 hover:border-theme-border/40 text-theme-text'
+          : 'border-transparent hover:bg-theme-card/70 hover:border-white/[0.06] text-theme-text'
       }`}
     >
       <div className="flex items-center space-x-2.5 min-w-0 flex-1">

@@ -51,7 +51,7 @@ export const NoteActionRibbon: React.FC<Props> = ({
   const displayFolders = subjectFolders.length > 0 ? subjectFolders : folders;
 
   return (
-    <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3.5 border-b border-theme-border/60 bg-theme-base sticky top-0 z-10 select-none flex-wrap gap-2">
+    <div className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-3.5 border-b border-white/[0.06] bg-theme-base sticky top-0 z-10 select-none flex-wrap gap-2">
       <div className="flex items-center flex-wrap gap-2">
         {/* Toggle complete button */}
         <button

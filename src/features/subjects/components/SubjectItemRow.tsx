@@ -231,7 +231,7 @@ export const SubjectItemRow: React.FC<Props> = ({
           isDragOver
             ? 'bg-theme-accent/25 ring-2 ring-theme-accent/70 border-theme-accent scale-[1.02] shadow-md text-theme-text font-bold'
             : isSelected
-            ? 'bg-theme-card border-theme-accent/40 shadow-sm text-theme-text font-semibold'
+            ? 'bg-theme-card/90 border-white/[0.08] shadow-xs text-theme-text font-medium'
             : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover/40 border-transparent'
         }`}
       >
@@ -363,7 +363,7 @@ export const SubjectItemRow: React.FC<Props> = ({
                   className={`flex items-center space-x-1.5 px-2 py-1 rounded-md text-xs transition-all cursor-pointer ${
                     isOverFolder
                       ? 'bg-theme-accent text-white font-bold scale-[1.02] shadow-sm'
-                      : 'bg-theme-card/60 hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-theme-border/40'
+                      : 'bg-theme-card/60 hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.06]'
                   }`}
                 >
                   <Folder size={12} className={isOverFolder ? 'text-white' : 'text-amber-400 fill-amber-400/20'} />

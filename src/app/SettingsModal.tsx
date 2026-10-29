@@ -112,10 +112,10 @@ export const SettingsModal: React.FC<Props> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-3xl bg-theme-sidebar border border-theme-border rounded-2xl shadow-2xl flex flex-col h-[540px] max-h-[88vh] overflow-hidden"
+        className="w-full max-w-3xl bg-theme-sidebar border border-white/[0.08] rounded-2xl shadow-2xl flex flex-col h-[540px] max-h-[88vh] overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-theme-border">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
           <div className="flex items-center space-x-2.5">
             <UDoLogo variant="color" size={20} className="shrink-0 drop-shadow-sm" />
             <span className="font-semibold text-sm text-theme-text">{t('settings.title')}</span>
@@ -133,7 +133,7 @@ export const SettingsModal: React.FC<Props> = ({
         {/* Body with Sidebar Tabs */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Left Navigation */}
-          <div className="w-44 border-r border-theme-border/60 p-3 space-y-1 bg-theme-column/30 shrink-0">
+          <div className="w-44 border-r border-white/[0.06] p-3 space-y-1 bg-theme-column/30 shrink-0">
             {navItems.map((item) => {
               const isSelected = activeTab === item.id;
               return (
@@ -170,11 +170,11 @@ export const SettingsModal: React.FC<Props> = ({
                 />
 
                 {/* Interface Preferences: Breadcrumbs toggle */}
-                <div className="pt-3 border-t border-theme-border/60">
+                <div className="pt-3 border-t border-white/[0.06]">
                   <div className="text-xs font-semibold text-theme-muted uppercase tracking-wider mb-2">
                     {t('settings.interfaceTitle')}
                   </div>
-                  <label className="flex items-center justify-between p-3 rounded-xl bg-theme-card border border-theme-border/60 cursor-pointer hover:border-theme-accent/40 transition-colors">
+                  <label className="flex items-center justify-between p-3 rounded-xl bg-theme-card border border-white/[0.06] cursor-pointer hover:border-theme-accent/40 transition-colors">
                     <div className="space-y-0.5 pr-4">
                       <div className="text-xs font-medium text-theme-text">
                         {t('settings.showBreadcrumbs')}
@@ -288,7 +288,7 @@ export const SettingsModal: React.FC<Props> = ({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end px-5 py-3 border-t border-theme-border bg-theme-column/30">
+        <div className="flex items-center justify-end px-5 py-3 border-t border-white/[0.06] bg-theme-column/30">
           <button
             type="button"
             onClick={onClose}

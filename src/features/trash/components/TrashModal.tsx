@@ -160,10 +160,10 @@ export const TrashModal: React.FC<Props> = ({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-2xl bg-theme-sidebar border border-theme-border rounded-2xl shadow-2xl flex flex-col h-[540px] max-h-[85vh] overflow-hidden"
+        className="w-full max-w-2xl bg-theme-sidebar border border-white/[0.08] rounded-2xl shadow-2xl flex flex-col h-[540px] max-h-[85vh] overflow-hidden"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-3.5 border-b border-theme-border/60">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-white/[0.06]">
           <div className="flex items-center space-x-2.5">
             <div className="w-8 h-8 rounded-xl bg-theme-hover flex items-center justify-center text-rose-400">
               <Trash2 size={16} />
@@ -230,8 +230,8 @@ export const TrashModal: React.FC<Props> = ({
         </AnimatePresence>
 
         {/* Tabs & Search Filter Toolbar */}
-        <div className="px-5 py-2.5 bg-theme-column/40 border-b border-theme-border/40 flex flex-wrap items-center justify-between gap-2 text-xs">
-          <div className="flex items-center space-x-1 bg-theme-base/60 p-0.5 rounded-lg border border-theme-border/40">
+        <div className="px-5 py-2.5 bg-theme-column/40 border-b border-white/[0.06] flex flex-wrap items-center justify-between gap-2 text-xs">
+          <div className="flex items-center space-x-1 bg-theme-base/60 p-0.5 rounded-lg border border-white/[0.06]">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
@@ -254,7 +254,7 @@ export const TrashModal: React.FC<Props> = ({
             ))}
           </div>
 
-          <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-theme-base/80 border border-theme-border/60 text-xs text-theme-muted focus-within:text-theme-text focus-within:border-theme-accent/50 w-48">
+          <div className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-theme-base/80 border border-white/[0.08] text-xs text-theme-muted focus-within:text-theme-text focus-within:border-theme-accent/50 w-48">
             <Search size={13} className="shrink-0" />
             <input
               type="text"
@@ -277,7 +277,7 @@ export const TrashModal: React.FC<Props> = ({
 
         {/* Action Selection Bar */}
         {filteredNotes.length > 0 && (
-          <div className="px-5 py-2 bg-theme-column/20 border-b border-theme-border/30 flex items-center justify-between text-xs">
+          <div className="px-5 py-2 bg-theme-column/20 border-b border-white/[0.04] flex items-center justify-between text-xs">
             <button
               type="button"
               onClick={handleSelectAll}
@@ -348,7 +348,7 @@ export const TrashModal: React.FC<Props> = ({
         </div>
 
         {/* Auto-Delete 30 Days Notice Footer */}
-        <div className="px-5 py-2.5 bg-theme-column/40 border-t border-theme-border/50 flex items-center justify-between text-[11px] text-theme-muted">
+        <div className="px-5 py-2.5 bg-theme-column/40 border-t border-white/[0.06] flex items-center justify-between text-[11px] text-theme-muted">
           <div className="flex items-center space-x-1.5">
             <Clock size={12} className="opacity-60 text-theme-muted" />
             <span>{t('trash.autoDeleteNotice') || 'Las notas con más de 30 días en la papelera se eliminan automáticamente.'}</span>

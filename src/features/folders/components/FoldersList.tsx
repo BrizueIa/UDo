@@ -172,7 +172,7 @@ export const FoldersList: React.FC<Props> = ({
       }`}
     >
       {/* Header with active subject title and new folder button */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-theme-border/50">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
         <h2 className="text-sm font-semibold text-theme-text truncate">
           {renderRichTitle(currentSubject?.name || t('nav.subjects'), 'folders-hdr', 0, { ignoreSize: true })}
         </h2>
@@ -321,7 +321,7 @@ export const FoldersList: React.FC<Props> = ({
                       className={`overflow-hidden pl-3 space-y-0.5 border-l ml-4 transition-colors rounded-r-lg ${
                         isDragOverNotes
                           ? 'border-theme-accent bg-theme-accent/10 ring-1 ring-theme-accent/30'
-                          : 'border-theme-border/40'
+                          : 'border-white/[0.06]'
                       }`}
                     >
                       {visibleNotes.length === 0 ? (

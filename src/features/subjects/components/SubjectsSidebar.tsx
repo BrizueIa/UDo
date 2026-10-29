@@ -167,7 +167,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
       } ${isDropOverEmptySpace ? 'bg-theme-accent/5' : ''}`}
     >
       {/* Header */}
-      <div className="flex items-center justify-between px-3 py-3 border-b border-theme-border/50">
+      <div className="flex items-center justify-between px-3 py-3 border-b border-white/[0.06]">
         <span className="text-xs font-semibold tracking-wider text-theme-muted uppercase truncate">
           {t('nav.subjects')}
         </span>
@@ -315,7 +315,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
       </div>
 
       {/* Footer: Integrated Trash Button */}
-      <div className="px-2 py-1.5 border-t border-theme-border/60 bg-theme-column/30 select-none">
+      <div className="px-2 py-1.5 border-t border-white/[0.06] select-none">
         <button
           type="button"
           onClick={onOpenTrash}

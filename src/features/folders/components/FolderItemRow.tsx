@@ -229,9 +229,9 @@ export const FolderItemRow: React.FC<Props> = ({
         isDragOverNote
           ? 'bg-theme-accent/25 border-theme-accent ring-2 ring-theme-accent/60 scale-[1.01] shadow-md'
           : isMultiSelected
-          ? 'bg-theme-accent/20 border-theme-accent/60 text-theme-text font-semibold ring-1 ring-theme-accent/40 shadow-xs'
+          ? 'bg-theme-accent/15 border-theme-accent/30 text-theme-text font-medium shadow-xs'
           : isSelected
-          ? 'bg-theme-card border-theme-accent/50 text-theme-text font-semibold shadow-xs'
+          ? 'bg-theme-card/90 border-white/[0.08] text-theme-text font-medium shadow-xs'
           : 'hover:bg-theme-hover/50 text-theme-text border-transparent'
       }`}
     >

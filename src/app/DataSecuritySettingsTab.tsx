@@ -112,7 +112,7 @@ export const DataSecuritySettingsTab: React.FC<Props> = ({
           <Lock size={14} className="text-theme-accent" />
           <span>{t('vault.title') || 'Bóveda Privada'}</span>
         </div>
-        <div className="p-4 rounded-xl bg-theme-column/50 border border-theme-border flex items-center justify-between">
+        <div className="p-4 rounded-xl bg-theme-column/50 border border-white/[0.06] flex items-center justify-between">
           <div>
             <div className="text-xs font-semibold text-theme-text">
               {hasVaultPin
@@ -141,7 +141,7 @@ export const DataSecuritySettingsTab: React.FC<Props> = ({
                 <button
                   type="button"
                   onClick={onOpenPinChange}
-                  className="px-2.5 py-1.5 rounded-lg bg-theme-card border border-theme-border text-theme-text text-xs hover:bg-theme-hover transition-colors"
+                  className="px-2.5 py-1.5 rounded-lg bg-theme-card border border-white/[0.06] text-theme-text text-xs hover:bg-theme-hover transition-colors"
                 >
                   {t('vault.changePin') || 'Cambiar PIN'}
                 </button>
@@ -171,7 +171,7 @@ export const DataSecuritySettingsTab: React.FC<Props> = ({
           <button
             type="button"
             onClick={handleExport}
-            className="p-3.5 rounded-xl bg-theme-column/50 border border-theme-border hover:border-theme-accent/50 text-left transition-all group"
+            className="p-3.5 rounded-xl bg-theme-column/50 border border-white/[0.06] hover:border-theme-accent/40 text-left transition-all group"
           >
             <div className="flex items-center space-x-2 text-theme-accent mb-1">
               <Download size={15} />
@@ -183,7 +183,7 @@ export const DataSecuritySettingsTab: React.FC<Props> = ({
           <button
             type="button"
             onClick={handleImport}
-            className="p-3.5 rounded-xl bg-theme-column/50 border border-theme-border hover:border-theme-accent/50 text-left transition-all group"
+            className="p-3.5 rounded-xl bg-theme-column/50 border border-white/[0.06] hover:border-theme-accent/40 text-left transition-all group"
           >
             <div className="flex items-center space-x-2 text-theme-accent mb-1">
               <Upload size={15} />
@@ -203,7 +203,7 @@ export const DataSecuritySettingsTab: React.FC<Props> = ({
               {backups.map((b) => (
                 <div
                   key={b.filename}
-                  className="flex items-center justify-between p-2 rounded-lg bg-theme-card/60 border border-theme-border/50 text-xs text-theme-text"
+                  className="flex items-center justify-between p-2 rounded-lg bg-theme-card/60 border border-white/[0.06] text-xs text-theme-text"
                 >
                   <div className="flex items-center space-x-2 truncate">
                     <FileText size={13} className="text-theme-muted flex-shrink-0" />
@@ -226,7 +226,7 @@ export const DataSecuritySettingsTab: React.FC<Props> = ({
           <Power size={14} className="text-theme-accent" />
           <span>{t('settings.systemTab') || 'Inicio con el Sistema'}</span>
         </div>
-        <div className="p-4 rounded-xl bg-theme-column/50 border border-theme-border flex items-center justify-between">
+        <div className="p-4 rounded-xl bg-theme-column/50 border border-white/[0.06] flex items-center justify-between">
           <div>
             <div className="text-xs font-semibold text-theme-text">{t('settings.autostartTitle') || 'Iniciar UDo al encender el equipo'}</div>
             <div className="text-[11px] text-theme-muted mt-0.5">
@@ -237,7 +237,7 @@ export const DataSecuritySettingsTab: React.FC<Props> = ({
             type="button"
             onClick={handleToggleAutostart}
             className={`w-11 h-6 rounded-full transition-colors relative p-0.5 ${
-              autostart ? 'bg-theme-accent' : 'bg-theme-card border border-theme-border'
+              autostart ? 'bg-theme-accent' : 'bg-theme-card border border-white/[0.08]'
             }`}
           >
             <div

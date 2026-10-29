@@ -96,9 +96,9 @@ export const NoteItemRow: React.FC<Props> = ({
       onContextMenu={onContextMenu}
       className={`group relative flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-grab active:cursor-grabbing hover:translate-x-0.5 active:scale-[0.98] transition-all select-none border ${
         isMultiSelected
-          ? 'bg-theme-accent/20 border-theme-accent/50 text-theme-text font-medium shadow-sm'
+          ? 'bg-theme-accent/15 border-theme-accent/30 text-theme-text font-medium shadow-xs'
           : isSelected
-          ? 'bg-theme-card border-theme-accent/50 text-theme-text font-medium shadow-sm'
+          ? 'bg-theme-card/90 border-white/[0.08] text-theme-text font-medium shadow-xs'
           : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover/40 border-transparent'
       }`}
     >

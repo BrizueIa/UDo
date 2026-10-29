@@ -280,7 +280,7 @@ export const TopBar: React.FC<Props> = ({
 
           {/* Window Controls (Native) */}
           {windowEnv.controlsSide === 'right' && (
-            <div className="pl-1 sm:pl-2 ml-1 border-l border-theme-border/60 flex items-center">
+            <div className="pl-1 sm:pl-2 ml-1 border-l border-white/[0.06] flex items-center">
               <TrafficLights showMinMax={windowEnv.showMinMax} styleMode="native" />
             </div>
           )}
