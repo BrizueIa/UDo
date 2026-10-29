@@ -230,11 +230,18 @@ export const FolderItemRow: React.FC<Props> = ({
           ? 'bg-theme-accent/25 border-theme-accent ring-2 ring-theme-accent/60 scale-[1.01] shadow-md'
           : isMultiSelected
           ? 'bg-theme-accent/15 border-theme-accent/30 text-theme-text font-medium shadow-xs'
-          : isSelected
-          ? 'bg-theme-card/90 border-white/[0.08] text-theme-text font-medium shadow-xs'
+          : isSelected || hasActiveNote
+          ? 'bg-theme-card/90 border-white/[0.08] text-theme-text font-medium shadow-xs pl-3'
           : 'hover:bg-theme-hover/50 text-theme-text border-transparent'
       }`}
     >
+      {/* Subtle Active Folder Left Accent Bar */}
+      {(isSelected || hasActiveNote) && (
+        <span
+          className="absolute left-1 top-2 bottom-2 w-[2.5px] rounded-full bg-theme-accent shadow-[0_0_5px_var(--color-accent)] z-20"
+          aria-hidden="true"
+        />
+      )}
       {/* Drop position indicator lines for folder reordering */}
       {dropPosition === 'before' && (
         <div className="absolute top-0 left-1 right-1 h-0.5 bg-theme-accent rounded-full z-30 shadow-xs" />
@@ -269,22 +276,13 @@ export const FolderItemRow: React.FC<Props> = ({
         </span>
       </button>
 
-      {/* Right container: Active Folder Dot + Folder Actions */}
-      <div className="flex items-center space-x-1.5 flex-shrink-0">
-        {hasActiveNote && (
-          <span
-            className="w-2 h-2 rounded-full bg-theme-accent shadow-[0_0_8px_var(--color-accent)] ring-1 ring-theme-accent/30 shrink-0"
-            title={t('nav.activeNoteProject')}
-          />
-        )}
-
-        {/* Folder Actions (visible on hover or when selected) */}
-        <div
-          onClick={(e) => e.stopPropagation()}
-          className={`flex items-center space-x-0.5 transition-opacity ${
-            isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-          }`}
-        >
+      {/* Folder Actions (visible on hover or when selected) */}
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className={`flex items-center space-x-0.5 transition-opacity flex-shrink-0 ${
+          isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        }`}
+      >
         <button
           onClick={onAddNote}
           className="p-1 text-theme-muted hover:text-theme-accent rounded"
@@ -337,7 +335,6 @@ export const FolderItemRow: React.FC<Props> = ({
             <Trash2 size={12} />
           </button>
         )}
-        </div>
       </div>
     </div>
   );

@@ -230,11 +230,18 @@ export const SubjectItemRow: React.FC<Props> = ({
         className={`group relative w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer select-none border ${
           isDragOver
             ? 'bg-theme-accent/25 ring-2 ring-theme-accent/70 border-theme-accent scale-[1.02] shadow-md text-theme-text font-bold'
-            : isSelected
-            ? 'bg-theme-card/90 border-white/[0.08] shadow-xs text-theme-text font-medium'
+            : isSelected || hasActiveNote
+            ? 'bg-theme-card/90 border-white/[0.08] shadow-xs text-theme-text font-medium pl-3.5'
             : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover/40 border-transparent'
         }`}
       >
+        {/* Subtle Active Project Left Accent Bar */}
+        {(isSelected || hasActiveNote) && (
+          <span
+            className="absolute left-1 top-2.5 bottom-2.5 w-[2.5px] rounded-full bg-theme-accent shadow-[0_0_5px_var(--color-accent)] z-20"
+            aria-hidden="true"
+          />
+        )}
         <div className="relative z-10 flex items-center space-x-2.5 min-w-0 flex-1">
           <span
             className="w-2.5 h-2.5 rounded-[3.5px] flex-shrink-0 shadow-sm transition-transform group-hover:scale-110"
@@ -298,13 +305,6 @@ export const SubjectItemRow: React.FC<Props> = ({
               </button>
             )}
           </div>
-
-          {hasActiveNote && (
-            <span
-              className="w-2 h-2 rounded-full bg-theme-accent shadow-[0_0_8px_var(--color-accent)] ring-1 ring-theme-accent/30 shrink-0"
-              title={t('nav.activeNoteProject')}
-            />
-          )}
 
           {count > 0 && !isDeleting && (
             <span
