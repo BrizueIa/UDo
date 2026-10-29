@@ -10,6 +10,7 @@ interface Props {
   folders: FolderItem[];
   selectedSubjectId: string;
   selectedFolderId: string;
+  isVaultUnlocked?: boolean;
   timer: FocusTimerState;
   onSelectSubject: (id: string) => void;
   onSelectFolder: (id: string) => void;
@@ -26,6 +27,7 @@ export const AppWidgetView: React.FC<Props> = ({
   folders,
   selectedSubjectId,
   selectedFolderId,
+  isVaultUnlocked = false,
   timer,
   onSelectSubject,
   onSelectFolder,
@@ -45,6 +47,7 @@ export const AppWidgetView: React.FC<Props> = ({
         folders={folders}
         selectedSubjectId={selectedSubjectId}
         selectedFolderId={selectedFolderId}
+        isVaultUnlocked={isVaultUnlocked}
         timer={timer}
         onSelectSubject={onSelectSubject}
         onSelectFolder={onSelectFolder}

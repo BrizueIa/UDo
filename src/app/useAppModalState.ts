@@ -7,10 +7,12 @@ export function useAppModalState() {
   const [isShortcutsModalOpen, setIsShortcutsModalOpen] = useState(false);
   const [isQuickAddOpen, setIsQuickAddOpen] = useState(false);
   const [isTimerModalOpen, setIsTimerModalOpen] = useState(false);
+  const [isTrashModalOpen, setIsTrashModalOpen] = useState(false);
   const [activeSketch, setActiveSketch] = useState<SketchItem | null>(null);
 
   const handleEscapeModals = () => {
-    if (isQuickAddOpen) setIsQuickAddOpen(false);
+    if (isTrashModalOpen) setIsTrashModalOpen(false);
+    else if (isQuickAddOpen) setIsQuickAddOpen(false);
     else if (isTimerModalOpen) setIsTimerModalOpen(false);
     else if (isSearchPaletteOpen) setIsSearchPaletteOpen(false);
     else if (isShortcutsModalOpen) setIsShortcutsModalOpen(false);
@@ -30,6 +32,8 @@ export function useAppModalState() {
     setIsQuickAddOpen,
     isTimerModalOpen,
     setIsTimerModalOpen,
+    isTrashModalOpen,
+    setIsTrashModalOpen,
     activeSketch,
     setActiveSketch,
     handleEscapeModals,

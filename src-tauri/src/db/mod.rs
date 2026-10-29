@@ -23,7 +23,7 @@ impl DatabaseManager {
         Ok(manager)
     }
 
-    fn get_connection(&self) -> Result<Connection> {
+    pub fn get_connection(&self) -> Result<Connection> {
         let conn = Connection::open(&self.db_path)?;
         conn.execute_batch(
             "PRAGMA foreign_keys = ON; PRAGMA journal_mode = WAL; PRAGMA busy_timeout = 5000; PRAGMA synchronous = NORMAL;",
@@ -35,16 +35,18 @@ impl DatabaseManager {
         let conn = self.get_connection()?;
         
         let mut subjects_stmt = conn.prepare(
-            "SELECT id, name, color, icon, sort_order FROM subjects ORDER BY sort_order ASC",
+            "SELECT id, name, color, icon, sort_order, is_private FROM subjects ORDER BY sort_order ASC",
         )?;
         let subjects = subjects_stmt
             .query_map([], |row| {
+                let is_priv: i32 = row.get(5).unwrap_or(0);
                 Ok(SubjectItem {
                     id: row.get(0)?,
                     name: row.get(1)?,
                     color: row.get(2)?,
                     icon: row.get(3)?,
                     order: row.get(4)?,
+                    is_private: is_priv != 0,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -74,9 +76,9 @@ impl DatabaseManager {
         })
     }
 
-    pub fn search_notes(&self, query: &str) -> Result<Vec<NoteItem>> {
+    pub fn search_notes(&self, query: &str, include_private: bool) -> Result<Vec<NoteItem>> {
         let conn = self.get_connection()?;
-        notes_repo::search_notes(&conn, query)
+        notes_repo::search_notes(&conn, query, include_private)
     }
 
     pub fn save_note(&self, note: &NoteItem) -> Result<()> {
@@ -89,17 +91,65 @@ impl DatabaseManager {
         notes_repo::delete_note(&conn, id)
     }
 
-    pub fn save_subject(&self, subject: &SubjectItem) -> Result<()> {
+    pub fn get_deleted_notes(&self, include_private: bool) -> Result<Vec<NoteItem>> {
+        let conn = self.get_connection()?;
+        notes_repo::get_deleted_notes(&conn, include_private)
+    }
+
+    pub fn restore_note(&self, id: &str) -> Result<()> {
+        let conn = self.get_connection()?;
+        notes_repo::restore_note(&conn, id)
+    }
+
+    pub fn restore_notes_batch(&self, ids: &[String]) -> Result<()> {
+        let conn = self.get_connection()?;
+        notes_repo::restore_notes_batch(&conn, ids)
+    }
+
+    pub fn permanently_delete_notes(&self, ids: &[String]) -> Result<()> {
+        let conn = self.get_connection()?;
+        notes_repo::permanently_delete_notes(&conn, ids)
+    }
+
+    pub fn empty_trash(&self, include_private: bool) -> Result<()> {
+        let conn = self.get_connection()?;
+        notes_repo::empty_trash(&conn, include_private)
+    }
+
+    pub fn get_setting(&self, key: &str) -> Result<Option<String>> {
+        let conn = self.get_connection()?;
+        let mut stmt = conn.prepare("SELECT value FROM app_settings WHERE key = ?1")?;
+        let mut rows = stmt.query(params![key])?;
+        if let Some(row) = rows.next()? {
+            Ok(Some(row.get(0)?))
+        } else {
+            Ok(None)
+        }
+    }
+
+    pub fn set_setting(&self, key: &str, value: &str) -> Result<()> {
         let conn = self.get_connection()?;
         conn.execute(
-            "INSERT INTO subjects (id, name, color, icon, sort_order)
-             VALUES (?1, ?2, ?3, ?4, ?5)
+            "INSERT INTO app_settings (key, value) VALUES (?1, ?2)
+             ON CONFLICT(key) DO UPDATE SET value=excluded.value;",
+            params![key, value],
+        )?;
+        Ok(())
+    }
+
+    pub fn save_subject(&self, subject: &SubjectItem) -> Result<()> {
+        let conn = self.get_connection()?;
+        let is_priv = if subject.is_private { 1 } else { 0 };
+        conn.execute(
+            "INSERT INTO subjects (id, name, color, icon, sort_order, is_private)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)
              ON CONFLICT(id) DO UPDATE SET
              name=excluded.name,
              color=excluded.color,
              icon=excluded.icon,
-             sort_order=excluded.sort_order;",
-            params![subject.id, subject.name, subject.color, subject.icon, subject.order],
+             sort_order=excluded.sort_order,
+             is_private=excluded.is_private;",
+            params![subject.id, subject.name, subject.color, subject.icon, subject.order, is_priv],
         )?;
         Ok(())
     }

@@ -12,6 +12,7 @@ interface Props {
   notes: NoteItem[];
   subjects: SubjectItem[];
   folders: FolderItem[];
+  isVaultUnlocked?: boolean;
   onClose: () => void;
   onSelectNote: (noteId: string, subjectId: string) => void;
 }
@@ -22,6 +23,7 @@ export const CommandPalette: React.FC<Props> = ({
   notes,
   subjects,
   folders,
+  isVaultUnlocked = false,
   onClose,
   onSelectNote,
 }) => {
@@ -41,13 +43,17 @@ export const CommandPalette: React.FC<Props> = ({
   useEffect(() => {
     let isCancelled = false;
     const trimmed = query.trim();
+    const privateSubIds = new Set(subjects.filter((s) => s.isPrivate).map((s) => s.id));
+    const allowedNotes = isVaultUnlocked
+      ? notes
+      : notes.filter((n) => !privateSubIds.has(n.subjectId));
 
     if (!trimmed) {
-      setResults(notes.slice(0, 10));
+      setResults(allowedNotes.slice(0, 10));
       return;
     }
 
-    api.searchNotes(trimmed).then((res) => {
+    api.searchNotes(trimmed, isVaultUnlocked).then((res) => {
       if (!isCancelled) {
         setResults(res);
         setSelectedIndex(0);
@@ -57,7 +63,7 @@ export const CommandPalette: React.FC<Props> = ({
     return () => {
       isCancelled = true;
     };
-  }, [query, notes]);
+  }, [query, notes, subjects, isVaultUnlocked]);
 
   if (!isOpen) return null;
 

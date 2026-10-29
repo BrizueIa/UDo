@@ -83,6 +83,18 @@ pub struct SubjectItem {
     pub color: String,
     pub icon: Option<String>,
     pub order: i32,
+    #[serde(rename = "isPrivate", default)]
+    pub is_private: bool,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BackupInfo {
+    pub filename: String,
+    pub path: String,
+    #[serde(rename = "sizeBytes")]
+    pub size_bytes: u64,
+    #[serde(rename = "createdAt")]
+    pub created_at: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

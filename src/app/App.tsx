@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { ViewFilter, SketchItem } from '../shared/types';
 import { useThemeManager } from '../shared/hooks/useThemeManager';
 import { useWorkspaceState } from '../shared/hooks/useWorkspaceState';
@@ -9,6 +9,7 @@ import { useTrayEvents } from '../shared/hooks/useTrayEvents';
 import { useSidebarCollapse } from '../shared/hooks/useSidebarCollapse';
 import { useAudioState } from '../shared/hooks/useAudioState';
 import { useAppModalState } from './useAppModalState';
+import { useVaultState } from '../features/private-vault/hooks/useVaultState';
 import { api } from '../shared/api/ipc';
 import {
   playTaskCompleteSound,
@@ -35,8 +36,22 @@ export const App: React.FC = () => {
     handleMoveNoteToSubject, handleMoveFolderToSubject, handleConvertFolderToSubject,
     handleAddFolder, handleUpdateFolder, handleDeleteFolder, handleToggleFolderExpand,
     handleAddSubject, handleUpdateSubject, handleDeleteSubject, getSubjectNoteCount,
-    handleWorkspaceUndo, handleWorkspaceRedo,
+    handleWorkspaceUndo, handleWorkspaceRedo, reloadWorkspaceData,
+    handleBatchDeleteNotes, handleBatchToggleCompleteNotes, handleBatchMoveNotesToFolder,
+    handleToggleSubjectPrivate, handleDuplicateNote,
   } = useWorkspaceState();
+
+  const vault = useVaultState();
+
+  useEffect(() => {
+    if (!vault.isVaultUnlocked) {
+      const selectedSub = subjects.find((s) => s.id === selectedSubjectId);
+      if (selectedSub?.isPrivate) {
+        const firstPublic = subjects.find((s) => !s.isPrivate);
+        if (firstPublic) setSelectedSubjectId(firstPublic.id);
+      }
+    }
+  }, [vault.isVaultUnlocked, subjects, selectedSubjectId, setSelectedSubjectId]);
 
   const [filter, setFilter] = useState<ViewFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -184,6 +199,7 @@ export const App: React.FC = () => {
         folders={folders}
         selectedSubjectId={selectedSubjectId}
         selectedFolderId={selectedFolderId}
+        isVaultUnlocked={vault.isVaultUnlocked}
         timer={focusTimer}
         onSelectSubject={setSelectedSubjectId}
         onSelectFolder={setSelectedFolderId}
@@ -222,10 +238,7 @@ export const App: React.FC = () => {
         isZenMode={isZenMode}
         onVolumeChange={handleVolumeChange}
         onSearchChange={setSearchQuery}
-        onOpenSearchPalette={(q) => {
-          modalState.setSearchPaletteInitialQuery(q || '');
-          modalState.setIsSearchPaletteOpen(true);
-        }}
+        onOpenSearchPalette={(q) => { modalState.setSearchPaletteInitialQuery(q || ''); modalState.setIsSearchPaletteOpen(true); }}
         onFilterChange={setFilter}
         onSelectTheme={setCurrentTheme}
         onSelectAccent={setCurrentAccent}
@@ -241,6 +254,12 @@ export const App: React.FC = () => {
         onOpenTimerModal={() => modalState.setIsTimerModalOpen(true)}
         showBreadcrumbs={showBreadcrumbs}
         onToggleBreadcrumbs={handleToggleBreadcrumbs}
+        hasVaultPin={vault.hasPin}
+        isVaultUnlocked={vault.isVaultUnlocked}
+        onOpenPinSetup={vault.openUnlockOrSetup}
+        onOpenPinChange={vault.openChangePin}
+        onLockVault={vault.lockVault}
+        onWorkspaceReloaded={reloadWorkspaceData}
       />
 
       <main className="flex-1 flex overflow-hidden">
@@ -251,6 +270,11 @@ export const App: React.FC = () => {
             selectedSubjectId={selectedSubjectId}
             activeNoteSubjectId={currentNote?.subjectId}
             isFocused={activeColumn === 1}
+            isVaultUnlocked={vault.isVaultUnlocked}
+            onToggleVault={vault.handleToggleVault}
+            onOpenTrash={() => modalState.setIsTrashModalOpen(true)}
+            onToggleSubjectPrivate={handleToggleSubjectPrivate}
+            onAddFolderToSubject={(subjId) => handleAddFolder(t('folders.addFolder'), subjId)}
             onSelectSubject={(id) => { setSelectedSubjectId(id); setActiveColumn(1); }}
             onAddSubject={handleAddSubject}
             onUpdateSubject={handleUpdateSubject}
@@ -287,6 +311,10 @@ export const App: React.FC = () => {
             onMoveNoteToFolder={handleMoveNoteToFolder}
             onReorderOrMoveNote={handleReorderOrMoveNote}
             onReorderFolder={handleReorderFolder}
+            onBatchDeleteNotes={handleBatchDeleteNotes}
+            onBatchToggleCompleteNotes={handleBatchToggleCompleteNotes}
+            onBatchMoveNotesToFolder={handleBatchMoveNotesToFolder}
+            onDuplicateNote={handleDuplicateNote}
           />
         )}
 
@@ -344,21 +372,17 @@ export const App: React.FC = () => {
         folders={folders}
         selectedSubjectId={selectedSubjectId}
         selectedFolderId={selectedFolderId}
-        activeSketch={modalState.activeSketch}
-        isSearchPaletteOpen={modalState.isSearchPaletteOpen}
-        searchPaletteInitialQuery={modalState.searchPaletteInitialQuery}
-        isQuickAddOpen={modalState.isQuickAddOpen}
-        isTimerModalOpen={modalState.isTimerModalOpen}
-        isShortcutsModalOpen={modalState.isShortcutsModalOpen}
+        modalState={modalState}
+        vault={vault}
         focusTimer={focusTimer}
-        onCloseSketch={() => modalState.setActiveSketch(null)}
         onSaveSketch={handleSaveSketch}
-        onCloseSearchPalette={() => modalState.setIsSearchPaletteOpen(false)}
-        onSelectNoteFromPalette={(noteId, subjectId) => { setSelectedSubjectId(subjectId); setSelectedNoteId(noteId); setActiveColumn(3); }}
-        onCloseQuickAdd={() => modalState.setIsQuickAddOpen(false)}
+        onSelectNoteFromPalette={(noteId, subjectId) => {
+          setSelectedSubjectId(subjectId);
+          setSelectedNoteId(noteId);
+          setActiveColumn(3);
+        }}
         onQuickAddSave={handleQuickAddSave}
-        onCloseTimerModal={() => modalState.setIsTimerModalOpen(false)}
-        onCloseShortcutsModal={() => modalState.setIsShortcutsModalOpen(false)}
+        onNotesRestored={reloadWorkspaceData}
       />
     </div>
   );

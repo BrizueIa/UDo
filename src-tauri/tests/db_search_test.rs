@@ -29,13 +29,13 @@ fn test_database_init_and_search() {
     db.save_note(&test_calculo_note).expect("Failed to save test calculo note");
 
     // Verify diacritic-insensitive search ("calculo" finds "Cálculo", "diseno" finds "Diseños")
-    let results_calculo = db.search_notes("calculo").expect("Search 'calculo' failed");
+    let results_calculo = db.search_notes("calculo", true).expect("Search 'calculo' failed");
     assert!(
         results_calculo.iter().any(|n| n.content.contains("Cálculo") || n.title.contains("Cálculo")),
         "Search for 'calculo' should find note with 'Cálculo'"
     );
 
-    let results_diseno = db.search_notes("diseno").expect("Search 'diseno' failed");
+    let results_diseno = db.search_notes("diseno", true).expect("Search 'diseno' failed");
     assert!(
         results_diseno.iter().any(|n| n.title.contains("Diseños") || n.content.contains("Diseños")),
         "Search for 'diseno' should find note with 'Diseños'"
@@ -69,7 +69,7 @@ fn test_database_init_and_search() {
 
     db.save_note(&new_note).expect("Failed to save note");
 
-    let search_robotics = db.search_notes("Quantum").expect("Search Quantum failed");
+    let search_robotics = db.search_notes("Quantum", true).expect("Search Quantum failed");
     assert!(
         search_robotics.iter().any(|n| n.id == new_note.id),
         "Should find new note by title or tag via FTS5"
@@ -77,7 +77,7 @@ fn test_database_init_and_search() {
 
     // Soft delete and verify excluded from search
     db.delete_note(&new_note.id).expect("Failed to delete note");
-    let search_after_delete = db.search_notes("Quantum").expect("Search after delete failed");
+    let search_after_delete = db.search_notes("Quantum", true).expect("Search after delete failed");
     assert!(
         !search_after_delete.iter().any(|n| n.id == new_note.id),
         "Soft-deleted note should be excluded from search"

@@ -23,6 +23,7 @@ interface Props {
   folders: FolderItem[];
   selectedSubjectId: string;
   selectedFolderId: string;
+  isVaultUnlocked?: boolean;
   timer?: FocusTimerState;
   onSelectSubject: (id: string) => void;
   onSelectFolder: (id: string) => void;
@@ -38,6 +39,7 @@ export const FloatingWidget: React.FC<Props> = ({
   folders,
   selectedSubjectId,
   selectedFolderId,
+  isVaultUnlocked = false,
   timer,
   onSelectSubject,
   onSelectFolder,
@@ -47,9 +49,10 @@ export const FloatingWidget: React.FC<Props> = ({
   onRestoreFullApp,
 }) => {
   const { t } = useTranslation();
+  const visibleSubjects = isVaultUnlocked ? subjects : subjects.filter((s) => !s.isPrivate);
   const [isExpanded, setIsExpanded] = useState(false);
   const [quickInput, setQuickInput] = useState('');
-  const [activeSubjectId, setActiveSubjectId] = useState(selectedSubjectId || subjects[0]?.id || '');
+  const [activeSubjectId, setActiveSubjectId] = useState(selectedSubjectId || visibleSubjects[0]?.id || '');
   const [activeFolderId, setActiveFolderId] = useState(selectedFolderId || folders[0]?.id || '');
 
   const [showSubjectMenu, setShowSubjectMenu] = useState(false);
@@ -58,7 +61,7 @@ export const FloatingWidget: React.FC<Props> = ({
   const subjectMenuRef = useRef<HTMLDivElement>(null);
   const folderMenuRef = useRef<HTMLDivElement>(null);
 
-  const currentSubject = subjects.find((s) => s.id === activeSubjectId) || subjects[0];
+  const currentSubject = visibleSubjects.find((s) => s.id === activeSubjectId) || visibleSubjects[0];
   const projectFolders = folders.filter((f) => f.subjectId === (currentSubject?.id || activeSubjectId));
   const currentFolder = projectFolders.find((f) => f.id === activeFolderId) || projectFolders[0];
 

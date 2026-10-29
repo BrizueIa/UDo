@@ -55,6 +55,12 @@ interface Props {
   onToggleFolders?: () => void;
   onToggleZenMode?: () => void;
   onOpenTimerModal?: () => void;
+  hasVaultPin?: boolean;
+  isVaultUnlocked?: boolean;
+  onOpenPinSetup?: () => void;
+  onOpenPinChange?: () => void;
+  onLockVault?: () => void;
+  onWorkspaceReloaded?: () => void;
 }
 
 export const TopBar: React.FC<Props> = ({
@@ -89,6 +95,12 @@ export const TopBar: React.FC<Props> = ({
   onToggleFolders,
   onToggleZenMode,
   onOpenTimerModal,
+  hasVaultPin,
+  isVaultUnlocked,
+  onOpenPinSetup,
+  onOpenPinChange,
+  onLockVault,
+  onWorkspaceReloaded,
 }) => {
   const { t } = useTranslation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -292,6 +304,12 @@ export const TopBar: React.FC<Props> = ({
         onToggleAudioMute={onToggleAudioMute}
         showBreadcrumbs={showBreadcrumbs}
         onToggleBreadcrumbs={onToggleBreadcrumbs}
+        hasVaultPin={hasVaultPin}
+        isVaultUnlocked={isVaultUnlocked}
+        onOpenPinSetup={onOpenPinSetup}
+        onOpenPinChange={onOpenPinChange}
+        onLockVault={onLockVault}
+        onWorkspaceReloaded={onWorkspaceReloaded}
       />
     </header>
   );

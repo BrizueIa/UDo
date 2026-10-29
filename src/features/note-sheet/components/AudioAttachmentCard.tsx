@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NoteAttachment } from '../../../shared/types';
 import { attachmentsApi } from '../../../shared/api/attachmentsApi';
-import { Play, Pause, X, ExternalLink } from 'lucide-react';
+import { Play, Pause, X, ExternalLink, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useContextMenu } from '../../../shared/ui/context-menu';
 
 interface Props {
   attachment: NoteAttachment;
@@ -11,6 +12,7 @@ interface Props {
 
 export const AudioAttachmentCard: React.FC<Props> = ({ attachment, onRemove }) => {
   const { t } = useTranslation();
+  const { openContextMenu } = useContextMenu();
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState<number>(() => {
@@ -94,8 +96,30 @@ export const AudioAttachmentCard: React.FC<Props> = ({ attachment, onRemove }) =
     onRemove(attachment.id);
   };
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    openContextMenu(e, [
+      {
+        id: 'open-native',
+        label: t('attachments.openWithSystemApp') || 'Abrir con aplicación del sistema',
+        icon: <ExternalLink size={14} />,
+        onClick: handleOpenExternal,
+      },
+      { id: 'sep-1', label: '', separator: true },
+      {
+        id: 'delete-audio',
+        label: t('voiceRecorder.deleteRecording') || 'Eliminar grabación',
+        icon: <Trash2 size={14} />,
+        danger: true,
+        onClick: handleDelete,
+      },
+    ]);
+  };
+
   return (
-    <div className="group relative flex items-center space-x-2.5 px-3 py-2 rounded-xl bg-theme-card/60 hover:bg-theme-card border border-white/[0.06] hover:border-white/[0.14] transition-all shadow-xs hover:shadow-md w-72 select-none">
+    <div
+      onContextMenu={handleContextMenu}
+      className="group relative flex items-center space-x-2.5 px-3 py-2 rounded-xl bg-theme-card/60 hover:bg-theme-card border border-white/[0.06] hover:border-white/[0.14] transition-all shadow-xs hover:shadow-md w-72 select-none"
+    >
       {audioSrc && (
         <audio
           ref={audioRef}

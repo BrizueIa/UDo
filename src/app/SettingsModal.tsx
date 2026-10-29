@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Keyboard,
   Check,
+  Shield,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ThemeId, AccentColor, CustomThemeDefinition } from '../shared/types';
@@ -14,6 +15,7 @@ import { ThemeSettingsPanel } from '../shared/ui/ThemeSettingsPanel';
 import { UDoLogo } from '../shared/ui/UDoLogo';
 import { AudioSettingsTab } from './AudioSettingsTab';
 import { ShortcutsSettingsTab } from './ShortcutsSettingsTab';
+import { DataSecuritySettingsTab } from './DataSecuritySettingsTab';
 
 interface Props {
   isOpen: boolean;
@@ -32,7 +34,13 @@ interface Props {
   showBreadcrumbs?: boolean;
   onToggleBreadcrumbs?: (show: boolean) => void;
   onOpenShortcuts?: () => void;
-  initialTab?: 'appearance' | 'audio' | 'shortcuts' | 'language';
+  initialTab?: 'appearance' | 'audio' | 'shortcuts' | 'language' | 'dataSecurity';
+  hasVaultPin?: boolean;
+  isVaultUnlocked?: boolean;
+  onOpenPinSetup?: () => void;
+  onOpenPinChange?: () => void;
+  onLockVault?: () => void;
+  onWorkspaceReloaded?: () => void;
 }
 
 export const SettingsModal: React.FC<Props> = ({
@@ -52,9 +60,15 @@ export const SettingsModal: React.FC<Props> = ({
   showBreadcrumbs = true,
   onToggleBreadcrumbs,
   initialTab = 'appearance',
+  hasVaultPin = false,
+  isVaultUnlocked = false,
+  onOpenPinSetup = () => {},
+  onOpenPinChange = () => {},
+  onLockVault = () => {},
+  onWorkspaceReloaded,
 }) => {
   const { t, i18n } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'appearance' | 'audio' | 'shortcuts' | 'language'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'appearance' | 'audio' | 'shortcuts' | 'language' | 'dataSecurity'>(initialTab);
 
   useEffect(() => {
     if (isOpen) setActiveTab(initialTab);
@@ -85,6 +99,7 @@ export const SettingsModal: React.FC<Props> = ({
 
   const navItems = [
     { id: 'appearance', label: t('settings.appearanceTab'), icon: <Palette size={15} /> },
+    { id: 'dataSecurity', label: t('settings.dataSecurityTab') || 'Datos y Bóveda', icon: <Shield size={15} /> },
     { id: 'audio', label: t('settings.audioTab'), icon: <Volume2 size={15} /> },
     { id: 'shortcuts', label: t('settings.shortcutsTab'), icon: <Keyboard size={15} /> },
     { id: 'language', label: t('settings.languageTab'), icon: <Globe size={15} /> },
@@ -257,6 +272,17 @@ export const SettingsModal: React.FC<Props> = ({
                   </button>
                 </div>
               </div>
+            )}
+
+            {activeTab === 'dataSecurity' && (
+              <DataSecuritySettingsTab
+                hasVaultPin={hasVaultPin}
+                isVaultUnlocked={isVaultUnlocked}
+                onOpenPinSetup={onOpenPinSetup}
+                onOpenPinChange={onOpenPinChange}
+                onLockVault={onLockVault}
+                onWorkspaceReloaded={onWorkspaceReloaded}
+              />
             )}
           </div>
         </div>

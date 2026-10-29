@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { CheckSquare, Square } from 'lucide-react';
+import { CheckSquare, Square, Scissors, Copy, Clipboard, Search } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NoteItem, SketchItem } from '../../../shared/types';
 import { buildDiacriticRegex } from '../../../shared/utils/diacritics';
 import { hasClipboardImageContent, processImageDropOrPaste } from '../../../shared/utils/imageClipboard';
 import { parseInlineRichText, RichTextParserOptions } from '../utils/inlineRichTextParser';
 import { RichTextToolbar } from './RichTextToolbar';
+import { useContextMenu } from '../../../shared/ui/context-menu';
 
 interface Props {
   content: string;
@@ -41,7 +42,68 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
   onAttachSketches,
 }) => {
   const { t } = useTranslation();
+  const { openContextMenu } = useContextMenu();
   const [selectionCoords, setSelectionCoords] = useState<{ x: number; y: number } | null>(null);
+
+  const handleEditorContextMenu = (e: React.MouseEvent) => {
+    openContextMenu(e, [
+      {
+        id: 'cut',
+        label: t('editor.cut') || 'Cortar',
+        icon: <Scissors size={14} />,
+        shortcut: 'Ctrl+X',
+        onClick: () => document.execCommand('cut'),
+      },
+      {
+        id: 'copy',
+        label: t('editor.copy') || 'Copiar',
+        icon: <Copy size={14} />,
+        shortcut: 'Ctrl+C',
+        onClick: () => document.execCommand('copy'),
+      },
+      {
+        id: 'paste',
+        label: t('editor.paste') || 'Pegar',
+        icon: <Clipboard size={14} />,
+        shortcut: 'Ctrl+V',
+        onClick: async () => {
+          try {
+            const text = await navigator.clipboard.readText();
+            if (text && textareaRef.current) {
+              const el = textareaRef.current;
+              const start = el.selectionStart;
+              const end = el.selectionEnd;
+              const next = content.substring(0, start) + text + content.substring(end);
+              onChangeContent(next);
+            }
+          } catch {}
+        },
+      },
+      { id: 'sep-1', label: '', separator: true },
+      {
+        id: 'insert-task',
+        label: t('editor.insertTask') || 'Insertar Tarea',
+        icon: <CheckSquare size={14} />,
+        onClick: () => {
+          if (textareaRef.current) {
+            const el = textareaRef.current;
+            const start = el.selectionStart;
+            const next = content.substring(0, start) + '\n- [ ] ' + content.substring(start);
+            onChangeContent(next);
+          }
+        },
+      },
+      {
+        id: 'find',
+        label: t('editor.find') || 'Buscar en la nota',
+        icon: <Search size={14} />,
+        shortcut: 'Ctrl+F',
+        onClick: () => {
+          window.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', ctrlKey: true, bubbles: true }));
+        },
+      },
+    ]);
+  };
 
   // Calculate total matches in content (diacritic-insensitive)
   useEffect(() => {
@@ -299,6 +361,7 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
             }
           }
         }}
+        onContextMenu={handleEditorContextMenu}
         placeholder={t('note.markdownPlaceholder')}
         style={{
           backgroundColor: 'var(--color-bg-sidebar)',

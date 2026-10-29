@@ -8,8 +8,13 @@ pub fn get_initial_data(db: State<'_, DatabaseManager>) -> Result<InitialData, S
 }
 
 #[tauri::command]
-pub fn search_notes(db: State<'_, DatabaseManager>, query: String) -> Result<Vec<NoteItem>, String> {
-    db.search_notes(&query).map_err(|e| e.to_string())
+pub fn search_notes(
+    db: State<'_, DatabaseManager>,
+    query: String,
+    include_private: Option<bool>,
+) -> Result<Vec<NoteItem>, String> {
+    db.search_notes(&query, include_private.unwrap_or(false))
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -21,6 +26,39 @@ pub fn save_note(db: State<'_, DatabaseManager>, note: NoteItem) -> Result<NoteI
 #[tauri::command]
 pub fn delete_note(db: State<'_, DatabaseManager>, id: String) -> Result<(), String> {
     db.delete_note(&id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn get_deleted_notes(
+    db: State<'_, DatabaseManager>,
+    include_private: Option<bool>,
+) -> Result<Vec<NoteItem>, String> {
+    db.get_deleted_notes(include_private.unwrap_or(false))
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn restore_note(db: State<'_, DatabaseManager>, id: String) -> Result<(), String> {
+    db.restore_note(&id).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn restore_notes_batch(db: State<'_, DatabaseManager>, ids: Vec<String>) -> Result<(), String> {
+    db.restore_notes_batch(&ids).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn permanently_delete_notes(db: State<'_, DatabaseManager>, ids: Vec<String>) -> Result<(), String> {
+    db.permanently_delete_notes(&ids).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn empty_trash(
+    db: State<'_, DatabaseManager>,
+    include_private: Option<bool>,
+) -> Result<(), String> {
+    db.empty_trash(include_private.unwrap_or(false))
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]

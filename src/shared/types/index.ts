@@ -106,6 +106,14 @@ export interface SubjectItem {
   color: string; // Hex or tailwind color class
   icon?: string;
   order: number;
+  isPrivate?: boolean;
+}
+
+export interface BackupInfo {
+  filename: string;
+  path: string;
+  sizeBytes: number;
+  createdAt: string;
 }
 
 export interface SearchResult {

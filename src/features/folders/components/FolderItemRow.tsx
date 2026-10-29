@@ -28,6 +28,7 @@ interface Props {
   onDeleteFolder: () => void;
   onMoveNoteToFolder?: (noteId: string, folderId: string) => void;
   onReorderFolder?: (draggedFolderId: string, targetFolderId: string, position: 'before' | 'after') => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }
 
 export const FolderItemRow: React.FC<Props> = ({
@@ -42,6 +43,7 @@ export const FolderItemRow: React.FC<Props> = ({
   onDeleteFolder,
   onMoveNoteToFolder,
   onReorderFolder,
+  onContextMenu,
 }) => {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
@@ -108,6 +110,17 @@ export const FolderItemRow: React.FC<Props> = ({
         }, 0);
       }
       return;
+    }
+
+    const noteIdsRaw = e.dataTransfer.getData('application/udo-note-ids');
+    if (noteIdsRaw && onMoveNoteToFolder) {
+      try {
+        const ids: string[] = JSON.parse(noteIdsRaw);
+        ids.forEach((id) => onMoveNoteToFolder(id, folder.id));
+        return;
+      } catch {
+        // fallback
+      }
     }
 
     const noteId = e.dataTransfer.getData('application/udo-note-id') || e.dataTransfer.getData('text/plain');
@@ -187,6 +200,7 @@ export const FolderItemRow: React.FC<Props> = ({
       draggable
       onDragStart={handleDragStart}
       onClick={onSelectFolder}
+      onContextMenu={onContextMenu}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}

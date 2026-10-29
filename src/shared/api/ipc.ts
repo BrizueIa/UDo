@@ -59,11 +59,11 @@ export const api = {
     return getLocalState();
   },
 
-  async searchNotes(query: string): Promise<NoteItem[]> {
+  async searchNotes(query: string, includePrivate: boolean = false): Promise<NoteItem[]> {
     if (isTauri) {
       try {
         const { invoke } = await import('@tauri-apps/api/core');
-        return await invoke<NoteItem[]>('search_notes', { query });
+        return await invoke<NoteItem[]>('search_notes', { query, includePrivate });
       } catch (err) {
         console.warn('Tauri search_notes failed, falling back to local search', err);
       }
@@ -71,7 +71,11 @@ export const api = {
     const state = getLocalState();
     const q = normalizeDiacritics(query.trim());
     if (!q) return [];
+    const privateSubIds = new Set(
+      state.subjects.filter((s) => s.isPrivate).map((s) => s.id)
+    );
     return state.notes.filter((n) => {
+      if (!includePrivate && privateSubIds.has(n.subjectId)) return false;
       return (
         normalizeDiacritics(n.title).includes(q) ||
         normalizeDiacritics(n.content).includes(q) ||

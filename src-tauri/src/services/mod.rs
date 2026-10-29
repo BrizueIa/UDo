@@ -1,5 +1,7 @@
 pub mod attachments;
 pub mod native_audio;
+pub mod vault;
+pub mod backup;
 
 use tauri::AppHandle;
 use tauri_plugin_notification::NotificationExt;

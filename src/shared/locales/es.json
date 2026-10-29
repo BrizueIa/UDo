@@ -35,6 +35,8 @@
   "folders": {
     "addFolder": "Nueva Carpeta",
     "addNote": "Nueva Nota",
+    "collapseFolder": "Colapsar Carpeta",
+    "expandFolder": "Expandir Carpeta",
     "empty": "No hay carpetas en este proyecto todavía.",
     "noNotes": "No hay notas en esta carpeta",
     "deleteFolder": "Eliminar Carpeta",
@@ -44,6 +46,11 @@
   "note": {
     "titlePlaceholder": "Título de la nota...",
     "clickToEditTitle": "Haz clic para editar el título",
+    "markCompleted": "Marcar como Completada",
+    "markPending": "Marcar como Pendiente",
+    "duplicate": "Duplicar Nota",
+    "copyWikiLink": "Copiar [[Wiki-Link]]",
+    "delete": "Mover a la Papelera",
     "modified": "Modificado",
     "justNow": "Justo ahora",
     "today": "Hoy",
@@ -274,6 +281,7 @@
     "shortcutsTab": "Atajos de Teclado",
     "generalTab": "General",
     "languageTab": "Idioma",
+    "dataSecurityTab": "Datos y Bóveda",
     "customTab": "Personalizado",
     "languageTitle": "Idioma de la Aplicación",
     "languageDesc": "Selecciona el idioma principal de la interfaz de usuario.",
@@ -302,6 +310,10 @@
     "autoBackup": "Copias de seguridad diarias",
     "exportData": "Exportar Datos (JSON)",
     "importData": "Importar Datos",
+    "autostartTitle": "Iniciar UDo al encender el equipo",
+    "autostartDesc": "Abre UDo automáticamente en segundo plano al iniciar sesión",
+    "systemTab": "Inicio con el Sistema",
+    "loading": "Cargando...",
     "version": "Versión"
   },
   "attachments": {
@@ -375,5 +387,71 @@
     "clearFormatting": "Limpiar formato",
     "selectionActive": "Selección activa",
     "sampleText": "texto"
+  },
+  "batch": {
+    "selectedCount": "{{count}} seleccionadas",
+    "toggleComplete": "Completar / pendiente",
+    "moveToFolder": "Mover a carpeta...",
+    "deleteNotes": "Mover a papelera (Supr)",
+    "selectFolder": "Seleccionar carpeta",
+    "clear": "Deseleccionar (Escape)"
+  },
+  "editor": {
+    "cut": "Cortar",
+    "copy": "Copiar",
+    "paste": "Pegar",
+    "insertTask": "Insertar Tarea",
+    "find": "Buscar en la nota (Ctrl+F)"
+  },
+  "vault": {
+    "title": "Bóveda Privada",
+    "unlockTitle": "Desbloquear Bóveda Privada",
+    "setupTitle": "Configurar PIN de la Bóveda",
+    "changeTitle": "Cambiar PIN de la Bóveda",
+    "enterPin": "Ingresa tu PIN de 6 dígitos",
+    "enterNewPin": "Ingresa el nuevo PIN de 6 dígitos",
+    "confirmPin": "Confirma tu PIN de 6 dígitos",
+    "enterCurrentPin": "Ingresa tu PIN actual",
+    "pinMismatch": "Los PINs no coinciden",
+    "invalidPin": "PIN incorrecto",
+    "statusUnlocked": "Desbloqueada",
+    "statusLocked": "Protegida con PIN",
+    "noPinConfigured": "Sin PIN configurado",
+    "description": "Oculta proyectos y notas privadas con un PIN de 6 dígitos",
+    "privateProjects": "Proyectos Privados",
+    "lockNow": "Bloquear ahora",
+    "moveToVault": "Mover a Bóveda Privada",
+    "removeFromVault": "Quitar de Bóveda",
+    "changePin": "Cambiar PIN",
+    "setPin": "Configurar PIN",
+    "locked": "Bóveda Privada (Bloqueada)",
+    "unlocked": "Bóveda Privada (Abierta)"
+  },
+  "trash": {
+    "title": "Papelera de Reciclaje",
+    "noteCount": "{{count}} nota eliminada",
+    "noteCount_other": "{{count}} notas eliminadas",
+    "empty": "Vaciar papelera",
+    "emptyConfirm": "¿Eliminar permanentemente todas las notas de la papelera?",
+    "confirmEmpty": "Sí, vaciar",
+    "selectAll": "Seleccionar todo",
+    "restoreSelected": "Restaurar ({{count}})",
+    "deleteSelected": "Eliminar definitivamente",
+    "restore": "Restaurar nota",
+    "permanentlyDelete": "Eliminar definitivamente",
+    "emptyState": "La papelera está vacía"
+  },
+  "backup": {
+    "title": "Copias de Seguridad (JSON)",
+    "exportTitle": "Exportar Base de Datos",
+    "exportDesc": "Guarda un archivo .json con tus notas y proyectos",
+    "importTitle": "Restaurar Respaldo",
+    "importDesc": "Restaura tus datos desde un archivo .json",
+    "recentAutoBackups": "Respaldos automáticos diarios (últimos 14)",
+    "exportSuccess": "Copia exportada con éxito",
+    "exportError": "Error al exportar la copia",
+    "importSuccess": "Copia importada con éxito",
+    "importError": "Error al restaurar la copia",
+    "importWebUnavailable": "Solo disponible en la app de escritorio"
   }
 }

@@ -35,6 +35,8 @@
   "folders": {
     "addFolder": "New Folder",
     "addNote": "New Note",
+    "collapseFolder": "Collapse Folder",
+    "expandFolder": "Expand Folder",
     "empty": "No folders in this project yet.",
     "noNotes": "No notes in this folder",
     "deleteFolder": "Delete Folder",
@@ -44,6 +46,11 @@
   "note": {
     "titlePlaceholder": "Note title...",
     "clickToEditTitle": "Click to edit title",
+    "markCompleted": "Mark as Done",
+    "markPending": "Mark as Pending",
+    "duplicate": "Duplicate Note",
+    "copyWikiLink": "Copy [[Wiki-Link]]",
+    "delete": "Move to Trash",
     "modified": "Modified",
     "justNow": "Just now",
     "today": "Today",
@@ -274,6 +281,7 @@
     "shortcutsTab": "Keyboard Shortcuts",
     "generalTab": "General",
     "languageTab": "Language",
+    "dataSecurityTab": "Data & Security",
     "customTab": "Custom",
     "languageTitle": "Application Language",
     "languageDesc": "Select the primary display language for the user interface.",
@@ -302,6 +310,10 @@
     "autoBackup": "Daily Local Backups",
     "exportData": "Export All Data (JSON)",
     "importData": "Import Data",
+    "autostartTitle": "Start UDo on system boot",
+    "autostartDesc": "Automatically launch UDo in background on login",
+    "systemTab": "System Startup",
+    "loading": "Loading...",
     "version": "Version"
   },
   "attachments": {
@@ -375,5 +387,71 @@
     "clearFormatting": "Clear formatting",
     "selectionActive": "Selection active",
     "sampleText": "text"
+  },
+  "batch": {
+    "selectedCount": "{{count}} selected",
+    "toggleComplete": "Mark selected",
+    "moveToFolder": "Move to folder...",
+    "deleteNotes": "Move to trash (Del)",
+    "selectFolder": "Select folder",
+    "clear": "Deselect (Esc)"
+  },
+  "editor": {
+    "cut": "Cut",
+    "copy": "Copy",
+    "paste": "Paste",
+    "insertTask": "Insert Task",
+    "find": "Find in note (Ctrl+F)"
+  },
+  "vault": {
+    "title": "Private Vault",
+    "unlockTitle": "Unlock Private Vault",
+    "setupTitle": "Setup Vault PIN",
+    "changeTitle": "Change Vault PIN",
+    "enterPin": "Enter your 6-digit PIN",
+    "enterNewPin": "Enter new 6-digit PIN",
+    "confirmPin": "Confirm your 6-digit PIN",
+    "enterCurrentPin": "Enter current PIN",
+    "pinMismatch": "PINs do not match",
+    "invalidPin": "Invalid PIN",
+    "statusUnlocked": "Unlocked",
+    "statusLocked": "Protected with PIN",
+    "noPinConfigured": "No PIN configured",
+    "description": "Hide private projects and notes with a 6-digit PIN",
+    "privateProjects": "Private Projects",
+    "lockNow": "Lock Now",
+    "moveToVault": "Move to Private Vault",
+    "removeFromVault": "Remove from Private Vault",
+    "changePin": "Change PIN",
+    "setPin": "Configure PIN",
+    "locked": "Private Vault (Locked)",
+    "unlocked": "Private Vault (Unlocked)"
+  },
+  "trash": {
+    "title": "Trash",
+    "noteCount": "{{count}} deleted note",
+    "noteCount_other": "{{count}} deleted notes",
+    "empty": "Empty Trash",
+    "emptyConfirm": "Permanently delete all notes in trash?",
+    "confirmEmpty": "Yes, Empty Trash",
+    "selectAll": "Select All",
+    "restoreSelected": "Restore ({{count}})",
+    "deleteSelected": "Delete Permanently",
+    "restore": "Restore Note",
+    "permanentlyDelete": "Permanently Delete",
+    "emptyState": "Trash is empty"
+  },
+  "backup": {
+    "title": "JSON Backups",
+    "exportTitle": "Export Database",
+    "exportDesc": "Save a .json backup file of all your notes and projects",
+    "importTitle": "Restore Backup",
+    "importDesc": "Restore your workspace data from a .json file",
+    "recentAutoBackups": "Daily auto-backups (last 14)",
+    "exportSuccess": "Backup exported successfully",
+    "exportError": "Failed to export backup",
+    "importSuccess": "Backup restored successfully",
+    "importError": "Failed to restore backup",
+    "importWebUnavailable": "Backup restore is only available in the desktop app"
   }
 }

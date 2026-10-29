@@ -30,6 +30,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .setup(|app| {
             let db = DatabaseManager::new().map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
+            services::backup::perform_daily_auto_backup(&db).ok();
             app.manage(db);
             app.manage(services::native_audio::NativeAudioState::default());
 
@@ -50,6 +51,11 @@ pub fn run() {
             commands::delete_subject,
             commands::save_folder,
             commands::delete_folder,
+            commands::get_deleted_notes,
+            commands::restore_note,
+            commands::restore_notes_batch,
+            commands::permanently_delete_notes,
+            commands::empty_trash,
             commands::get_clipboard_image,
             commands::read_image_as_data_url,
             window::toggle_widget_mode,
@@ -68,6 +74,14 @@ pub fn run() {
             services::native_audio::start_native_recording,
             services::native_audio::stop_native_recording,
             services::native_audio::cancel_native_recording,
+            services::vault::has_vault_pin,
+            services::vault::set_vault_pin,
+            services::vault::verify_vault_pin,
+            services::backup::list_auto_backups,
+            services::backup::export_workspace_json,
+            services::backup::import_workspace_json,
+            services::backup::is_autostart_enabled,
+            services::backup::set_autostart_enabled,
         ])
         .run(tauri::generate_context!())
         .expect("error while running UDo application");

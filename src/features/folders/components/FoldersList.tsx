@@ -1,12 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { FolderItem, NoteItem, SubjectItem, ViewFilter } from '../../../shared/types';
 import { FolderItemRow } from './FolderItemRow';
 import { NoteItemRow } from './NoteItemRow';
-import { FolderPlus, Check, X, Hash, Plus } from 'lucide-react';
+import { FolderPlus, X, Hash, Plus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { normalizeDiacritics } from '../../../shared/utils/diacritics';
 import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
+import { useMultiSelection } from '../hooks/useMultiSelection';
+import { useFoldersContextMenu } from '../hooks/useFoldersContextMenu';
+import { BatchActionBar } from './BatchActionBar';
+import { MarqueeSelectionBox } from './MarqueeSelectionBox';
+import { InlineCreateFolder } from './InlineCreateFolder';
+import { filterAndSortFolderNotes } from '../utils/filterNotes';
 
 interface Props {
   currentSubject?: SubjectItem;
@@ -40,6 +46,10 @@ interface Props {
     targetFolderId: string,
     position?: 'before' | 'after'
   ) => void;
+  onBatchDeleteNotes?: (ids: string[]) => void;
+  onBatchToggleCompleteNotes?: (ids: string[]) => void;
+  onBatchMoveNotesToFolder?: (ids: string[], folderId: string) => void;
+  onDuplicateNote?: (id: string) => void;
 }
 
 export const FoldersList: React.FC<Props> = ({
@@ -65,60 +75,47 @@ export const FoldersList: React.FC<Props> = ({
   onMoveNoteToFolder,
   onReorderOrMoveNote,
   onReorderFolder,
+  onBatchDeleteNotes,
+  onBatchToggleCompleteNotes,
+  onBatchMoveNotesToFolder,
+  onDuplicateNote,
 }) => {
   const { t } = useTranslation();
 
+  const allVisibleNoteIds = useMemo(() => {
+    return notes
+      .filter((n) => currentSubject && n.subjectId === currentSubject.id)
+      .map((n) => n.id);
+  }, [notes, currentSubject]);
+
+  const {
+    selectedNoteIds,
+    clearSelection,
+    handleNoteClick,
+    handleContainerMouseDown,
+    marqueeRect,
+  } = useMultiSelection({
+    allVisibleNoteIds,
+    onBatchDelete: onBatchDeleteNotes,
+  });
+
+  const { handleNoteContextMenu, handleFolderContextMenu } = useFoldersContextMenu({
+    folders,
+    selectedNoteIds,
+    onToggleNoteComplete,
+    onBatchToggleCompleteNotes,
+    onMoveNoteToFolder,
+    onBatchMoveNotesToFolder,
+    onBatchDeleteNotes,
+    onDuplicateNote,
+    onAddNote,
+    onToggleFolderExpand,
+    onDeleteFolder,
+  });
+
   // Create folder inline state
   const [isCreating, setIsCreating] = useState(false);
-  const [newFolderName, setNewFolderName] = useState('');
   const [dragOverFolderNotesId, setDragOverFolderNotesId] = useState<string | null>(null);
-
-  // Filter notes according to status, diacritic-insensitive search, and active tag
-  const filterNotes = (folderNotes: NoteItem[]) => {
-    const query = normalizeDiacritics(searchQuery.trim());
-    const normActiveTag = activeTagFilter ? normalizeDiacritics(activeTagFilter) : null;
-
-    return folderNotes
-      .filter((n) => {
-        // Status pill filter
-        if (filter === 'pending' && n.isCompleted) return false;
-        if (filter === 'completed' && !n.isCompleted) return false;
-
-        // Active transversal tag filter (diacritic-insensitive)
-        if (
-          normActiveTag &&
-          !n.tags.some((tag) => normalizeDiacritics(tag) === normActiveTag)
-        ) {
-          return false;
-        }
-
-        // Scoped search query filter (diacritic-insensitive)
-        if (query) {
-          const matchTitle = normalizeDiacritics(n.title).includes(query);
-          const matchContent = normalizeDiacritics(n.content).includes(query);
-          const matchTags = n.tags.some((tag) => normalizeDiacritics(tag).includes(query));
-          if (!matchTitle && !matchContent && !matchTags) return false;
-        }
-
-        return true;
-      })
-      .sort((a, b) => {
-        if (a.isPinned !== b.isPinned) return Number(b.isPinned) - Number(a.isPinned);
-        if (typeof a.order === 'number' && typeof b.order === 'number') {
-          return a.order - b.order;
-        }
-        return 0;
-      });
-  };
-
-  const handleSaveCreate = () => {
-    const trimmed = newFolderName.trim();
-    if (trimmed) {
-      onAddFolder(trimmed);
-    }
-    setIsCreating(false);
-    setNewFolderName('');
-  };
 
   // Count notes matching activeTagFilter across current subject
   const totalTagMatchingNotes = activeTagFilter
@@ -174,51 +171,21 @@ export const FoldersList: React.FC<Props> = ({
       )}
 
       {/* Inline Create Folder Form */}
-      <AnimatePresence>
-        {isCreating && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            transition={{ duration: 0.12, ease: 'easeOut' }}
-            className="p-2.5 mx-2 my-2 bg-theme-card border border-theme-border rounded-lg space-y-2 shadow-sm"
-          >
-            <input
-              type="text"
-              autoFocus
-              placeholder={t('folders.addFolder') + '...'}
-              value={newFolderName}
-              onChange={(e) => setNewFolderName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSaveCreate();
-                if (e.key === 'Escape') setIsCreating(false);
-              }}
-              className="w-full bg-theme-sidebar px-2 py-1 rounded text-xs outline-none border border-theme-border focus:border-theme-accent text-theme-text"
-            />
-            <div className="flex items-center justify-end space-x-1">
-              <button
-                type="button"
-                onClick={() => setIsCreating(false)}
-                className="p-1 text-theme-muted hover:text-theme-text rounded"
-              >
-                <X size={13} />
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveCreate}
-                disabled={!newFolderName.trim()}
-                className="flex items-center space-x-1 px-2 py-0.5 rounded bg-theme-accent text-white text-xs font-semibold hover:bg-theme-accent-hover disabled:opacity-50"
-              >
-                <Check size={12} />
-                <span>{t('note.save')}</span>
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <InlineCreateFolder
+        isOpen={isCreating}
+        onClose={() => setIsCreating(false)}
+        onSave={(name) => {
+          onAddFolder(name);
+          setIsCreating(false);
+        }}
+      />
 
       {/* Folders & Notes list */}
-      <div className="flex-1 overflow-y-auto px-2 py-2 space-y-2">
+      <div
+        data-folders-container
+        onMouseDown={handleContainerMouseDown}
+        className="flex-1 overflow-y-auto px-2 py-2 space-y-2 relative"
+      >
         {folders.length === 0 && !isCreating ? (
           <div className="text-center py-8 text-xs text-theme-muted">
             {t('folders.empty')}
@@ -226,7 +193,12 @@ export const FoldersList: React.FC<Props> = ({
         ) : (
           folders.map((folder) => {
             const folderNotes = notes.filter((n) => n.folderId === folder.id);
-            const visibleNotes = filterNotes(folderNotes);
+            const visibleNotes = filterAndSortFolderNotes({
+              notes: folderNotes,
+              filter,
+              searchQuery,
+              activeTagFilter,
+            });
             const isFolderSelected = selectedFolderId === folder.id;
             const isDragOverNotes = dragOverFolderNotesId === folder.id;
 
@@ -243,6 +215,7 @@ export const FoldersList: React.FC<Props> = ({
                   onUpdateFolder={onUpdateFolder}
                   onDeleteFolder={() => onDeleteFolder(folder.id)}
                   onReorderFolder={onReorderFolder}
+                  onContextMenu={(e) => handleFolderContextMenu(e, folder)}
                   onMoveNoteToFolder={(noteId) => {
                     setTimeout(() => {
                       if (onReorderOrMoveNote) {
@@ -265,6 +238,7 @@ export const FoldersList: React.FC<Props> = ({
                       onDragOver={(e) => {
                         if (
                           e.dataTransfer.types.includes('application/udo-note-id') ||
+                          e.dataTransfer.types.includes('application/udo-note-ids') ||
                           e.dataTransfer.types.includes('text/plain')
                         ) {
                           e.preventDefault();
@@ -285,6 +259,15 @@ export const FoldersList: React.FC<Props> = ({
                         setDragOverFolderNotesId(null);
                         const isFolder = e.dataTransfer.types.includes('application/udo-folder-id');
                         if (isFolder) return;
+
+                        const noteIdsRaw = e.dataTransfer.getData('application/udo-note-ids');
+                        if (noteIdsRaw && onBatchMoveNotesToFolder) {
+                          try {
+                            const ids: string[] = JSON.parse(noteIdsRaw);
+                            onBatchMoveNotesToFolder(ids, folder.id);
+                            return;
+                          } catch {}
+                        }
 
                         const noteId =
                           e.dataTransfer.getData('application/udo-note-id') ||
@@ -319,11 +302,19 @@ export const FoldersList: React.FC<Props> = ({
                             key={note.id}
                             note={note}
                             isSelected={note.id === selectedNoteId}
+                            isMultiSelected={selectedNoteIds.has(note.id)}
+                            multiSelectedIds={Array.from(selectedNoteIds)}
                             onSelect={() => {
                               onSelectFolder(folder.id);
                               onSelectNote(note.id);
                             }}
+                            onSelectWithEvent={(e) => {
+                              onSelectFolder(folder.id);
+                              onSelectNote(note.id);
+                              handleNoteClick(note.id, e);
+                            }}
                             onToggleComplete={() => onToggleNoteComplete(note.id)}
+                            onContextMenu={(e) => handleNoteContextMenu(e, note)}
                             onDropOnNote={(draggedId, targetId, pos) => {
                               if (onReorderOrMoveNote) {
                                 onReorderOrMoveNote(draggedId, folder.id, targetId, pos);
@@ -339,6 +330,16 @@ export const FoldersList: React.FC<Props> = ({
             );
           })
         )}
+
+        <BatchActionBar
+          selectedCount={selectedNoteIds.size}
+          folders={folders}
+          onToggleCompleteAll={() => onBatchToggleCompleteNotes?.(Array.from(selectedNoteIds))}
+          onMoveAllToFolder={(folderId) => onBatchMoveNotesToFolder?.(Array.from(selectedNoteIds), folderId)}
+          onDeleteAll={() => onBatchDeleteNotes?.(Array.from(selectedNoteIds))}
+          onClearSelection={clearSelection}
+        />
+        <MarqueeSelectionBox rect={marqueeRect} />
       </div>
     </div>
   );

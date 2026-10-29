@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { NoteItem, SubjectItem, FolderItem } from '../types';
 import { api } from '../api/ipc';
 import { useWorkspaceHistory, WorkspaceSnapshot } from './useWorkspaceHistory';
 import { useWorkspaceActions } from './useWorkspaceActions';
+import { useWorkspaceBatchActions } from './useWorkspaceBatchActions';
 
 export function useWorkspaceState() {
   const [subjects, setSubjects] = useState<SubjectItem[]>([]);
@@ -48,38 +49,58 @@ export function useWorkspaceState() {
     recordSnapshot,
   });
 
-  useEffect(() => {
-    api.getInitialData().then((data) => {
-      const updatedFolders = [...data.folders];
-      data.subjects.forEach((subj) => {
-        const hasFolder = updatedFolders.some((f) => f.subjectId === subj.id);
-        if (!hasFolder) {
-          const autoFolder: FolderItem = {
-            id: `folder-${Date.now()}-${subj.id}`,
-            subjectId: subj.id,
-            name: 'General',
-            isExpanded: true,
-            order: 0,
-          };
-          updatedFolders.push(autoFolder);
-          api.saveFolder(autoFolder);
-        }
-      });
-      setSubjects(data.subjects);
-      setFolders(updatedFolders);
-      setNotes(data.notes);
-      if (data.subjects.length > 0) {
-        setSelectedSubjectId(data.subjects[0].id);
-        const firstSubjectFolders = updatedFolders.filter((f) => f.subjectId === data.subjects[0].id);
-        if (firstSubjectFolders.length > 0) {
-          setSelectedFolderId(firstSubjectFolders[0].id);
-        }
-      }
-      if (data.notes.length > 0) {
-        setSelectedNoteId(data.notes[0].id);
+  const {
+    handleBatchDeleteNotes,
+    handleBatchToggleCompleteNotes,
+    handleBatchMoveNotesToFolder,
+    handleToggleSubjectPrivate,
+    handleDuplicateNote,
+  } = useWorkspaceBatchActions({
+    notes,
+    folders,
+    selectedNoteId,
+    setNotes,
+    setSubjects,
+    setSelectedNoteId,
+    recordSnapshot,
+    getSnapshot,
+  });
+
+  const reloadWorkspaceData = useCallback(async () => {
+    const data = await api.getInitialData();
+    const updatedFolders = [...data.folders];
+    data.subjects.forEach((subj) => {
+      const hasFolder = updatedFolders.some((f) => f.subjectId === subj.id);
+      if (!hasFolder) {
+        const autoFolder: FolderItem = {
+          id: `folder-${Date.now()}-${subj.id}`,
+          subjectId: subj.id,
+          name: 'General',
+          isExpanded: true,
+          order: 0,
+        };
+        updatedFolders.push(autoFolder);
+        api.saveFolder(autoFolder);
       }
     });
+    setSubjects(data.subjects);
+    setFolders(updatedFolders);
+    setNotes(data.notes);
+    if (data.subjects.length > 0) {
+      setSelectedSubjectId(data.subjects[0].id);
+      const firstSubjectFolders = updatedFolders.filter((f) => f.subjectId === data.subjects[0].id);
+      if (firstSubjectFolders.length > 0) {
+        setSelectedFolderId(firstSubjectFolders[0].id);
+      }
+    }
+    if (data.notes.length > 0) {
+      setSelectedNoteId(data.notes[0].id);
+    }
   }, []);
+
+  useEffect(() => {
+    reloadWorkspaceData();
+  }, [reloadWorkspaceData]);
 
   const currentSubject = subjects.find((s) => s.id === selectedSubjectId);
   const currentSubjectFolders = folders
@@ -354,5 +375,11 @@ export function useWorkspaceState() {
     getSubjectNoteCount,
     handleWorkspaceUndo,
     handleWorkspaceRedo,
+    reloadWorkspaceData,
+    handleBatchDeleteNotes,
+    handleBatchToggleCompleteNotes,
+    handleBatchMoveNotesToFolder,
+    handleToggleSubjectPrivate,
+    handleDuplicateNote,
   };
 }

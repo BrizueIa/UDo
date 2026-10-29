@@ -7,24 +7,37 @@ import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
 interface Props {
   note: NoteItem;
   isSelected: boolean;
+  isMultiSelected?: boolean;
+  multiSelectedIds?: string[];
   onSelect: () => void;
+  onSelectWithEvent?: (e: React.MouseEvent) => void;
   onToggleComplete: () => void;
   onDropOnNote?: (draggedNoteId: string, targetNoteId: string, position: 'before' | 'after') => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }
 
 export const NoteItemRow: React.FC<Props> = ({
   note,
   isSelected,
+  isMultiSelected = false,
+  multiSelectedIds = [],
   onSelect,
+  onSelectWithEvent,
   onToggleComplete,
   onDropOnNote,
+  onContextMenu,
 }) => {
   const { t } = useTranslation();
   const [dropPosition, setDropPosition] = useState<'before' | 'after' | null>(null);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-    e.dataTransfer.setData('application/udo-note-id', note.id);
-    e.dataTransfer.setData('text/plain', note.id);
+    if (isMultiSelected && multiSelectedIds.length > 1) {
+      e.dataTransfer.setData('application/udo-note-ids', JSON.stringify(multiSelectedIds));
+      e.dataTransfer.setData('text/plain', multiSelectedIds.join(','));
+    } else {
+      e.dataTransfer.setData('application/udo-note-id', note.id);
+      e.dataTransfer.setData('text/plain', note.id);
+    }
     e.dataTransfer.effectAllowed = 'move';
   };
 
@@ -69,14 +82,21 @@ export const NoteItemRow: React.FC<Props> = ({
 
   return (
     <div
+      data-note-id={note.id}
       draggable
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      onClick={onSelect}
+      onClick={(e) => {
+        if (onSelectWithEvent) onSelectWithEvent(e);
+        else onSelect();
+      }}
+      onContextMenu={onContextMenu}
       className={`group relative flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-grab active:cursor-grabbing hover:translate-x-0.5 active:scale-[0.98] transition-all select-none border ${
-        isSelected
+        isMultiSelected
+          ? 'bg-theme-accent/20 border-theme-accent/50 text-theme-text font-medium shadow-sm'
+          : isSelected
           ? 'bg-theme-card border-theme-accent/50 text-theme-text font-medium shadow-sm'
           : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover/40 border-transparent'
       }`}

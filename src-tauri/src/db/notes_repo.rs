@@ -50,11 +50,13 @@ pub fn get_all_notes(conn: &Connection) -> Result<Vec<NoteItem>> {
     Ok(notes)
 }
 
-pub fn search_notes(conn: &Connection, query: &str) -> Result<Vec<NoteItem>> {
+pub fn search_notes(conn: &Connection, query: &str, include_private: bool) -> Result<Vec<NoteItem>> {
     let trimmed = query.trim();
     if trimmed.is_empty() {
         return Ok(Vec::new());
     }
+
+    let inc_priv_int = if include_private { 1 } else { 0 };
 
     // Tokenize query for SQLite FTS5 prefix matching
     let tokens: Vec<String> = trimmed
@@ -79,13 +81,15 @@ pub fn search_notes(conn: &Connection, query: &str) -> Result<Vec<NoteItem>> {
                    notes.focus_minutes, notes.sort_order, notes.attachments_json
             FROM notes
             JOIN notes_fts ON notes.rowid = notes_fts.rowid
-            WHERE notes.is_deleted = 0 AND notes_fts MATCH ?1
+            WHERE notes.is_deleted = 0
+              AND (?2 = 1 OR notes.subject_id NOT IN (SELECT id FROM subjects WHERE is_private = 1))
+              AND notes_fts MATCH ?1
             ORDER BY rank
             LIMIT 50;
         ";
 
         if let Ok(mut stmt) = conn.prepare(fts_sql) {
-            let results = stmt.query_map(params![fts_query], map_note_row);
+            let results = stmt.query_map(params![fts_query, inc_priv_int], map_note_row);
             if let Ok(mapped) = results {
                 let notes: Result<Vec<NoteItem>, _> = mapped.collect();
                 if let Ok(notes) = notes {
@@ -105,7 +109,9 @@ pub fn search_notes(conn: &Connection, query: &str) -> Result<Vec<NoteItem>> {
                 sketches_json, created_at, updated_at, due_date,
                 focus_minutes, sort_order, attachments_json
          FROM notes
-         WHERE is_deleted = 0 AND (
+         WHERE is_deleted = 0
+           AND (?2 = 1 OR subject_id NOT IN (SELECT id FROM subjects WHERE is_private = 1))
+           AND (
              title LIKE ?1 OR
              content LIKE ?1 OR
              tags_json LIKE ?1
@@ -115,7 +121,7 @@ pub fn search_notes(conn: &Connection, query: &str) -> Result<Vec<NoteItem>> {
     )?;
 
     let notes = stmt
-        .query_map(params![like_pattern], map_note_row)?
+        .query_map(params![like_pattern, inc_priv_int], map_note_row)?
         .collect::<Result<Vec<_>, _>>()?;
 
     Ok(notes)
@@ -174,5 +180,55 @@ pub fn save_note(conn: &Connection, note: &NoteItem) -> Result<()> {
 
 pub fn delete_note(conn: &Connection, id: &str) -> Result<()> {
     conn.execute("UPDATE notes SET is_deleted = 1 WHERE id = ?1", params![id])?;
+    Ok(())
+}
+
+pub fn get_deleted_notes(conn: &Connection, include_private: bool) -> Result<Vec<NoteItem>> {
+    let inc_priv_int = if include_private { 1 } else { 0 };
+    let mut stmt = conn.prepare(
+        "SELECT id, folder_id, subject_id, title, content, is_completed, is_pinned,
+                tags_json, links_json, sketches_json, created_at, updated_at, due_date,
+                focus_minutes, sort_order, attachments_json
+         FROM notes
+         WHERE is_deleted = 1
+           AND (?1 = 1 OR subject_id NOT IN (SELECT id FROM subjects WHERE is_private = 1))
+         ORDER BY updated_at DESC",
+    )?;
+    let notes = stmt
+        .query_map(params![inc_priv_int], map_note_row)?
+        .collect::<Result<Vec<_>, _>>()?;
+    Ok(notes)
+}
+
+pub fn restore_note(conn: &Connection, id: &str) -> Result<()> {
+    conn.execute("UPDATE notes SET is_deleted = 0 WHERE id = ?1", params![id])?;
+    Ok(())
+}
+
+pub fn restore_notes_batch(conn: &Connection, ids: &[String]) -> Result<()> {
+    let mut stmt = conn.prepare("UPDATE notes SET is_deleted = 0 WHERE id = ?1")?;
+    for id in ids {
+        stmt.execute(params![id])?;
+    }
+    Ok(())
+}
+
+pub fn permanently_delete_notes(conn: &Connection, ids: &[String]) -> Result<()> {
+    let mut stmt = conn.prepare("DELETE FROM notes WHERE id = ?1")?;
+    for id in ids {
+        stmt.execute(params![id])?;
+    }
+    Ok(())
+}
+
+pub fn empty_trash(conn: &Connection, include_private: bool) -> Result<()> {
+    if include_private {
+        conn.execute("DELETE FROM notes WHERE is_deleted = 1", [])?;
+    } else {
+        conn.execute(
+            "DELETE FROM notes WHERE is_deleted = 1 AND subject_id NOT IN (SELECT id FROM subjects WHERE is_private = 1)",
+            [],
+        )?;
+    }
     Ok(())
 }

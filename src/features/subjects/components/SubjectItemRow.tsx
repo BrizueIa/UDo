@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { SubjectItem, FolderItem } from '../../../shared/types';
-import { Pencil, Trash2, X, Check, Folder } from 'lucide-react';
+import { Pencil, Trash2, X, Check, Folder, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
@@ -24,6 +24,7 @@ interface Props {
   onMoveNoteToFolder?: (noteId: string, folderId: string) => void;
   onMoveNoteToSubject?: (noteId: string, subjectId: string) => void;
   onMoveFolderToSubject?: (folderId: string, subjectId: string) => void;
+  onContextMenu?: (e: React.MouseEvent) => void;
 }
 
 export const SubjectItemRow: React.FC<Props> = ({
@@ -38,6 +39,7 @@ export const SubjectItemRow: React.FC<Props> = ({
   onMoveNoteToFolder,
   onMoveNoteToSubject,
   onMoveFolderToSubject,
+  onContextMenu,
 }) => {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
@@ -104,6 +106,17 @@ export const SubjectItemRow: React.FC<Props> = ({
     if (hoverTimerRef.current) {
       clearTimeout(hoverTimerRef.current);
       hoverTimerRef.current = null;
+    }
+
+    const noteIdsRaw = e.dataTransfer.getData('application/udo-note-ids');
+    if (noteIdsRaw && onMoveNoteToSubject) {
+      try {
+        const ids: string[] = JSON.parse(noteIdsRaw);
+        ids.forEach((id) => onMoveNoteToSubject(id, subject.id));
+        return;
+      } catch {
+        // fallback
+      }
     }
 
     const folderId = e.dataTransfer.getData('application/udo-folder-id');
@@ -200,6 +213,7 @@ export const SubjectItemRow: React.FC<Props> = ({
     <div className="space-y-1">
       <motion.div
         onClick={() => onSelectSubject(subject.id)}
+        onContextMenu={onContextMenu}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
@@ -221,6 +235,9 @@ export const SubjectItemRow: React.FC<Props> = ({
           <span className="truncate text-[13px]">
             {renderRichTitle(subject.name, 'subj', 0, { ignoreSize: true })}
           </span>
+          {subject.isPrivate && (
+            <Lock size={12} className="text-theme-accent ml-1 flex-shrink-0" />
+          )}
         </div>
 
         <div className="relative z-10 flex items-center space-x-1 flex-shrink-0">

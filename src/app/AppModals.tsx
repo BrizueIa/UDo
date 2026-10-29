@@ -6,6 +6,10 @@ import { CommandPalette } from '../features/search-palette/components/CommandPal
 import { QuickAddModal } from '../features/search-palette/components/QuickAddModal';
 import { FocusTimerPopover } from '../features/focus-timer/components/FocusTimerPopover';
 import { ShortcutsModal } from '../shared/ui/ShortcutsModal';
+import { TrashModal } from '../features/trash/components/TrashModal';
+import { VaultPinModal } from '../features/private-vault/components/VaultPinModal';
+import { useAppModalState } from './useAppModalState';
+import { useVaultState } from '../features/private-vault/hooks/useVaultState';
 
 interface AppModalsProps {
   currentNote: NoteItem | null | undefined;
@@ -14,21 +18,13 @@ interface AppModalsProps {
   folders: FolderItem[];
   selectedSubjectId: string;
   selectedFolderId: string;
-  activeSketch: SketchItem | null;
-  isSearchPaletteOpen: boolean;
-  searchPaletteInitialQuery: string;
-  isQuickAddOpen: boolean;
-  isTimerModalOpen: boolean;
-  isShortcutsModalOpen: boolean;
+  modalState: ReturnType<typeof useAppModalState>;
+  vault: ReturnType<typeof useVaultState>;
   focusTimer: FocusTimerState;
-  onCloseSketch: () => void;
   onSaveSketch: (sketch: SketchItem) => void;
-  onCloseSearchPalette: () => void;
   onSelectNoteFromPalette: (noteId: string, subjectId: string) => void;
-  onCloseQuickAdd: () => void;
   onQuickAddSave: (title: string, folderId: string, subjectId: string) => void;
-  onCloseTimerModal: () => void;
-  onCloseShortcutsModal: () => void;
+  onNotesRestored?: () => void;
 }
 
 export const AppModals: React.FC<AppModalsProps> = ({
@@ -38,67 +34,76 @@ export const AppModals: React.FC<AppModalsProps> = ({
   folders,
   selectedSubjectId,
   selectedFolderId,
-  activeSketch,
-  isSearchPaletteOpen,
-  searchPaletteInitialQuery,
-  isQuickAddOpen,
-  isTimerModalOpen,
-  isShortcutsModalOpen,
+  modalState,
+  vault,
   focusTimer,
-  onCloseSketch,
   onSaveSketch,
-  onCloseSearchPalette,
   onSelectNoteFromPalette,
-  onCloseQuickAdd,
   onQuickAddSave,
-  onCloseTimerModal,
-  onCloseShortcutsModal,
+  onNotesRestored = () => {},
 }) => {
   return (
     <>
-      {activeSketch && currentNote && (
+      {modalState.activeSketch && currentNote && (
         <ImageAnnotatorModal
-          sketch={activeSketch}
-          isOpen={!!activeSketch}
-          onClose={onCloseSketch}
+          sketch={modalState.activeSketch}
+          isOpen={!!modalState.activeSketch}
+          onClose={() => modalState.setActiveSketch(null)}
           onSave={onSaveSketch}
         />
       )}
 
       <CommandPalette
-        isOpen={isSearchPaletteOpen}
-        initialQuery={searchPaletteInitialQuery}
+        isOpen={modalState.isSearchPaletteOpen}
+        initialQuery={modalState.searchPaletteInitialQuery}
         notes={notes}
         subjects={subjects}
         folders={folders}
-        onClose={onCloseSearchPalette}
+        isVaultUnlocked={vault.isVaultUnlocked}
+        onClose={() => modalState.setIsSearchPaletteOpen(false)}
         onSelectNote={onSelectNoteFromPalette}
       />
 
       <QuickAddModal
-        isOpen={isQuickAddOpen}
+        isOpen={modalState.isQuickAddOpen}
         subjects={subjects}
         folders={folders}
         defaultSubjectId={selectedSubjectId}
         defaultFolderId={selectedFolderId}
-        onClose={onCloseQuickAdd}
+        onClose={() => modalState.setIsQuickAddOpen(false)}
         onSave={onQuickAddSave}
       />
 
       {currentNote && (
         <FocusTimerPopover
-          isOpen={isTimerModalOpen}
+          isOpen={modalState.isTimerModalOpen}
           noteId={currentNote.id}
           noteTitle={currentNote.title}
           accumulatedMinutes={currentNote.focusMinutes}
           timer={focusTimer}
-          onClose={onCloseTimerModal}
+          onClose={() => modalState.setIsTimerModalOpen(false)}
         />
       )}
 
       <ShortcutsModal
-        isOpen={isShortcutsModalOpen}
-        onClose={onCloseShortcutsModal}
+        isOpen={modalState.isShortcutsModalOpen}
+        onClose={() => modalState.setIsShortcutsModalOpen(false)}
+      />
+
+      <TrashModal
+        isOpen={modalState.isTrashModalOpen}
+        isVaultUnlocked={vault.isVaultUnlocked}
+        subjects={subjects}
+        folders={folders}
+        onClose={() => modalState.setIsTrashModalOpen(false)}
+        onNotesRestored={onNotesRestored}
+      />
+
+      <VaultPinModal
+        isOpen={vault.isPinModalOpen}
+        mode={vault.pinModalMode}
+        onClose={() => vault.setIsPinModalOpen(false)}
+        onSuccess={vault.handleModalSuccess}
       />
     </>
   );

@@ -9,7 +9,13 @@ pub fn init_schema(conn: &Connection) -> Result<()> {
             name TEXT NOT NULL,
             color TEXT NOT NULL,
             icon TEXT,
-            sort_order INTEGER NOT NULL DEFAULT 0
+            sort_order INTEGER NOT NULL DEFAULT 0,
+            is_private INTEGER NOT NULL DEFAULT 0
+        );
+
+        CREATE TABLE IF NOT EXISTS app_settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL
         );
 
         CREATE TABLE IF NOT EXISTS folders (
@@ -83,6 +89,18 @@ pub fn init_schema(conn: &Connection) -> Result<()> {
     if !columns.contains(&"attachments_json".to_string()) {
         conn.execute(
             "ALTER TABLE notes ADD COLUMN attachments_json TEXT NOT NULL DEFAULT '[]';",
+            [],
+        )?;
+    }
+
+    let mut pragma_sub = conn.prepare("PRAGMA table_info(subjects)")?;
+    let sub_columns = pragma_sub
+        .query_map([], |row| row.get::<_, String>(1))?
+        .collect::<Result<Vec<_>, _>>()?;
+
+    if !sub_columns.contains(&"is_private".to_string()) {
+        conn.execute(
+            "ALTER TABLE subjects ADD COLUMN is_private INTEGER NOT NULL DEFAULT 0;",
             [],
         )?;
     }
