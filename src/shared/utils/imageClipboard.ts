@@ -3,13 +3,53 @@ import { SketchItem } from '../types';
 const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg', '.bmp'];
 
 export function isImagePath(path: string): boolean {
-  const lower = path.toLowerCase();
+  const clean = path.trim().replace(/^file:\/\//, '').split('?')[0].split('#')[0];
+  const lower = clean.toLowerCase();
   return IMAGE_EXTENSIONS.some((ext) => lower.endsWith(ext));
 }
 
-/**
- * Extracts the first image file from a ClipboardEvent, DragEvent or general Event.
- */
+export function extractImagePathsFromText(text: string): string[] {
+  if (!text || typeof text !== 'string') return [];
+  // Split by newlines or whitespace (e.g. Dolphin/Nautilus paste multiple files)
+  const tokens = text.split(/[\r\n\t ]+/).map((t) => t.trim()).filter(Boolean);
+  const results: string[] = [];
+
+  for (const token of tokens) {
+    let clean = token;
+    if (clean.startsWith('file://')) {
+      try {
+        clean = decodeURIComponent(new URL(clean).pathname);
+      } catch {
+        clean = decodeURIComponent(clean.replace(/^file:\/\//, ''));
+      }
+    }
+    if (isImagePath(clean)) {
+      results.push(clean);
+    }
+  }
+
+  return results;
+}
+
+export function hasClipboardImageContent(clipboardData: DataTransfer | null): boolean {
+  if (!clipboardData) return false;
+  // 1. Direct binary images
+  for (let i = 0; i < clipboardData.items.length; i++) {
+    if (clipboardData.items[i].type.startsWith('image/')) return true;
+  }
+  for (let i = 0; i < clipboardData.files.length; i++) {
+    if (clipboardData.files[i].type.startsWith('image/')) return true;
+  }
+  // 2. File paths in text/uri-list or text/plain
+  const uriList = clipboardData.getData('text/uri-list');
+  if (extractImagePathsFromText(uriList).length > 0) return true;
+
+  const plainText = clipboardData.getData('text/plain');
+  if (extractImagePathsFromText(plainText).length > 0) return true;
+
+  return false;
+}
+
 export function extractImageFile(
   event: React.ClipboardEvent | React.DragEvent | ClipboardEvent | DragEvent
 ): File | null {
@@ -97,8 +137,34 @@ export async function createSketchFromPath(
 export async function processImageDropOrPaste(
   event: React.ClipboardEvent | React.DragEvent | ClipboardEvent | DragEvent,
   fallbackTitle: string = 'Pasted Image'
-): Promise<SketchItem | null> {
+): Promise<SketchItem[]> {
+  const items: SketchItem[] = [];
+
+  // Check direct file binary
   const file = extractImageFile(event);
-  if (!file) return null;
-  return createSketchFromImage(file, fallbackTitle);
+  if (file) {
+    const sk = await createSketchFromImage(file, fallbackTitle);
+    items.push(sk);
+    return items;
+  }
+
+  // Check path strings from clipboard
+  if ('clipboardData' in event && event.clipboardData) {
+    const uriList = event.clipboardData.getData('text/uri-list');
+    const plainText = event.clipboardData.getData('text/plain');
+    const paths = Array.from(
+      new Set([...extractImagePathsFromText(uriList), ...extractImagePathsFromText(plainText)])
+    );
+
+    for (const p of paths) {
+      try {
+        const sk = await createSketchFromPath(p, fallbackTitle);
+        items.push(sk);
+      } catch (err) {
+        console.warn('Failed to load image from path:', p, err);
+      }
+    }
+  }
+
+  return items;
 }
