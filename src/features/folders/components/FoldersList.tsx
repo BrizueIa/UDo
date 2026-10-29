@@ -27,6 +27,12 @@ interface Props {
   onDeleteFolder: (id: string) => void;
   onAddNote: (folderId: string) => void;
   onMoveNoteToFolder?: (noteId: string, folderId: string) => void;
+  onReorderOrMoveNote?: (
+    draggedNoteId: string,
+    targetFolderId: string,
+    targetNoteId?: string,
+    position?: 'before' | 'after'
+  ) => void;
 }
 
 export const FoldersList: React.FC<Props> = ({
@@ -49,12 +55,14 @@ export const FoldersList: React.FC<Props> = ({
   onDeleteFolder,
   onAddNote,
   onMoveNoteToFolder,
+  onReorderOrMoveNote,
 }) => {
   const { t } = useTranslation();
 
   // Create folder inline state
   const [isCreating, setIsCreating] = useState(false);
   const [newFolderName, setNewFolderName] = useState('');
+  const [dragOverFolderNotesId, setDragOverFolderNotesId] = useState<string | null>(null);
 
   // Filter notes according to status, diacritic-insensitive search, and active tag
   const filterNotes = (folderNotes: NoteItem[]) => {
@@ -85,7 +93,13 @@ export const FoldersList: React.FC<Props> = ({
 
         return true;
       })
-      .sort((a, b) => Number(b.isPinned) - Number(a.isPinned));
+      .sort((a, b) => {
+        if (a.isPinned !== b.isPinned) return Number(b.isPinned) - Number(a.isPinned);
+        if (typeof a.order === 'number' && typeof b.order === 'number') {
+          return a.order - b.order;
+        }
+        return 0;
+      });
   };
 
   const handleSaveCreate = () => {
@@ -205,6 +219,7 @@ export const FoldersList: React.FC<Props> = ({
             const folderNotes = notes.filter((n) => n.folderId === folder.id);
             const visibleNotes = filterNotes(folderNotes);
             const isFolderSelected = selectedFolderId === folder.id;
+            const isDragOverNotes = dragOverFolderNotesId === folder.id;
 
             return (
               <div key={folder.id} className="space-y-1">
@@ -217,10 +232,16 @@ export const FoldersList: React.FC<Props> = ({
                   onAddNote={() => onAddNote(folder.id)}
                   onUpdateFolder={onUpdateFolder}
                   onDeleteFolder={() => onDeleteFolder(folder.id)}
-                  onMoveNoteToFolder={onMoveNoteToFolder}
+                  onMoveNoteToFolder={(noteId) => {
+                    if (onReorderOrMoveNote) {
+                      onReorderOrMoveNote(noteId, folder.id);
+                    } else if (onMoveNoteToFolder) {
+                      onMoveNoteToFolder(noteId, folder.id);
+                    }
+                  }}
                 />
 
-                {/* Notes in folder (Animated Accordion) */}
+                {/* Notes in folder (Animated Accordion + drop receiver anywhere in folder) */}
                 <AnimatePresence initial={false}>
                   {folder.isExpanded && (
                     <motion.div
@@ -228,7 +249,38 @@ export const FoldersList: React.FC<Props> = ({
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -4 }}
                       transition={{ duration: 0.15, ease: 'easeOut' }}
-                      className="overflow-hidden pl-3 space-y-0.5 border-l border-theme-border/40 ml-4"
+                      onDragOver={(e) => {
+                        if (
+                          e.dataTransfer.types.includes('application/udo-note-id') ||
+                          e.dataTransfer.types.includes('text/plain')
+                        ) {
+                          e.preventDefault();
+                          e.dataTransfer.dropEffect = 'move';
+                          if (dragOverFolderNotesId !== folder.id) {
+                            setDragOverFolderNotesId(folder.id);
+                          }
+                        }
+                      }}
+                      onDragLeave={(e) => {
+                        if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                          setDragOverFolderNotesId(null);
+                        }
+                      }}
+                      onDrop={(e) => {
+                        e.preventDefault();
+                        setDragOverFolderNotesId(null);
+                        const noteId =
+                          e.dataTransfer.getData('application/udo-note-id') ||
+                          e.dataTransfer.getData('text/plain');
+                        if (noteId && onReorderOrMoveNote) {
+                          onReorderOrMoveNote(noteId, folder.id);
+                        }
+                      }}
+                      className={`overflow-hidden pl-3 space-y-0.5 border-l ml-4 transition-colors rounded-r-lg ${
+                        isDragOverNotes
+                          ? 'border-theme-accent bg-theme-accent/10 ring-1 ring-theme-accent/30'
+                          : 'border-theme-border/40'
+                      }`}
                     >
                       {visibleNotes.length === 0 ? (
                         <div
@@ -253,6 +305,11 @@ export const FoldersList: React.FC<Props> = ({
                               onSelectNote(note.id);
                             }}
                             onToggleComplete={() => onToggleNoteComplete(note.id)}
+                            onDropOnNote={(draggedId, targetId, pos) => {
+                              if (onReorderOrMoveNote) {
+                                onReorderOrMoveNote(draggedId, folder.id, targetId, pos);
+                              }
+                            }}
                           />
                         ))
                       )}

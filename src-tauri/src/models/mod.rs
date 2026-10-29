@@ -41,6 +41,8 @@ pub struct NoteItem {
     pub due_date: Option<String>,
     #[serde(rename = "focusMinutes")]
     pub focus_minutes: Option<u32>,
+    #[serde(rename = "order", default)]
+    pub order: Option<i32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

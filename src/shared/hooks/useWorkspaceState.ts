@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { NoteItem, SubjectItem, FolderItem } from '../types';
 import { api } from '../api/ipc';
+import { useWorkspaceHistory, WorkspaceSnapshot } from './useWorkspaceHistory';
+import { useWorkspaceActions } from './useWorkspaceActions';
 
 export function useWorkspaceState() {
   const [subjects, setSubjects] = useState<SubjectItem[]>([]);
@@ -11,6 +13,39 @@ export function useWorkspaceState() {
   const [selectedFolderId, setSelectedFolderId] = useState<string>('');
   const [selectedNoteId, setSelectedNoteId] = useState<string>('');
   const [activeTagFilter, setActiveTagFilter] = useState<string | null>(null);
+
+  const { recordSnapshot, undo, redo } = useWorkspaceHistory();
+
+  const getSnapshot = (): WorkspaceSnapshot => ({
+    subjects,
+    folders,
+    notes,
+    selectedSubjectId,
+    selectedFolderId,
+    selectedNoteId,
+  });
+
+  const {
+    handleMoveNoteToFolder,
+    handleReorderOrMoveNote,
+    handleMoveNoteToSubject,
+    handleMoveFolderToSubject,
+    handleConvertFolderToSubject,
+  } = useWorkspaceActions({
+    subjects,
+    folders,
+    notes,
+    selectedSubjectId,
+    selectedFolderId,
+    selectedNoteId,
+    setSubjects,
+    setFolders,
+    setNotes,
+    setSelectedSubjectId,
+    setSelectedFolderId,
+    setSelectedNoteId,
+    recordSnapshot,
+  });
 
   useEffect(() => {
     api.getInitialData().then((data) => {
@@ -56,6 +91,7 @@ export function useWorkspaceState() {
   };
 
   const handleToggleNoteComplete = (id: string) => {
+    recordSnapshot(getSnapshot());
     setNotes((prev) =>
       prev.map((n) => {
         if (n.id !== id) return n;
@@ -67,6 +103,7 @@ export function useWorkspaceState() {
   };
 
   const handleDeleteNote = (id: string) => {
+    recordSnapshot(getSnapshot());
     setNotes((prev) => prev.filter((n) => n.id !== id));
     api.deleteNote(id);
     if (selectedNoteId === id) {
@@ -80,6 +117,8 @@ export function useWorkspaceState() {
     initialTitle: string = '',
     targetSubjectId?: string
   ) => {
+    recordSnapshot(getSnapshot());
+
     let folderId = targetFolderId || selectedFolderId;
     let subjectId = targetSubjectId || selectedSubjectId;
 
@@ -120,6 +159,7 @@ export function useWorkspaceState() {
       })
     );
 
+    const folderNotes = notes.filter((n) => n.folderId === folderId);
     const newNote: NoteItem = {
       id: `note-${Date.now()}`,
       folderId,
@@ -128,6 +168,7 @@ export function useWorkspaceState() {
       content: '',
       isCompleted: false,
       isPinned: false,
+      order: folderNotes.length,
       tags: activeTagFilter ? [activeTagFilter] : [],
       links: [],
       sketches: [],
@@ -143,6 +184,7 @@ export function useWorkspaceState() {
   };
 
   const handleAddFolder = (name: string, targetSubjectId?: string) => {
+    recordSnapshot(getSnapshot());
     const subjectId = targetSubjectId || selectedSubjectId;
     if (!subjectId) return null;
     const subjFolders = folders.filter((f) => f.subjectId === subjectId);
@@ -165,6 +207,7 @@ export function useWorkspaceState() {
   };
 
   const handleDeleteFolder = (id: string) => {
+    recordSnapshot(getSnapshot());
     const deleted = folders.find((f) => f.id === id);
     const remainingFolders = folders.filter((f) => f.id !== id);
     setNotes((prev) => prev.filter((n) => n.folderId !== id));
@@ -204,6 +247,7 @@ export function useWorkspaceState() {
   };
 
   const handleAddSubject = (name: string, color: string) => {
+    recordSnapshot(getSnapshot());
     const newSubject: SubjectItem = { id: `sub-${Date.now()}`, name, color, order: subjects.length };
     const defaultFolder: FolderItem = { id: `folder-${Date.now()}`, subjectId: newSubject.id, name: 'General', isExpanded: true, order: 0 };
     setSubjects((prev) => [...prev, newSubject]);
@@ -220,6 +264,7 @@ export function useWorkspaceState() {
   };
 
   const handleDeleteSubject = (id: string) => {
+    recordSnapshot(getSnapshot());
     setSubjects((prev) => prev.filter((s) => s.id !== id));
     setFolders((prev) => prev.filter((f) => f.subjectId !== id));
     setNotes((prev) => prev.filter((n) => n.subjectId !== id));
@@ -235,119 +280,28 @@ export function useWorkspaceState() {
     return notes.filter((n) => n.subjectId === subjectId).length;
   };
 
-  const handleMoveNoteToFolder = (noteId: string, targetFolderId: string) => {
-    const targetFolder = folders.find((f) => f.id === targetFolderId);
-    if (!targetFolder) return;
-
-    setNotes((prev) =>
-      prev.map((n) => {
-        if (n.id === noteId) {
-          const updated = {
-            ...n,
-            folderId: targetFolderId,
-            subjectId: targetFolder.subjectId,
-            updatedAt: new Date().toISOString(),
-          };
-          api.saveNote(updated);
-          return updated;
-        }
-        return n;
-      })
-    );
-    setSelectedFolderId(targetFolderId);
-    setSelectedSubjectId(targetFolder.subjectId);
-    setSelectedNoteId(noteId);
-  };
-
-  const handleMoveNoteToSubject = (noteId: string, targetSubjectId: string) => {
-    const subjectFolders = folders.filter((f) => f.subjectId === targetSubjectId);
-    let targetFolder = subjectFolders[0];
-
-    if (!targetFolder) {
-      const newFolder: FolderItem = {
-        id: `folder-${Date.now()}`,
-        subjectId: targetSubjectId,
-        name: 'General',
-        isExpanded: true,
-        order: 0,
-      };
-      setFolders((prev) => [...prev, newFolder]);
-      api.saveFolder(newFolder);
-      targetFolder = newFolder;
+  const handleWorkspaceUndo = async () => {
+    const prev = await undo(getSnapshot());
+    if (prev) {
+      setSubjects(prev.subjects);
+      setFolders(prev.folders);
+      setNotes(prev.notes);
+      setSelectedSubjectId(prev.selectedSubjectId);
+      setSelectedFolderId(prev.selectedFolderId);
+      setSelectedNoteId(prev.selectedNoteId);
     }
-
-    setNotes((prev) =>
-      prev.map((n) => {
-        if (n.id === noteId) {
-          const updated = {
-            ...n,
-            subjectId: targetSubjectId,
-            folderId: targetFolder.id,
-            updatedAt: new Date().toISOString(),
-          };
-          api.saveNote(updated);
-          return updated;
-        }
-        return n;
-      })
-    );
-    setSelectedSubjectId(targetSubjectId);
-    setSelectedFolderId(targetFolder.id);
-    setSelectedNoteId(noteId);
   };
 
-  const handleMoveFolderToSubject = (folderId: string, targetSubjectId: string) => {
-    const folder = folders.find((f) => f.id === folderId);
-    if (!folder || folder.subjectId === targetSubjectId) return;
-
-    const updatedFolder = { ...folder, subjectId: targetSubjectId };
-    setFolders((prev) => prev.map((f) => (f.id === folderId ? updatedFolder : f)));
-    api.saveFolder(updatedFolder);
-
-    setNotes((prev) =>
-      prev.map((n) => {
-        if (n.folderId === folderId) {
-          const updatedNote = { ...n, subjectId: targetSubjectId, updatedAt: new Date().toISOString() };
-          api.saveNote(updatedNote);
-          return updatedNote;
-        }
-        return n;
-      })
-    );
-    setSelectedSubjectId(targetSubjectId);
-    setSelectedFolderId(folderId);
-  };
-
-  const handleConvertFolderToSubject = (folderId: string) => {
-    const folder = folders.find((f) => f.id === folderId);
-    if (!folder) return;
-
-    const colors = ['#f97316', '#10b981', '#6366f1', '#ec4899', '#3b82f6', '#eab308', '#8b5cf6', '#14b8a6'];
-    const newSubject: SubjectItem = {
-      id: `sub-${Date.now()}`,
-      name: folder.name,
-      color: colors[subjects.length % colors.length],
-      order: subjects.length,
-    };
-    setSubjects((prev) => [...prev, newSubject]);
-    api.saveSubject(newSubject);
-
-    const updatedFolder = { ...folder, subjectId: newSubject.id };
-    setFolders((prev) => prev.map((f) => (f.id === folderId ? updatedFolder : f)));
-    api.saveFolder(updatedFolder);
-
-    setNotes((prev) =>
-      prev.map((n) => {
-        if (n.folderId === folderId) {
-          const updatedNote = { ...n, subjectId: newSubject.id, updatedAt: new Date().toISOString() };
-          api.saveNote(updatedNote);
-          return updatedNote;
-        }
-        return n;
-      })
-    );
-    setSelectedSubjectId(newSubject.id);
-    setSelectedFolderId(folderId);
+  const handleWorkspaceRedo = async () => {
+    const next = await redo(getSnapshot());
+    if (next) {
+      setSubjects(next.subjects);
+      setFolders(next.folders);
+      setNotes(next.notes);
+      setSelectedSubjectId(next.selectedSubjectId);
+      setSelectedFolderId(next.selectedFolderId);
+      setSelectedNoteId(next.selectedNoteId);
+    }
   };
 
   return {
@@ -371,6 +325,7 @@ export function useWorkspaceState() {
     handleDeleteNote,
     handleCreateNote,
     handleMoveNoteToFolder,
+    handleReorderOrMoveNote,
     handleMoveNoteToSubject,
     handleMoveFolderToSubject,
     handleConvertFolderToSubject,
@@ -382,5 +337,7 @@ export function useWorkspaceState() {
     handleUpdateSubject,
     handleDeleteSubject,
     getSubjectNoteCount,
+    handleWorkspaceUndo,
+    handleWorkspaceRedo,
   };
 }

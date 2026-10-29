@@ -75,6 +75,7 @@ export interface NoteItem {
   updatedAt: string;
   dueDate?: string; // Optional deadline
   focusMinutes?: number; // Estimated countdown time
+  order?: number; // Manual sorting order in folder
 }
 
 export interface FolderItem {

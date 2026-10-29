@@ -34,10 +34,11 @@ export const App: React.FC = () => {
     currentSubject, currentSubjectFolders, currentNote, currentFolder,
     setSelectedSubjectId, setSelectedFolderId, setSelectedNoteId, setActiveTagFilter,
     handleUpdateNote, handleToggleNoteComplete, handleDeleteNote, handleCreateNote,
-    handleMoveNoteToFolder, handleMoveNoteToSubject,
+    handleMoveNoteToFolder, handleReorderOrMoveNote, handleMoveNoteToSubject,
     handleMoveFolderToSubject, handleConvertFolderToSubject,
     handleAddFolder, handleUpdateFolder, handleDeleteFolder, handleToggleFolderExpand,
     handleAddSubject, handleUpdateSubject, handleDeleteSubject, getSubjectNoteCount,
+    handleWorkspaceUndo, handleWorkspaceRedo,
   } = useWorkspaceState();
 
   const [filter, setFilter] = useState<ViewFilter>('all');
@@ -201,6 +202,8 @@ export const App: React.FC = () => {
     onNavigateVertical: handleVerticalNavigate,
     onNavigateHorizontal: handleHorizontalNavigate,
     onEnterTreeItem: handleEnterTreeItem,
+    onUndo: handleWorkspaceUndo,
+    onRedo: handleWorkspaceRedo,
     onEscape: handleEscape,
   });
 
@@ -282,6 +285,7 @@ export const App: React.FC = () => {
         {!isZenMode && (
           <SubjectsSidebar
             subjects={subjects}
+            folders={folders}
             selectedSubjectId={selectedSubjectId}
             isFocused={activeColumn === 1}
             onSelectSubject={(id) => { setSelectedSubjectId(id); setActiveColumn(1); }}
@@ -289,6 +293,7 @@ export const App: React.FC = () => {
             onUpdateSubject={handleUpdateSubject}
             onDeleteSubject={handleDeleteSubject}
             getSubjectNoteCount={getSubjectNoteCount}
+            onMoveNoteToFolder={handleMoveNoteToFolder}
             onMoveNoteToSubject={handleMoveNoteToSubject}
             onMoveFolderToSubject={handleMoveFolderToSubject}
             onConvertFolderToSubject={handleConvertFolderToSubject}
@@ -316,6 +321,7 @@ export const App: React.FC = () => {
             onDeleteFolder={handleDeleteFolder}
             onAddNote={(folderId) => handleCreateNewNote(folderId)}
             onMoveNoteToFolder={handleMoveNoteToFolder}
+            onReorderOrMoveNote={handleReorderOrMoveNote}
           />
         )}
 

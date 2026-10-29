@@ -63,6 +63,7 @@ impl DatabaseManager {
                 updated_at TEXT NOT NULL,
                 due_date TEXT,
                 focus_minutes INTEGER,
+                sort_order INTEGER NOT NULL DEFAULT 0,
                 is_deleted INTEGER NOT NULL DEFAULT 0,
                 FOREIGN KEY(folder_id) REFERENCES folders(id) ON DELETE CASCADE,
                 FOREIGN KEY(subject_id) REFERENCES subjects(id) ON DELETE CASCADE
@@ -91,6 +92,13 @@ impl DatabaseManager {
             END;
             ",
         )?;
+
+        // Ensure sort_order column exists on notes table for existing databases
+        let mut pragma = conn.prepare("PRAGMA table_info(notes)")?;
+        let columns = pragma.query_map([], |row| row.get::<_, String>(1))?.collect::<Result<Vec<_>, _>>()?;
+        if !columns.contains(&"sort_order".to_string()) {
+            conn.execute("ALTER TABLE notes ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0;", [])?;
+        }
 
         // Rebuild FTS index only when notes count does not match FTS index count
         let notes_count: i64 = conn.query_row("SELECT count(*) FROM notes", [], |r| r.get(0))?;
@@ -155,6 +163,7 @@ impl DatabaseManager {
         let tags: Vec<String> = serde_json::from_str(&tags_str).unwrap_or_default();
         let links: Vec<LinkItem> = serde_json::from_str(&links_str).unwrap_or_default();
         let sketches: Vec<SketchItem> = serde_json::from_str(&sketches_str).unwrap_or_default();
+        let sort_order: i32 = row.get(14).unwrap_or(0);
 
         Ok(NoteItem {
             id: row.get(0)?,
@@ -171,6 +180,7 @@ impl DatabaseManager {
             updated_at: row.get(11)?,
             due_date: row.get(12)?,
             focus_minutes: row.get(13)?,
+            order: Some(sort_order),
         })
     }
 
@@ -200,7 +210,7 @@ impl DatabaseManager {
             })
         })?.collect::<Result<Vec<_>, _>>()?;
 
-        let mut notes_stmt = conn.prepare("SELECT id, folder_id, subject_id, title, content, is_completed, is_pinned, tags_json, links_json, sketches_json, created_at, updated_at, due_date, focus_minutes FROM notes WHERE is_deleted = 0 ORDER BY is_pinned DESC, updated_at DESC")?;
+        let mut notes_stmt = conn.prepare("SELECT id, folder_id, subject_id, title, content, is_completed, is_pinned, tags_json, links_json, sketches_json, created_at, updated_at, due_date, focus_minutes, sort_order FROM notes WHERE is_deleted = 0 ORDER BY is_pinned DESC, sort_order ASC, updated_at DESC")?;
         let notes = notes_stmt.query_map([], Self::map_note_row)?.collect::<Result<Vec<_>, _>>()?;
 
         Ok(InitialData {
@@ -238,7 +248,7 @@ impl DatabaseManager {
                 SELECT notes.id, notes.folder_id, notes.subject_id, notes.title, notes.content,
                        notes.is_completed, notes.is_pinned, notes.tags_json, notes.links_json,
                        notes.sketches_json, notes.created_at, notes.updated_at, notes.due_date,
-                       notes.focus_minutes
+                       notes.focus_minutes, notes.sort_order
                 FROM notes
                 JOIN notes_fts ON notes.rowid = notes_fts.rowid
                 WHERE notes.is_deleted = 0 AND notes_fts MATCH ?1
@@ -265,14 +275,14 @@ impl DatabaseManager {
             "SELECT id, folder_id, subject_id, title, content,
                     is_completed, is_pinned, tags_json, links_json,
                     sketches_json, created_at, updated_at, due_date,
-                    focus_minutes
+                    focus_minutes, sort_order
              FROM notes
              WHERE is_deleted = 0 AND (
                  title LIKE ?1 OR
                  content LIKE ?1 OR
                  tags_json LIKE ?1
              )
-             ORDER BY is_pinned DESC, updated_at DESC
+             ORDER BY is_pinned DESC, sort_order ASC, updated_at DESC
              LIMIT 50",
         )?;
 
@@ -288,10 +298,11 @@ impl DatabaseManager {
         let tags_json = serde_json::to_string(&note.tags).unwrap_or_else(|_| "[]".to_string());
         let links_json = serde_json::to_string(&note.links).unwrap_or_else(|_| "[]".to_string());
         let sketches_json = serde_json::to_string(&note.sketches).unwrap_or_else(|_| "[]".to_string());
+        let sort_order = note.order.unwrap_or(0);
 
         conn.execute(
-            "INSERT INTO notes (id, folder_id, subject_id, title, content, is_completed, is_pinned, tags_json, links_json, sketches_json, created_at, updated_at, due_date, focus_minutes)
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)
+            "INSERT INTO notes (id, folder_id, subject_id, title, content, is_completed, is_pinned, tags_json, links_json, sketches_json, created_at, updated_at, due_date, focus_minutes, sort_order, is_deleted)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, 0)
              ON CONFLICT(id) DO UPDATE SET
              folder_id=excluded.folder_id,
              subject_id=excluded.subject_id,
@@ -304,7 +315,9 @@ impl DatabaseManager {
              sketches_json=excluded.sketches_json,
              updated_at=excluded.updated_at,
              due_date=excluded.due_date,
-             focus_minutes=excluded.focus_minutes;",
+             focus_minutes=excluded.focus_minutes,
+             sort_order=excluded.sort_order,
+             is_deleted=0;",
             params![
                 note.id,
                 note.folder_id,
@@ -319,7 +332,8 @@ impl DatabaseManager {
                 note.created_at,
                 note.updated_at,
                 note.due_date,
-                note.focus_minutes
+                note.focus_minutes,
+                sort_order
             ],
         )?;
 

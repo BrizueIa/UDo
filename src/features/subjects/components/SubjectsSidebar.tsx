@@ -1,22 +1,18 @@
-import React, { useState } from 'react';
-import { SubjectItem } from '../../../shared/types';
-import { Plus, Check, X, Pencil, Trash2, FolderPlus } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { SubjectItem, FolderItem } from '../../../shared/types';
+import { Plus, Check, X, FolderPlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
+import { SubjectItemRow } from './SubjectItemRow';
 
 const COLOR_PALETTE = [
-  '#f97316', // Orange
-  '#10b981', // Emerald
-  '#6366f1', // Indigo
-  '#ec4899', // Pink
-  '#3b82f6', // Blue
-  '#eab308', // Amber
-  '#8b5cf6', // Purple
-  '#14b8a6', // Teal
+  '#f97316', '#10b981', '#6366f1', '#ec4899',
+  '#3b82f6', '#eab308', '#8b5cf6', '#14b8a6',
 ];
 
 interface Props {
   subjects: SubjectItem[];
+  folders: FolderItem[];
   selectedSubjectId: string;
   isFocused?: boolean;
   onSelectSubject: (id: string) => void;
@@ -24,6 +20,7 @@ interface Props {
   onUpdateSubject: (subject: SubjectItem) => void;
   onDeleteSubject: (id: string) => void;
   getSubjectNoteCount: (id: string) => number;
+  onMoveNoteToFolder?: (noteId: string, folderId: string) => void;
   onMoveNoteToSubject?: (noteId: string, subjectId: string) => void;
   onMoveFolderToSubject?: (folderId: string, subjectId: string) => void;
   onConvertFolderToSubject?: (folderId: string) => void;
@@ -31,6 +28,7 @@ interface Props {
 
 export const SubjectsSidebar: React.FC<Props> = ({
   subjects,
+  folders,
   selectedSubjectId,
   isFocused = false,
   onSelectSubject,
@@ -38,35 +36,28 @@ export const SubjectsSidebar: React.FC<Props> = ({
   onUpdateSubject,
   onDeleteSubject,
   getSubjectNoteCount,
+  onMoveNoteToFolder,
   onMoveNoteToSubject,
   onMoveFolderToSubject,
   onConvertFolderToSubject,
 }) => {
   const { t } = useTranslation();
 
-  // Drag and drop state
-  const [dragOverSubjectId, setDragOverSubjectId] = useState<string | null>(null);
-  const [isDropToNewProject, setIsDropToNewProject] = useState(false);
+  // Drag and drop state for folders -> project conversion
+  const [isDraggingFolder, setIsDraggingFolder] = useState(false);
+  const [isDropOverEmptySpace, setIsDropOverEmptySpace] = useState(false);
+  const dragLeaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // New Subject State
   const [isCreating, setIsCreating] = useState(false);
   const [newName, setNewName] = useState('');
   const [newColor, setNewColor] = useState(COLOR_PALETTE[0]);
 
-  // Edit Subject State
-  const [editingSubjectId, setEditingSubjectId] = useState<string | null>(null);
-  const [editName, setEditName] = useState('');
-  const [editColor, setEditColor] = useState('');
-
-  // Confirm delete state
-  const [deletingSubjectId, setDeletingSubjectId] = useState<string | null>(null);
-
   const handleStartCreate = () => {
     setIsCreating(true);
     setNewName('');
     const randomColor = COLOR_PALETTE[subjects.length % COLOR_PALETTE.length];
     setNewColor(randomColor);
-    setEditingSubjectId(null);
   };
 
   const handleSaveCreate = () => {
@@ -76,32 +67,55 @@ export const SubjectsSidebar: React.FC<Props> = ({
     setNewName('');
   };
 
-  const handleStartEdit = (subject: SubjectItem, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setEditingSubjectId(subject.id);
-    setEditName(subject.name);
-    setEditColor(subject.color);
-    setIsCreating(false);
+  const handleAsideDragOver = (e: React.DragEvent) => {
+    if (
+      e.dataTransfer.types.includes('application/udo-folder-id') ||
+      e.dataTransfer.types.includes('text/plain')
+    ) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      if (dragLeaveTimerRef.current) {
+        clearTimeout(dragLeaveTimerRef.current);
+        dragLeaveTimerRef.current = null;
+      }
+      setIsDraggingFolder(true);
+      setIsDropOverEmptySpace(true);
+    }
   };
 
-  const handleSaveEdit = (subject: SubjectItem, e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const trimmed = editName.trim();
-    if (trimmed) onUpdateSubject({ ...subject, name: trimmed, color: editColor });
-    setEditingSubjectId(null);
+  const handleAsideDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      dragLeaveTimerRef.current = setTimeout(() => {
+        setIsDraggingFolder(false);
+        setIsDropOverEmptySpace(false);
+      }, 100);
+    }
   };
 
-  const handleDelete = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    onDeleteSubject(id);
-    setDeletingSubjectId(null);
+  const handleAsideDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setIsDraggingFolder(false);
+    setIsDropOverEmptySpace(false);
+    if (dragLeaveTimerRef.current) {
+      clearTimeout(dragLeaveTimerRef.current);
+      dragLeaveTimerRef.current = null;
+    }
+
+    const folderId = e.dataTransfer.getData('application/udo-folder-id');
+    if (folderId && onConvertFolderToSubject) {
+      onConvertFolderToSubject(folderId);
+    }
   };
 
   return (
     <aside
-      className={`w-56 flex-shrink-0 bg-theme-sidebar border-r border-theme-border flex flex-col h-full select-none transition-all ${
+      onDragOver={handleAsideDragOver}
+      onDragLeave={handleAsideDragLeave}
+      onDrop={handleAsideDrop}
+      className={`relative w-56 flex-shrink-0 bg-theme-sidebar border-r border-theme-border flex flex-col h-full select-none transition-all ${
         isFocused ? 'ring-1 ring-inset ring-theme-accent/40 shadow-sm' : ''
-      }`}
+      } ${isDropOverEmptySpace ? 'bg-theme-accent/5' : ''}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-theme-border/50">
@@ -180,207 +194,50 @@ export const SubjectsSidebar: React.FC<Props> = ({
 
       {/* Subjects List */}
       <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
-        {subjects.map((subject) => {
-          const isSelected = subject.id === selectedSubjectId;
-          const isEditing = editingSubjectId === subject.id;
-          const count = getSubjectNoteCount(subject.id);
-
-          if (isEditing) {
-            return (
-              <div
-                key={subject.id}
-                className="p-2.5 bg-theme-card border border-theme-accent/40 rounded-xl space-y-2 shadow-sm"
-              >
-                <input
-                  type="text"
-                  autoFocus
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleSaveEdit(subject);
-                    if (e.key === 'Escape') setEditingSubjectId(null);
-                  }}
-                  className="w-full bg-theme-column px-2 py-1 rounded text-xs outline-none border border-theme-border text-theme-text"
-                />
-
-                <div className="flex items-center justify-between px-1">
-                  {COLOR_PALETTE.map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setEditColor(c)}
-                      className={`w-4 h-4 rounded-full transition-transform ${
-                        editColor === c ? 'scale-125 ring-2 ring-white/60' : 'opacity-80 hover:opacity-100'
-                      }`}
-                      style={{ backgroundColor: c }}
-                    />
-                  ))}
-                </div>
-
-                <div className="flex items-center justify-end space-x-1 pt-1">
-                  <button
-                    onClick={() => setEditingSubjectId(null)}
-                    className="p-1 rounded text-theme-muted hover:text-theme-text"
-                  >
-                    <X size={13} />
-                  </button>
-                  <button
-                    onClick={() => handleSaveEdit(subject)}
-                    className="p-1 rounded bg-theme-accent text-white hover:bg-theme-accent-hover"
-                  >
-                    <Check size={13} />
-                  </button>
-                </div>
-              </div>
-            );
-          }
-
-          return (
-            <motion.div
-              key={subject.id}
-              onClick={() => onSelectSubject(subject.id)}
-              onDragOver={(e) => {
-                if (
-                  e.dataTransfer.types.includes('application/udo-note-id') ||
-                  e.dataTransfer.types.includes('application/udo-folder-id') ||
-                  e.dataTransfer.types.includes('text/plain')
-                ) {
-                  e.preventDefault();
-                  e.dataTransfer.dropEffect = 'move';
-                  if (dragOverSubjectId !== subject.id) setDragOverSubjectId(subject.id);
-                }
-              }}
-              onDragLeave={() => {
-                if (dragOverSubjectId === subject.id) setDragOverSubjectId(null);
-              }}
-              onDrop={(e) => {
-                e.preventDefault();
-                setDragOverSubjectId(null);
-                const folderId = e.dataTransfer.getData('application/udo-folder-id');
-                const noteId = e.dataTransfer.getData('application/udo-note-id') || (!folderId ? e.dataTransfer.getData('text/plain') : '');
-
-                if (folderId && onMoveFolderToSubject) {
-                  onMoveFolderToSubject(folderId, subject.id);
-                } else if (noteId && onMoveNoteToSubject) {
-                  onMoveNoteToSubject(noteId, subject.id);
-                }
-              }}
-              whileHover={{ x: 2 }}
-              whileTap={{ scale: 0.98 }}
-              className={`group relative w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer select-none ${
-                dragOverSubjectId === subject.id
-                  ? 'bg-theme-accent/25 ring-2 ring-theme-accent/70 border-theme-accent scale-[1.02] shadow-md text-theme-text font-bold'
-                  : isSelected
-                  ? 'text-theme-text font-semibold'
-                  : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover/40'
-              }`}
-            >
-              {/* Sliding Active Pill */}
-              {isSelected && !dragOverSubjectId && (
-                <motion.div
-                  layoutId="active-subject-pill"
-                  className="absolute inset-0 bg-theme-card border border-theme-accent/40 rounded-lg shadow-sm pointer-events-none"
-                  transition={{ type: 'spring', stiffness: 450, damping: 32 }}
-                />
-              )}
-
-              <div className="relative z-10 flex items-center space-x-2.5 min-w-0 flex-1">
-                <span
-                  className="w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-sm transition-transform group-hover:scale-110"
-                  style={{ backgroundColor: subject.color }}
-                />
-                <span className="truncate text-[13px]">{subject.name}</span>
-              </div>
-
-              {/* Action Buttons (visible on hover) or Count Badge */}
-              <div className="relative z-10 flex items-center space-x-1 flex-shrink-0">
-                <div className="opacity-0 group-hover:opacity-100 flex items-center space-x-0.5 transition-opacity">
-                  <button
-                    onClick={(e) => handleStartEdit(subject, e)}
-                    className="p-1 text-theme-muted hover:text-theme-text hover:bg-theme-hover rounded"
-                    title={t('nav.editSubject')}
-                  >
-                    <Pencil size={12} />
-                  </button>
-                  {deletingSubjectId === subject.id ? (
-                    <div className="flex items-center space-x-0.5 bg-red-500/10 px-1 py-0.5 rounded border border-red-500/30">
-                      <button
-                        onClick={(e) => handleDelete(subject.id, e)}
-                        className="text-[10px] text-red-400 font-bold px-1 hover:underline"
-                        title={t('nav.confirmDelete')}
-                      >
-                        {t('nav.del')}
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setDeletingSubjectId(null);
-                        }}
-                        className="text-theme-muted hover:text-theme-text p-0.5"
-                      >
-                        <X size={10} />
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setDeletingSubjectId(subject.id);
-                      }}
-                      className="p-1 text-theme-muted hover:text-red-400 hover:bg-theme-hover rounded"
-                      title={t('nav.deleteSubject')}
-                    >
-                      <Trash2 size={12} />
-                    </button>
-                  )}
-                </div>
-
-                {count > 0 && deletingSubjectId !== subject.id && (
-                  <span
-                    className={`text-xs px-2 py-0.5 rounded-full font-mono text-[11px] group-hover:hidden ${
-                      isSelected
-                        ? 'bg-theme-accent/20 text-theme-accent font-semibold'
-                        : 'bg-theme-card/70 text-theme-muted'
-                    }`}
-                  >
-                    {count}
-                  </span>
-                )}
-              </div>
-            </motion.div>
-          );
-        })}
+        {subjects.map((subject) => (
+          <SubjectItemRow
+            key={subject.id}
+            subject={subject}
+            isSelected={subject.id === selectedSubjectId}
+            count={getSubjectNoteCount(subject.id)}
+            folders={folders}
+            onSelectSubject={onSelectSubject}
+            onUpdateSubject={onUpdateSubject}
+            onDeleteSubject={onDeleteSubject}
+            onMoveNoteToFolder={onMoveNoteToFolder}
+            onMoveNoteToSubject={onMoveNoteToSubject}
+            onMoveFolderToSubject={onMoveFolderToSubject}
+          />
+        ))}
       </div>
 
-      {/* Bottom Drop Zone: Convert dragged folder to new project */}
-      <div
-        onDragOver={(e) => {
-          if (e.dataTransfer.types.includes('application/udo-folder-id') || e.dataTransfer.types.includes('text/plain')) {
-            e.preventDefault();
-            e.dataTransfer.dropEffect = 'move';
-            setIsDropToNewProject(true);
-          }
-        }}
-        onDragLeave={() => setIsDropToNewProject(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setIsDropToNewProject(false);
-          const folderId = e.dataTransfer.getData('application/udo-folder-id');
-          if (folderId && onConvertFolderToSubject) {
-            onConvertFolderToSubject(folderId);
-          }
-        }}
-        className={`mx-2 mb-2 p-2 rounded-xl border-2 border-dashed transition-all text-center flex flex-col items-center justify-center space-y-1 ${
-          isDropToNewProject
-            ? 'border-theme-accent bg-theme-accent/20 text-theme-text scale-[1.02] shadow-md'
-            : 'border-theme-border/50 text-theme-muted/60 hover:border-theme-border/80'
-        }`}
-      >
-        <FolderPlus size={14} className={isDropToNewProject ? 'text-theme-accent' : 'text-theme-muted'} />
-        <span className="text-[10px] font-medium leading-tight">
-          {isDropToNewProject ? t('nav.dropFolderToNewProject') : t('nav.convertToProject')}
-        </span>
-      </div>
+      {/* Floating Drop Overlay for Creating Project from Folder (Only visible while dragging folder) */}
+      <AnimatePresence>
+        {isDraggingFolder && (
+          <motion.div
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ duration: 0.15 }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              e.dataTransfer.dropEffect = 'move';
+              setIsDropOverEmptySpace(true);
+            }}
+            onDrop={handleAsideDrop}
+            className="absolute bottom-3 left-2 right-2 p-3 rounded-xl border-2 border-dashed border-theme-accent bg-theme-card/95 backdrop-blur-md shadow-2xl flex flex-col items-center justify-center space-y-1 z-40 text-center cursor-pointer ring-2 ring-theme-accent/50"
+          >
+            <FolderPlus size={16} className="text-theme-accent animate-bounce" />
+            <span className="text-xs font-bold text-theme-text leading-tight">
+              {t('nav.dropFolderToNewProject')}
+            </span>
+            <span className="text-[10px] text-theme-muted">
+              {t('nav.dropAnywhereInColumn')}
+            </span>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </aside>
   );
 };

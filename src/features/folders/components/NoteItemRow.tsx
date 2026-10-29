@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { CheckCircle2, Circle, Pin } from 'lucide-react';
 import { NoteItem } from '../../../shared/types';
@@ -9,6 +9,7 @@ interface Props {
   isSelected: boolean;
   onSelect: () => void;
   onToggleComplete: () => void;
+  onDropOnNote?: (draggedNoteId: string, targetNoteId: string, position: 'before' | 'after') => void;
 }
 
 export const NoteItemRow: React.FC<Props> = ({
@@ -16,8 +17,10 @@ export const NoteItemRow: React.FC<Props> = ({
   isSelected,
   onSelect,
   onToggleComplete,
+  onDropOnNote,
 }) => {
   const { t } = useTranslation();
+  const [dropPosition, setDropPosition] = useState<'before' | 'after' | null>(null);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     e.dataTransfer.setData('application/udo-note-id', note.id);
@@ -25,10 +28,47 @@ export const NoteItemRow: React.FC<Props> = ({
     e.dataTransfer.effectAllowed = 'move';
   };
 
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (e.dataTransfer.types.includes('application/udo-note-id') || e.dataTransfer.types.includes('text/plain')) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+
+      const rect = e.currentTarget.getBoundingClientRect();
+      const midPoint = rect.top + rect.height / 2;
+      const pos = e.clientY < midPoint ? 'before' : 'after';
+      if (pos !== dropPosition) {
+        setDropPosition(pos);
+      }
+    }
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDropPosition(null);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const draggedNoteId =
+      e.dataTransfer.getData('application/udo-note-id') || e.dataTransfer.getData('text/plain');
+    const pos = dropPosition || 'after';
+    setDropPosition(null);
+
+    if (draggedNoteId && draggedNoteId !== note.id && onDropOnNote) {
+      onDropOnNote(draggedNoteId, note.id, pos);
+    }
+  };
+
   return (
     <div
       draggable
       onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       onClick={onSelect}
       className={`group relative flex items-center justify-between px-2.5 py-1.5 rounded-lg cursor-grab active:cursor-grabbing hover:translate-x-0.5 active:scale-[0.98] transition-all select-none ${
         isSelected
@@ -36,6 +76,14 @@ export const NoteItemRow: React.FC<Props> = ({
           : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover/40'
       }`}
     >
+      {/* Drop position indicator lines */}
+      {dropPosition === 'before' && (
+        <div className="absolute top-0 left-1 right-1 h-0.5 bg-theme-accent rounded-full z-30 shadow-xs" />
+      )}
+      {dropPosition === 'after' && (
+        <div className="absolute bottom-0 left-1 right-1 h-0.5 bg-theme-accent rounded-full z-30 shadow-xs" />
+      )}
+
       {/* Sliding Active Pill */}
       {isSelected && (
         <motion.div
