@@ -41,7 +41,7 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
   onAttachSketches,
 }) => {
   const { t } = useTranslation();
-  const [hasSelection, setHasSelection] = useState(false);
+  const [selectionCoords, setSelectionCoords] = useState<{ x: number; y: number } | null>(null);
 
   // Calculate total matches in content (diacritic-insensitive)
   useEffect(() => {
@@ -67,6 +67,19 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
     }
   }, [currentMatchIndex, findQuery]);
 
+  // Close floating toolbar when clicking outside textarea
+  useEffect(() => {
+    const handleOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (textareaRef.current?.contains(target) || target.closest('[data-rich-toolbar="true"]')) {
+        return;
+      }
+      setSelectionCoords(null);
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, [textareaRef]);
+
   const matchCounter = { current: 0 };
   const parserOpts: RichTextParserOptions = {
     notes,
@@ -78,13 +91,30 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
     t,
   };
 
-  const checkSelection = () => {
+  const handleMouseUp = (e: React.MouseEvent<HTMLTextAreaElement>) => {
     const el = textareaRef.current;
-    if (!el) {
-      setHasSelection(false);
-      return;
+    if (!el) return;
+    if (el.selectionStart !== el.selectionEnd && el.value.slice(el.selectionStart, el.selectionEnd).trim().length > 0) {
+      const rect = el.getBoundingClientRect();
+      const x = Math.max(rect.left + 50, Math.min(rect.right - 50, e.clientX));
+      const y = Math.max(rect.top + 20, e.clientY);
+      setSelectionCoords({ x, y });
+    } else {
+      setSelectionCoords(null);
     }
-    setHasSelection(el.selectionStart !== el.selectionEnd);
+  };
+
+  const handleKeyUp = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    const el = textareaRef.current;
+    if (!el) return;
+    if (el.selectionStart !== el.selectionEnd && el.value.slice(el.selectionStart, el.selectionEnd).trim().length > 0) {
+      if (!selectionCoords) {
+        const rect = el.getBoundingClientRect();
+        setSelectionCoords({ x: rect.left + rect.width / 2, y: rect.top + 60 });
+      }
+    } else if (e.key !== 'Shift' && e.key !== 'Control' && e.key !== 'Alt' && e.key !== 'Meta') {
+      setSelectionCoords(null);
+    }
   };
 
   const handleShortcutWrap = (prefix: string, suffix: string) => {
@@ -181,14 +211,14 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
     );
   }
 
-  // Edit Mode: Toolbar + Interactive Checklists Block + Textarea
+  // Edit Mode: Floating Toolbar + Interactive Checklists Block + Textarea
   return (
-    <div className="space-y-3">
-      {/* Word-style Rich Text Mini-Toolbar */}
+    <div className="space-y-3 relative">
+      {/* Word-style Floating Mini-Toolbar on Selection */}
       <RichTextToolbar
         textareaRef={textareaRef}
         content={content}
-        hasSelection={hasSelection}
+        coords={selectionCoords}
         onChangeContent={onChangeContent}
       />
 
@@ -234,9 +264,8 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
         ref={textareaRef}
         value={content}
         onChange={(e) => onChangeContent(e.target.value)}
-        onSelect={checkSelection}
-        onKeyUp={checkSelection}
-        onMouseUp={checkSelection}
+        onMouseUp={handleMouseUp}
+        onKeyUp={handleKeyUp}
         onKeyDown={(e) => {
           const isCtrl = e.ctrlKey || e.metaKey;
           if (isCtrl && !e.shiftKey && e.key.toLowerCase() === 'b') {

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Check, Pin } from 'lucide-react';
 import { NoteItem } from '../../../shared/types';
 import { useTranslation } from 'react-i18next';
+import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
 
 interface Props {
   note: NoteItem;
@@ -113,7 +114,7 @@ export const NoteItemRow: React.FC<Props> = ({
               : 'text-theme-text'
           }`}
         >
-          {note.title || t('note.titlePlaceholder')}
+          {renderRichTitle(note.title || t('note.titlePlaceholder'))}
         </span>
       </div>
 

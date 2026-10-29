@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { FolderItem } from '../../../shared/types';
 import { useTranslation } from 'react-i18next';
+import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
 
 interface Props {
   folder: FolderItem;
@@ -182,7 +183,7 @@ export const FolderItemRow: React.FC<Props> = ({
           {folder.isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </span>
         <span className="text-xs font-semibold text-theme-text truncate">
-          📁 {folder.name}
+          📁 {renderRichTitle(folder.name)}
         </span>
         <span className="text-[11px] text-theme-muted font-mono">
           ({noteCount})

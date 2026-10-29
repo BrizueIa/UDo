@@ -3,6 +3,7 @@ import { SubjectItem, FolderItem } from '../../../shared/types';
 import { Pencil, Trash2, X, Check, Folder } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
+import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
 
 const COLOR_PALETTE = [
   '#5551f5', '#1fd4a5', '#a986ff', '#ffc95f',
@@ -178,7 +179,7 @@ export const SubjectItemRow: React.FC<Props> = ({
             className="w-2.5 h-2.5 rounded-[3.5px] flex-shrink-0 shadow-sm transition-transform group-hover:scale-110"
             style={{ backgroundColor: subject.color }}
           />
-          <span className="truncate text-[13px]">{subject.name}</span>
+          <span className="truncate text-[13px]">{renderRichTitle(subject.name)}</span>
         </div>
 
         <div className="relative z-10 flex items-center space-x-1 flex-shrink-0">

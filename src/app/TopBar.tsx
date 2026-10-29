@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { ViewFilter, ThemeId, AccentColor, CustomThemeDefinition } from '../shared/types';
 import { TrafficLights } from '../shared/ui/TrafficLights';
 import { UDoLogo } from '../shared/ui/UDoLogo';
+import { renderRichTitle } from '../features/note-sheet/utils/inlineRichTextParser';
 import { SettingsModal } from './SettingsModal';
 import { TopBarSearch } from './TopBarSearch';
 import { TopBarFilterTabs } from './TopBarFilterTabs';
@@ -178,7 +179,7 @@ export const TopBar: React.FC<Props> = ({
 
           {currentSubjectName && (
             <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-theme-card text-[11px] font-semibold text-theme-muted border border-white/[0.05] truncate max-w-[130px]">
-              {currentSubjectName}
+              {renderRichTitle(currentSubjectName)}
             </span>
           )}
         </div>

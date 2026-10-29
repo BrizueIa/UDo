@@ -27,6 +27,55 @@ export function stripRichTextFormatting(text: string): string {
     .replace(/<\/?u>/gi, '').replace(/~~/g, '').replace(/\*\*/g, '').replace(/\*/g, '').replace(/`/g, '');
 }
 
+export function renderRichTitle(text: string, keyPrefix = 'title', depth = 0): React.ReactNode {
+  if (!text) return null;
+  if (depth > 4) return text;
+
+  return text.split(INLINE_TOKEN_REGEX).map((part, i) => {
+    if (!part) return null;
+    const key = `${keyPrefix}-${i}`;
+
+    if (part.startsWith('`') && part.endsWith('`')) {
+      return (
+        <code key={key} className="px-1 py-0.5 mx-0.5 rounded bg-theme-column font-mono text-[11px] text-theme-accent border border-white/[0.05]">
+          {part.slice(1, -1)}
+        </code>
+      );
+    }
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={key} className="font-bold">{renderRichTitle(part.slice(2, -2), `${key}-b`, depth + 1)}</strong>;
+    }
+    if (part.startsWith('~~') && part.endsWith('~~')) {
+      return <del key={key} className="line-through opacity-75">{renderRichTitle(part.slice(2, -2), `${key}-del`, depth + 1)}</del>;
+    }
+    if (part.startsWith('<u>') && part.endsWith('</u>')) {
+      return <u key={key} className="underline underline-offset-2">{renderRichTitle(part.slice(3, -4), `${key}-u`, depth + 1)}</u>;
+    }
+    const colorMatch = part.match(/^\[color=([^\]]+)\]([\s\S]*?)\[\/color\]$/);
+    if (colorMatch) {
+      return <span key={key} style={{ color: colorMatch[1] }}>{renderRichTitle(colorMatch[2], `${key}-c`, depth + 1)}</span>;
+    }
+    const bgMatch = part.match(/^\[bg=([^\]]+)\]([\s\S]*?)\[\/bg\]$/);
+    if (bgMatch) {
+      const color = bgMatch[1];
+      const bg = color.startsWith('#') && color.length === 7 ? `${color}33` : 'rgba(255, 201, 95, 0.25)';
+      return (
+        <mark key={key} style={{ backgroundColor: bg, borderBottom: `2px solid ${color}`, padding: '0 3px', borderRadius: '4px', color: 'inherit' }}>
+          {renderRichTitle(bgMatch[2], `${key}-bg`, depth + 1)}
+        </mark>
+      );
+    }
+    const sizeMatch = part.match(/^\[size=([^\]]+)\]([\s\S]*?)\[\/size\]$/);
+    if (sizeMatch) {
+      return <span key={key} className={SIZE_MAP[sizeMatch[1]] || 'text-base'}>{renderRichTitle(sizeMatch[2], `${key}-sz`, depth + 1)}</span>;
+    }
+    if (part.startsWith('*') && part.endsWith('*')) {
+      return <em key={key} className="italic">{renderRichTitle(part.slice(1, -1), `${key}-em`, depth + 1)}</em>;
+    }
+    return part;
+  });
+}
+
 export function renderTextWithHighlights(rawText: string, keyPrefix: string, options: RichTextParserOptions): React.ReactNode {
   const q = options.findQuery?.trim();
   if (!q) return rawText;

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ThemeId, AccentColor, CustomThemeDefinition } from '../types';
-import { Check, Trash2 } from 'lucide-react';
+import { Check, Trash2, Moon, Sun, Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { parseVSCodeTheme } from '../utils/themeImporter';
 import { PRESET_THEMES, ACCENTS } from '../data/themePresets';
@@ -136,24 +136,28 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
             <button
               type="button"
               onClick={() => setThemeCategoryFilter('dark')}
-              className={`flex-1 py-1 rounded text-center transition-colors cursor-pointer ${
+              className={`flex-1 py-1 rounded text-center transition-colors cursor-pointer flex items-center justify-center space-x-1.5 ${
                 themeCategoryFilter === 'dark'
                   ? 'bg-theme-card text-theme-text font-semibold shadow-xs'
                   : 'text-theme-muted hover:text-theme-text'
               }`}
             >
-              🌙 {t('settings.darkThemes')} ({darkPresets.length})
+              <Moon size={12} />
+              <span>{t('settings.darkThemes')}</span>
+              <span className="opacity-70 font-mono text-[10px]">({darkPresets.length})</span>
             </button>
             <button
               type="button"
               onClick={() => setThemeCategoryFilter('light')}
-              className={`flex-1 py-1 rounded text-center transition-colors cursor-pointer ${
+              className={`flex-1 py-1 rounded text-center transition-colors cursor-pointer flex items-center justify-center space-x-1.5 ${
                 themeCategoryFilter === 'light'
                   ? 'bg-theme-card text-theme-text font-semibold shadow-xs'
                   : 'text-theme-muted hover:text-theme-text'
               }`}
             >
-              ☀️ {t('settings.lightThemes')} ({lightPresets.length})
+              <Sun size={12} />
+              <span>{t('settings.lightThemes')}</span>
+              <span className="opacity-70 font-mono text-[10px]">({lightPresets.length})</span>
             </button>
           </div>
 
@@ -162,7 +166,10 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
             {(themeCategoryFilter === 'all' || themeCategoryFilter === 'dark') && (
               <div className="space-y-1.5">
                 <div className="flex items-center space-x-2 px-1 text-[11px] font-bold text-theme-muted uppercase tracking-wider">
-                  <span>🌙 {t('settings.darkThemes')}</span>
+                  <div className="flex items-center space-x-1.5">
+                    <Moon size={11} className="text-theme-muted" />
+                    <span>{t('settings.darkThemes')}</span>
+                  </div>
                   <div className="flex-1 h-px bg-white/[0.06]" />
                   <span className="text-[10px] font-mono opacity-60">{darkPresets.length}</span>
                 </div>
@@ -185,10 +192,7 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
                             : 'bg-theme-card/50 hover:bg-theme-card text-theme-muted hover:text-theme-text border border-white/[0.05] hover:border-theme-accent/30'
                         }`}
                       >
-                        <div className="flex items-center space-x-2.5 truncate">
-                          <span className="text-sm shrink-0">{th.icon}</span>
-                          <span className="truncate font-medium">{th.name}</span>
-                        </div>
+                        <span className="truncate font-medium">{th.name}</span>
                         <div className="flex items-center space-x-2 shrink-0">
                           <div className="flex items-center space-x-1 px-1.5 py-0.5 rounded-md bg-theme-base/60 border border-white/[0.04]">
                             {th.previewColors.map((color, idx) => (
@@ -211,7 +215,10 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
             {(themeCategoryFilter === 'all' || themeCategoryFilter === 'light') && (
               <div className="space-y-1.5 pt-1">
                 <div className="flex items-center space-x-2 px-1 text-[11px] font-bold text-theme-muted uppercase tracking-wider">
-                  <span>☀️ {t('settings.lightThemes')}</span>
+                  <div className="flex items-center space-x-1.5">
+                    <Sun size={11} className="text-theme-muted" />
+                    <span>{t('settings.lightThemes')}</span>
+                  </div>
                   <div className="flex-1 h-px bg-white/[0.06]" />
                   <span className="text-[10px] font-mono opacity-60">{lightPresets.length}</span>
                 </div>
@@ -234,10 +241,7 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
                             : 'bg-theme-card/50 hover:bg-theme-card text-theme-muted hover:text-theme-text border border-white/[0.05] hover:border-theme-accent/30'
                         }`}
                       >
-                        <div className="flex items-center space-x-2.5 truncate">
-                          <span className="text-sm shrink-0">{th.icon}</span>
-                          <span className="truncate font-medium">{th.name}</span>
-                        </div>
+                        <span className="truncate font-medium">{th.name}</span>
                         <div className="flex items-center space-x-2 shrink-0">
                           <div className="flex items-center space-x-1 px-1.5 py-0.5 rounded-md bg-theme-base/60 border border-white/[0.04]">
                             {th.previewColors.map((color, idx) => (
@@ -260,7 +264,10 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
             {customThemes.length > 0 && (
               <div className="pt-2 border-t border-theme-border/40 space-y-1.5">
                 <div className="flex items-center space-x-2 px-1 text-[11px] font-bold text-theme-muted uppercase tracking-wider">
-                  <span>✨ {t('settings.importedThemes')}</span>
+                  <div className="flex items-center space-x-1.5">
+                    <Sparkles size={11} className="text-theme-muted" />
+                    <span>{t('settings.importedThemes')}</span>
+                  </div>
                   <div className="flex-1 h-px bg-white/[0.06]" />
                   <span className="text-[10px] font-mono opacity-60">{customThemes.length}</span>
                 </div>
@@ -284,9 +291,8 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
                             onSelectTheme(ct.id);
                             onCloseMenu?.();
                           }}
-                          className="flex items-center space-x-2.5 flex-1 text-left truncate cursor-pointer"
+                          className="flex items-center space-x-2 flex-1 text-left truncate cursor-pointer"
                         >
-                          <span className="text-sm shrink-0">✨</span>
                           <span className="truncate font-medium">{ct.name}</span>
                         </button>
                         <div className="flex items-center space-x-2 shrink-0">

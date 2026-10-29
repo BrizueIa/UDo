@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../../../shared/api/ipc';
 import { UDoLogo } from '../../../shared/ui/UDoLogo';
 import { FloatingWidgetSelectors } from './FloatingWidgetSelectors';
+import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
 
 interface Props {
   notes: NoteItem[];
@@ -300,7 +301,7 @@ export const FloatingWidget: React.FC<Props> = ({
                 >
                   <div className="w-3.5 h-3.5 rounded-[4px] border border-theme-muted/60 group-hover:border-theme-accent transition-colors" />
                 </button>
-                <span className="text-xs text-theme-text truncate">{note.title}</span>
+                <span className="text-xs text-theme-text truncate">{renderRichTitle(note.title)}</span>
               </div>
 
               {/* Click to open note in full app with all panels visible */}

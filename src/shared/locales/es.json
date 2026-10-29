@@ -41,6 +41,7 @@
   },
   "note": {
     "titlePlaceholder": "Título de la nota...",
+    "clickToEditTitle": "Haz clic para editar el título",
     "modified": "Modificado",
     "justNow": "Justo ahora",
     "today": "Hoy",

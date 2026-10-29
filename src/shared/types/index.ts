@@ -24,7 +24,7 @@ export interface ThemePreset {
   id: ThemeId;
   name: string;
   category: 'dark' | 'light';
-  icon: string;
+  icon?: string;
   previewColors: [string, string, string];
 }
 
