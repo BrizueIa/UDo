@@ -240,7 +240,10 @@
     "toggleFolders": "Toggle Folders List (Column 2)",
     "zenMode": "Zen Mode (Distraction-free Writing)",
     "showHelp": "Show this Shortcuts Cheat Sheet",
-    "escapeAction": "Close modals / Clear search / Unfocus"
+    "escapeAction": "Close modals / Clear search / Unfocus",
+    "groupGeneral": "General & Window",
+    "groupNotes": "Notes & Folders",
+    "groupNavigation": "Navigation & Columns"
   },
   "settings": {
     "title": "Settings",
@@ -264,6 +267,7 @@
     "language": "Language",
     "appearanceTab": "Appearance",
     "audioTab": "Audio & Sound",
+    "shortcutsTab": "Keyboard Shortcuts",
     "generalTab": "General",
     "masterVolume": "Sound effects volume",
     "muteAudio": "Mute audio",

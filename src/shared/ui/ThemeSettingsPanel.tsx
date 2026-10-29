@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ThemeId, AccentColor, CustomThemeDefinition } from '../types';
 import { Check, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -32,6 +32,17 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
   const [themeCategoryFilter, setThemeCategoryFilter] = useState<'all' | 'dark' | 'light'>('all');
   const [importJsonText, setImportJsonText] = useState('');
   const [importError, setImportError] = useState<string | null>(null);
+
+  // Restore current theme on unmount
+  useEffect(() => {
+    return () => {
+      document.documentElement.setAttribute('data-theme', currentTheme);
+    };
+  }, [currentTheme]);
+
+  const restoreTheme = () => {
+    document.documentElement.setAttribute('data-theme', currentTheme);
+  };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -68,7 +79,7 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
   const lightPresets = PRESET_THEMES.filter((th) => th.category === 'light');
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3" onMouseLeave={restoreTheme}>
       {/* Subtabs Header */}
       <div className="flex items-center bg-theme-column/80 p-0.5 rounded-lg text-xs font-semibold w-fit">
         <button
@@ -147,7 +158,7 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
           </div>
 
           {/* Theme List Grid */}
-          <div className="max-h-72 overflow-y-auto space-y-1 pr-1">
+          <div className="max-h-72 overflow-y-auto space-y-1 pr-1" onMouseLeave={restoreTheme}>
             {(themeCategoryFilter === 'all' || themeCategoryFilter === 'dark') && (
               <div className="space-y-1">
                 <div className="px-2 py-0.5 text-[10px] font-bold text-theme-muted uppercase tracking-wider">
@@ -165,6 +176,7 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
                           onCloseMenu?.();
                         }}
                         onMouseEnter={() => document.documentElement.setAttribute('data-theme', th.id)}
+                        onMouseLeave={restoreTheme}
                         className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
                           isSelected
                             ? 'bg-theme-card text-theme-text font-semibold border border-theme-accent/40 shadow-xs'
@@ -211,6 +223,7 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
                           onCloseMenu?.();
                         }}
                         onMouseEnter={() => document.documentElement.setAttribute('data-theme', th.id)}
+                        onMouseLeave={restoreTheme}
                         className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors cursor-pointer ${
                           isSelected
                             ? 'bg-theme-card text-theme-text font-semibold border border-theme-accent/40 shadow-xs'
@@ -251,6 +264,8 @@ export const ThemeSettingsPanel: React.FC<Props> = ({
                     return (
                       <div
                         key={ct.id}
+                        onMouseEnter={() => document.documentElement.setAttribute('data-theme', ct.id)}
+                        onMouseLeave={restoreTheme}
                         className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg text-xs transition-colors group ${
                           isSelected
                             ? 'bg-theme-card text-theme-text font-semibold border border-theme-accent/40 shadow-xs'

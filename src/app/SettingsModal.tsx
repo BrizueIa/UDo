@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { ThemeId, AccentColor, CustomThemeDefinition } from '../shared/types';
 import { ThemeSettingsPanel } from '../shared/ui/ThemeSettingsPanel';
 import { AudioSettingsTab } from './AudioSettingsTab';
+import { ShortcutsSettingsTab } from './ShortcutsSettingsTab';
 
 interface Props {
   isOpen: boolean;
@@ -29,7 +30,7 @@ interface Props {
   onVolumeChange: (vol: number) => void;
   onToggleAudioMute: () => void;
   onOpenShortcuts?: () => void;
-  initialTab?: 'appearance' | 'audio' | 'general';
+  initialTab?: 'appearance' | 'audio' | 'shortcuts' | 'general';
 }
 
 export const SettingsModal: React.FC<Props> = ({
@@ -46,15 +47,24 @@ export const SettingsModal: React.FC<Props> = ({
   audioVolume,
   onVolumeChange,
   onToggleAudioMute,
-  onOpenShortcuts,
   initialTab = 'appearance',
 }) => {
   const { t, i18n } = useTranslation();
-  const [activeTab, setActiveTab] = useState<'appearance' | 'audio' | 'general'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'appearance' | 'audio' | 'shortcuts' | 'general'>(initialTab);
 
   useEffect(() => {
     if (isOpen) setActiveTab(initialTab);
   }, [isOpen, initialTab]);
+
+  // Ensure current theme is preserved when modal closes or unmounts
+  useEffect(() => {
+    if (!isOpen) {
+      document.documentElement.setAttribute('data-theme', currentTheme);
+    }
+    return () => {
+      document.documentElement.setAttribute('data-theme', currentTheme);
+    };
+  }, [isOpen, currentTheme]);
 
   // Close on Escape
   useEffect(() => {
@@ -72,6 +82,7 @@ export const SettingsModal: React.FC<Props> = ({
   const navItems = [
     { id: 'appearance', label: t('settings.appearanceTab'), icon: <Palette size={15} /> },
     { id: 'audio', label: t('settings.audioTab'), icon: <Volume2 size={15} /> },
+    { id: 'shortcuts', label: t('settings.shortcutsTab'), icon: <Keyboard size={15} /> },
     { id: 'general', label: t('settings.generalTab'), icon: <Globe size={15} /> },
   ] as const;
 
@@ -149,6 +160,11 @@ export const SettingsModal: React.FC<Props> = ({
               />
             )}
 
+            {/* ⌨️ Keyboard Shortcuts Tab */}
+            {activeTab === 'shortcuts' && (
+              <ShortcutsSettingsTab />
+            )}
+
             {/* 🌐 General / Language Tab */}
             {activeTab === 'general' && (
               <div className="space-y-4">
@@ -207,23 +223,6 @@ export const SettingsModal: React.FC<Props> = ({
                     </button>
                   </div>
                 </div>
-
-                {/* Keyboard Shortcuts Trigger */}
-                {onOpenShortcuts && (
-                  <div className="pt-4 border-t border-theme-border/60">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onClose();
-                        onOpenShortcuts();
-                      }}
-                      className="flex items-center space-x-2 px-3 py-2 rounded-xl bg-theme-card hover:bg-theme-hover text-theme-text border border-white/[0.06] text-xs transition-colors cursor-pointer"
-                    >
-                      <Keyboard size={14} className="text-theme-accent" />
-                      <span>{t('settings.viewShortcuts')}</span>
-                    </button>
-                  </div>
-                )}
               </div>
             )}
           </div>

@@ -240,7 +240,10 @@
     "toggleFolders": "Alternar lista de Carpetas (Columna 2)",
     "zenMode": "Modo Zen (Escritura sin distracciones)",
     "showHelp": "Mostrar esta guía de atajos",
-    "escapeAction": "Cerrar modales / Limpiar búsqueda / Desenfocar"
+    "escapeAction": "Cerrar modales / Limpiar búsqueda / Desenfocar",
+    "groupGeneral": "General y Ventana",
+    "groupNotes": "Notas y Carpetas",
+    "groupNavigation": "Navegación y Columnas"
   },
   "settings": {
     "title": "Ajustes",
@@ -264,6 +267,7 @@
     "language": "Idioma",
     "appearanceTab": "Apariencia",
     "audioTab": "Audio & Sonido",
+    "shortcutsTab": "Atajos de Teclado",
     "generalTab": "General",
     "masterVolume": "Volumen de efectos de sonido",
     "muteAudio": "Silenciar sonidos",

@@ -1,9 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Square, Trash2, Sliders } from 'lucide-react';
+import { Mic, Square, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NoteAttachment } from '../../../shared/types';
 import { attachmentsApi } from '../../../shared/api/attachmentsApi';
-import { AudioDeviceSettingsModal } from './AudioDeviceSettingsModal';
 
 interface Props {
   onAttachmentCreated: (attachment: NoteAttachment) => void;
@@ -14,7 +13,6 @@ export const VoiceRecorderButton: React.FC<Props> = ({ onAttachmentCreated, onEr
   const { t } = useTranslation();
   const [isRecording, setIsRecording] = useState(false);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -220,29 +218,14 @@ export const VoiceRecorderButton: React.FC<Props> = ({ onAttachmentCreated, onEr
   }
 
   return (
-    <div className="flex items-center space-x-0.5">
-      <button
-        type="button"
-        onClick={startRecording}
-        className="flex items-center space-x-1 px-2.5 py-1 rounded-l-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.05] transition-colors text-[11px] cursor-pointer"
-        title={t('voiceRecorder.recordVoiceNote')}
-      >
-        <Mic size={12} className="text-red-400" />
-        <span>{t('voiceRecorder.record')}</span>
-      </button>
-      <button
-        type="button"
-        onClick={() => setIsSettingsOpen(true)}
-        className="px-1.5 py-1 rounded-r-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border-t border-r border-b border-white/[0.05] transition-colors text-[11px] cursor-pointer"
-        title={t('audioSettings.title')}
-      >
-        <Sliders size={11} />
-      </button>
-
-      <AudioDeviceSettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-      />
-    </div>
+    <button
+      type="button"
+      onClick={startRecording}
+      className="flex items-center space-x-1.5 px-2.5 py-1 rounded-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.05] transition-colors text-[11px] cursor-pointer"
+      title={t('voiceRecorder.recordVoiceNote')}
+    >
+      <Mic size={12} className="text-red-400" />
+      <span>{t('voiceRecorder.record')}</span>
+    </button>
   );
 };

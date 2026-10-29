@@ -6,7 +6,6 @@ import { TopBarSearch } from './TopBarSearch';
 import { TopBarFilterTabs } from './TopBarFilterTabs';
 import { api, WindowEnvironment } from '../shared/api/ipc';
 import {
-  HelpCircle,
   Layers,
   Settings,
   Timer,
@@ -45,7 +44,7 @@ interface Props {
   onImportCustomTheme: (theme: CustomThemeDefinition) => void;
   onDeleteCustomTheme: (id: string) => void;
   onToggleLanguage?: () => void;
-  onToggleShortcutsModal: () => void;
+  onToggleShortcutsModal?: () => void;
   onToggleWidgetMode: () => void;
   onToggleAudioMute: () => void;
   onToggleSidebar?: () => void;
@@ -78,7 +77,6 @@ export const TopBar: React.FC<Props> = ({
   onSelectAccent,
   onImportCustomTheme,
   onDeleteCustomTheme,
-  onToggleShortcutsModal,
   onToggleWidgetMode,
   onToggleAudioMute,
   onToggleSidebar,
@@ -252,16 +250,6 @@ export const TopBar: React.FC<Props> = ({
             <Layers size={15} />
           </button>
 
-          {/* Keyboard Shortcuts Modal */}
-          <button
-            type="button"
-            onClick={onToggleShortcutsModal}
-            className="p-1.5 rounded-md hover:text-theme-text hover:bg-theme-hover transition-colors cursor-pointer"
-            title={t('shortcuts.title')}
-          >
-            <HelpCircle size={15} />
-          </button>
-
           {/* Unified Settings Modal Trigger */}
           <button
             type="button"
@@ -296,7 +284,6 @@ export const TopBar: React.FC<Props> = ({
         audioVolume={audioVolume}
         onVolumeChange={onVolumeChange}
         onToggleAudioMute={onToggleAudioMute}
-        onOpenShortcuts={onToggleShortcutsModal}
       />
     </header>
   );
