@@ -41,8 +41,64 @@ fn mime_for_extension(ext: &str) -> &'static str {
         "webp" => "image/webp",
         "gif" => "image/gif",
         "svg" => "image/svg+xml",
+        "zip" => "application/zip",
+        "stl" => "model/stl",
         _ => "application/octet-stream",
     }
+}
+
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct AttachmentInfo {
+    pub name: String,
+    pub file_path: String,
+    pub mime_type: String,
+    pub size_bytes: u64,
+    pub extension: String,
+}
+
+#[tauri::command]
+pub fn save_attachment_from_path(source_path: String) -> Result<AttachmentInfo, String> {
+    let path = Path::new(&source_path);
+    if !path.exists() || !path.is_file() {
+        return Err(format!("File does not exist: {}", source_path));
+    }
+
+    let file_name = path
+        .file_name()
+        .and_then(|n| n.to_str())
+        .unwrap_or("unnamed_file")
+        .to_string();
+
+    let ext = get_extension(&file_name);
+    if BLOCKED_EXTENSIONS.contains(&ext.as_str()) {
+        return Err(format!("File extension '{}' is blocked for security reasons.", ext));
+    }
+
+    let meta = fs::metadata(path).map_err(|e| format!("Failed to read file metadata: {}", e))?;
+    let size_bytes = meta.len();
+    let mime = mime_for_extension(&ext).to_string();
+
+    let dir = get_attachments_dir()?;
+    let timestamp = chrono::Utc::now().timestamp_millis();
+    let sanitized_name: String = file_name
+        .chars()
+        .map(|c| if c.is_alphanumeric() || c == '.' || c == '-' || c == '_' { c } else { '_' })
+        .collect();
+
+    let target_name = format!("{}_{}", timestamp, sanitized_name);
+    let target_path = dir.join(target_name);
+
+    fs::copy(path, &target_path)
+        .map_err(|e| format!("Failed to copy attachment file: {}", e))?;
+
+    Ok(AttachmentInfo {
+        name: file_name,
+        file_path: target_path.to_string_lossy().to_string(),
+        mime_type: mime,
+        size_bytes,
+        extension: ext,
+    })
 }
 
 #[tauri::command]

@@ -8,7 +8,7 @@ import { NoteTitleBar } from './NoteTitleBar';
 import { NoteMediaBar } from './NoteMediaBar';
 import { NoteContentHeader } from './NoteContentHeader';
 import { NoteTemplatePicker } from './NoteTemplatePicker';
-import { ImageAttachmentModal } from './ImageAttachmentModal';
+import { AttachmentModal } from './AttachmentModal';
 import { AudioDeviceSettingsModal } from './AudioDeviceSettingsModal';
 import { AlertTriangle, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -270,8 +270,7 @@ export const NoteDetailView: React.FC<Props> = ({
           onToggleMediaDrawer={() => setIsMediaDrawerOpen(!isMediaDrawerOpen)}
           onToggleAddLink={() => setShowLinkInput(!showLinkInput)}
           onOpenWhiteboard={onOpenWhiteboard}
-          onOpenAttachImageModal={() => setIsAttachmentModalOpen(true)}
-          onAttachFiles={handleAttachFiles}
+          onOpenAttachModal={() => setIsAttachmentModalOpen(true)}
           onAttachmentCreated={handleAddAttachment}
           onError={(msg) => setBlockedFileError(msg)}
         />
@@ -358,11 +357,13 @@ export const NoteDetailView: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Manual Image Attachment Modal (FR-16) */}
-      <ImageAttachmentModal
+      {/* Universal Attachment Modal */}
+      <AttachmentModal
         isOpen={isAttachmentModalOpen}
         onClose={() => setIsAttachmentModalOpen(false)}
         onAttachSketch={attachSingleSketch}
+        onAttachmentCreated={handleAddAttachment}
+        onAttachFiles={handleAttachFiles}
       />
 
       {/* Audio Input/Output Device Settings Modal */}

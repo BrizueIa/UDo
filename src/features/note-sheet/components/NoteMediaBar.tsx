@@ -1,5 +1,5 @@
 import React, { useRef } from 'react';
-import { Paperclip, Link as LinkIcon, Image as ImageIcon, UploadCloud } from 'lucide-react';
+import { Paperclip, Link as LinkIcon, Image as ImageIcon } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NoteAttachment } from '../../../shared/types';
 import { VoiceRecorderButton } from './VoiceRecorderButton';
@@ -10,6 +10,7 @@ interface Props {
   onToggleMediaDrawer: () => void;
   onToggleAddLink: () => void;
   onOpenWhiteboard: () => void;
+  onOpenAttachModal?: () => void;
   onOpenAttachImageModal?: () => void;
   onAttachFiles?: (files: FileList) => void;
   onAttachmentCreated?: (attachment: NoteAttachment) => void;
@@ -22,6 +23,7 @@ export const NoteMediaBar: React.FC<Props> = ({
   onToggleMediaDrawer,
   onToggleAddLink,
   onOpenWhiteboard,
+  onOpenAttachModal,
   onOpenAttachImageModal,
   onAttachFiles,
   onAttachmentCreated,
@@ -29,6 +31,8 @@ export const NoteMediaBar: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleOpenAttach = onOpenAttachModal || onOpenAttachImageModal;
 
   const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -56,27 +60,39 @@ export const NoteMediaBar: React.FC<Props> = ({
       </button>
 
       <div className="flex items-center flex-wrap gap-1.5">
-        {/* Hidden File Input for universal PC files */}
-        <input
-          ref={fileInputRef}
-          type="file"
-          multiple
-          className="hidden"
-          onChange={handleFileInputChange}
-        />
+        {/* Fallback hidden file input for pure web or test environments */}
+        {!handleOpenAttach && onAttachFiles && (
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            className="hidden"
+            onChange={handleFileInputChange}
+          />
+        )}
 
-        {/* Universal Attach File Button */}
-        {onAttachFiles && (
+        {/* Universal Attach Button (opens Universal Attachment Modal) */}
+        {handleOpenAttach ? (
+          <button
+            type="button"
+            onClick={handleOpenAttach}
+            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.05] transition-colors text-[11px] cursor-pointer"
+            title={t('attachments.modalTitle')}
+          >
+            <Paperclip size={12} className="text-theme-accent" />
+            <span>{t('attachments.attachResource')}</span>
+          </button>
+        ) : onAttachFiles ? (
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.05] transition-colors text-[11px] cursor-pointer"
             title={t('attachments.attachFile')}
           >
-            <UploadCloud size={12} className="text-theme-accent" />
-            <span>{t('attachments.attachFile')}</span>
+            <Paperclip size={12} className="text-theme-accent" />
+            <span>{t('attachments.attachResource')}</span>
           </button>
-        )}
+        ) : null}
 
         {/* Voice Note Recorder Button */}
         {onAttachmentCreated && (
@@ -84,19 +100,6 @@ export const NoteMediaBar: React.FC<Props> = ({
             onAttachmentCreated={onAttachmentCreated}
             onError={onError}
           />
-        )}
-
-        {/* Image Modal Button */}
-        {onOpenAttachImageModal && (
-          <button
-            type="button"
-            onClick={onOpenAttachImageModal}
-            className="flex items-center space-x-1 px-2.5 py-1 rounded-lg bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.05] transition-colors text-[11px] cursor-pointer"
-            title={t('note.attachImageModalTitle')}
-          >
-            <Paperclip size={12} className="text-theme-accent" />
-            <span>{t('note.attachImageBtn')}</span>
-          </button>
         )}
 
         {/* Add Link */}

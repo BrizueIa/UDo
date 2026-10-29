@@ -5,8 +5,73 @@ export interface AudioDeviceOption {
   name: string;
 }
 
+export interface SavedAttachmentInfo {
+  name: string;
+  filePath: string;
+  mimeType: string;
+  sizeBytes: number;
+  extension: string;
+}
+
 export const attachmentsApi = {
   isTauri,
+
+  async openAttachmentDialog(t: (key: string) => string): Promise<string[]> {
+    if (isTauri) {
+      try {
+        const { open } = await import('@tauri-apps/plugin-dialog');
+        const selected = await open({
+          multiple: true,
+          title: t('attachments.selectFilesTitle'),
+          filters: [
+            {
+              name: t('attachments.filterAll'),
+              extensions: ['*'],
+            },
+            {
+              name: t('attachments.filterImages'),
+              extensions: ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'bmp', 'ico'],
+            },
+            {
+              name: t('attachments.filterDocuments'),
+              extensions: ['pdf', 'docx', 'doc', 'xlsx', 'xls', 'txt', 'md', 'csv', 'odt', 'pptx'],
+            },
+            {
+              name: t('attachments.filterAudio'),
+              extensions: ['mp3', 'wav', 'webm', 'ogg', 'm4a', 'flac', 'aac', 'opus'],
+            },
+            {
+              name: t('attachments.filter3D'),
+              extensions: ['stl', '3mf', 'step', 'stp', 'blend', 'obj', 'gcode'],
+            },
+            {
+              name: t('attachments.filterArchives'),
+              extensions: ['zip', 'tar', 'gz', '7z', 'rar'],
+            },
+          ],
+        });
+
+        if (!selected) return [];
+        return Array.isArray(selected) ? selected : [selected];
+      } catch (err) {
+        console.warn('Tauri openAttachmentDialog failed:', err);
+      }
+    }
+    return [];
+  },
+
+  async saveAttachmentFromPath(sourcePath: string): Promise<SavedAttachmentInfo> {
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        return await invoke<SavedAttachmentInfo>('save_attachment_from_path', { sourcePath });
+      } catch (err) {
+        console.warn('Tauri save_attachment_from_path failed', err);
+        throw err;
+      }
+    }
+    throw new Error('Native path attachments are only supported in desktop mode');
+  },
 
   async saveAttachmentFile(fileName: string, bytes: Uint8Array): Promise<string> {
     if (isTauri) {

@@ -60,6 +60,7 @@ pub fn run() {
             window::get_window_env,
             services::send_native_notification,
             services::attachments::save_attachment_file,
+            services::attachments::save_attachment_from_path,
             services::attachments::open_attachment_native,
             services::attachments::read_attachment_base64,
             services::attachments::delete_attachment_file,
