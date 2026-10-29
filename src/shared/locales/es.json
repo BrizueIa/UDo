@@ -85,6 +85,7 @@
     "pinToTop": "Fijar nota arriba",
     "moveToFolder": "Mover a carpeta",
     "deleteNote": "Eliminar nota",
+    "revealInSidebar": "Mostrar en el panel",
     "annotate": "Editar / Anotar",
     "interactive": "Interactivo",
     "markdown": "Markdown",
@@ -173,7 +174,7 @@
   "widget": {
     "title": "UDo Mini",
     "quickAddPlaceholder": "Tarea rápida... (Enter para guardar)",
-    "noPending": "¡Todo al día! 🎉",
+    "noPending": "¡Todo al día!",
     "expand": "Abrir App Completa",
     "expandMedium": "Extender a vista de notas",
     "shrinkCompact": "Modo widget compacto",

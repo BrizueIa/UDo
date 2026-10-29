@@ -50,6 +50,15 @@ export const App: React.FC = () => {
   const { soundMuted, soundVolume, handleToggleAudioMute, handleVolumeChange } = useAudioState();
   const modalState = useAppModalState();
 
+  const noteSubject = subjects.find((s) => s.id === currentNote?.subjectId);
+  const noteFolder = folders.find((f) => f.id === currentNote?.folderId);
+  const handleRevealLocation = () => {
+    if (!currentNote) return;
+    setSelectedSubjectId(currentNote.subjectId);
+    setSelectedFolderId(currentNote.folderId);
+    handleToggleFolderExpand(currentNote.folderId);
+  };
+
   const handleSprintCompleted = useCallback(
     (noteId: string, secondsSpent: number) => {
       const minutesSpent = Math.max(1, Math.round(secondsSpent / 60));
@@ -261,7 +270,14 @@ export const App: React.FC = () => {
             folders={folders}
             selectedSubjectId={selectedSubjectId}
             isFocused={activeColumn === 1}
-            onSelectSubject={(id) => { setSelectedSubjectId(id); setActiveColumn(1); }}
+            onSelectSubject={(id) => {
+              setSelectedSubjectId(id);
+              setActiveColumn(1);
+              if (currentNote && currentNote.subjectId !== id) {
+                const subNotes = notes.filter((n) => n.subjectId === id);
+                if (subNotes.length > 0) setSelectedNoteId(subNotes[0].id);
+              }
+            }}
             onAddSubject={handleAddSubject}
             onUpdateSubject={handleUpdateSubject}
             onDeleteSubject={handleDeleteSubject}
@@ -310,8 +326,11 @@ export const App: React.FC = () => {
               key={currentNote.id}
               note={currentNote}
               notes={notes}
-              folderName={currentFolder?.name || 'Notes'}
+              folderName={noteFolder?.name || currentFolder?.name || 'Notes'}
               folders={currentSubjectFolders}
+              subjectName={noteSubject?.name}
+              subjectColor={noteSubject?.color}
+              onRevealLocation={handleRevealLocation}
               activeTagFilter={activeTagFilter}
               activeTimerFormatted={
                 (focusTimer.isRunning || focusTimer.isPaused) &&

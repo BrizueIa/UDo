@@ -216,7 +216,9 @@ export const SubjectItemRow: React.FC<Props> = ({
             className="w-2.5 h-2.5 rounded-[3.5px] flex-shrink-0 shadow-sm transition-transform group-hover:scale-110"
             style={{ backgroundColor: subject.color }}
           />
-          <span className="truncate text-[13px]">{renderRichTitle(subject.name)}</span>
+          <span className="truncate text-[13px]">
+            {renderRichTitle(subject.name, 'subj', 0, { ignoreSize: true })}
+          </span>
         </div>
 
         <div className="relative z-10 flex items-center space-x-1 flex-shrink-0">

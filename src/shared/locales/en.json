@@ -85,6 +85,7 @@
     "pinToTop": "Pin note to top",
     "moveToFolder": "Move to folder",
     "deleteNote": "Delete note",
+    "revealInSidebar": "Reveal in sidebar",
     "annotate": "Edit / Annotate",
     "interactive": "Interactive",
     "markdown": "Markdown",
@@ -173,7 +174,7 @@
   "widget": {
     "title": "UDo Mini",
     "quickAddPlaceholder": "Quick task... (Enter to save)",
-    "noPending": "All caught up! 🎉",
+    "noPending": "All caught up!",
     "expand": "Open Full App",
     "expandMedium": "Expand to Note View",
     "shrinkCompact": "Compact Widget View",

@@ -222,7 +222,7 @@ export const FolderItemRow: React.FC<Props> = ({
             <Folder size={14} className="text-amber-400 fill-amber-400/20 shrink-0" />
           )}
           <span className="text-xs font-semibold text-theme-text truncate">
-            {renderRichTitle(folder.name)}
+            {renderRichTitle(folder.name, 'folder', 0, { ignoreSize: true })}
           </span>
         </span>
         <span className="text-[11px] text-theme-muted font-mono ml-1">

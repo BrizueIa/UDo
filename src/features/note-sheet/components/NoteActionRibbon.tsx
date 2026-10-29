@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NoteItem, FolderItem } from '../../../shared/types';
-import { CheckSquare, Pin, ChevronDown, Trash2, Timer } from 'lucide-react';
+import { CheckSquare, Pin, ChevronDown, Trash2, Timer, Folder } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
+import { renderRichTitle } from '../utils/inlineRichTextParser';
 
 interface Props {
   note: NoteItem;
@@ -114,8 +115,10 @@ export const NoteActionRibbon: React.FC<Props> = ({
             className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs bg-theme-card/80 hover:bg-theme-card text-theme-text border border-white/[0.06] transition-colors shadow-sm cursor-pointer"
             title={t('note.moveToFolder')}
           >
-            <span>📁</span>
-            <span className="font-medium truncate max-w-[120px]">{folderName}</span>
+            <Folder size={13} className="text-amber-400 fill-amber-400/20 shrink-0" />
+            <span className="font-medium truncate max-w-[120px]">
+              {renderRichTitle(folderName, 'ribbon', 0, { ignoreSize: true })}
+            </span>
             <ChevronDown size={12} className="text-theme-muted" />
           </button>
 
@@ -144,8 +147,10 @@ export const NoteActionRibbon: React.FC<Props> = ({
                           : 'text-theme-text'
                       }`}
                     >
-                      <span>📁</span>
-                      <span className="truncate">{f.name}</span>
+                      <Folder size={13} className="text-amber-400 fill-amber-400/20 shrink-0" />
+                      <span className="truncate">
+                        {renderRichTitle(f.name, 'ribbon-f', 0, { ignoreSize: true })}
+                      </span>
                     </button>
                   ))}
                 </div>

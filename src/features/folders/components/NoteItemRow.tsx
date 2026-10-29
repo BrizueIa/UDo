@@ -114,7 +114,7 @@ export const NoteItemRow: React.FC<Props> = ({
               : 'text-theme-text'
           }`}
         >
-          {renderRichTitle(note.title || t('note.titlePlaceholder'))}
+          {renderRichTitle(note.title || t('note.titlePlaceholder'), 'note', 0, { ignoreSize: true })}
         </span>
       </div>
 

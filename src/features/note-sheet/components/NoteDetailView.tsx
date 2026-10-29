@@ -10,7 +10,7 @@ import { NoteContentHeader } from './NoteContentHeader';
 import { NoteTemplatePicker } from './NoteTemplatePicker';
 import { AttachmentModal } from './AttachmentModal';
 import { AudioDeviceSettingsModal } from './AudioDeviceSettingsModal';
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle, X, Lightbulb } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { playTaskCompleteSound } from '../../../shared/utils/soundEffects';
 import { useNoteMediaPaste } from '../hooks/useNoteMediaPaste';
@@ -24,6 +24,9 @@ interface Props {
   notes: NoteItem[];
   folderName: string;
   folders: FolderItem[];
+  subjectName?: string;
+  subjectColor?: string;
+  onRevealLocation?: () => void;
   activeTagFilter?: string | null;
   activeTimerFormatted?: string;
   isTimerRunning?: boolean;
@@ -44,6 +47,9 @@ export const NoteDetailView: React.FC<Props> = ({
   notes,
   folderName,
   folders,
+  subjectName,
+  subjectColor,
+  onRevealLocation,
   activeTagFilter,
   activeTimerFormatted,
   isTimerRunning,
@@ -240,6 +246,10 @@ export const NoteDetailView: React.FC<Props> = ({
           <NoteTitleBar
             localTitle={localTitle}
             isCompleted={note.isCompleted}
+            subjectName={subjectName}
+            subjectColor={subjectColor}
+            folderName={folderName}
+            onRevealLocation={onRevealLocation}
             onTitleChange={handleTitleChange}
             onBlur={flushSave}
             isFindBarOpen={isFindBarOpen}
@@ -329,10 +339,11 @@ export const NoteDetailView: React.FC<Props> = ({
                   setIsStarterDismissed(false);
                   localStorage.removeItem('udo_hide_starter_templates');
                 }}
-                className="text-[11px] text-theme-muted hover:text-theme-accent transition-colors flex items-center space-x-1 py-0.5 cursor-pointer"
+                className="text-[11px] text-theme-muted hover:text-theme-accent transition-colors flex items-center space-x-1.5 py-0.5 cursor-pointer"
                 title={t('templates.showStarterPrompt')}
               >
-                <span>💡 {t('templates.showStarterPrompt')}</span>
+                <Lightbulb size={12} className="text-amber-400" />
+                <span>{t('templates.showStarterPrompt')}</span>
               </button>
             </div>
           )}

@@ -9,6 +9,7 @@ import {
   Timer,
   Mic,
   Folder as FolderIcon,
+  Sparkles,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../../shared/api/ipc';
@@ -282,7 +283,7 @@ export const FloatingWidget: React.FC<Props> = ({
           </div>
         ) : folderPendingNotes.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center py-6 text-xs text-theme-muted">
-            <span className="text-base mb-1">🎉</span>
+            <Sparkles size={20} className="text-[#1fd4a5] mb-1" />
             <span>{t('widget.noPending')}</span>
           </div>
         ) : (
@@ -301,7 +302,9 @@ export const FloatingWidget: React.FC<Props> = ({
                 >
                   <div className="w-3.5 h-3.5 rounded-[4px] border border-theme-muted/60 group-hover:border-theme-accent transition-colors" />
                 </button>
-                <span className="text-xs text-theme-text truncate">{renderRichTitle(note.title)}</span>
+                <span className="text-xs text-theme-text truncate">
+                  {renderRichTitle(note.title, 'widget', 0, { ignoreSize: true })}
+                </span>
               </div>
 
               {/* Click to open note in full app with all panels visible */}

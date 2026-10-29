@@ -137,7 +137,7 @@ export const SettingsModal: React.FC<Props> = ({
 
           {/* Right Content Area */}
           <div className="flex-1 p-5 overflow-y-auto min-h-0">
-            {/* 🎨 Appearance Tab */}
+            {/* Appearance Tab */}
             {activeTab === 'appearance' && (
               <ThemeSettingsPanel
                 currentTheme={currentTheme}
@@ -150,7 +150,7 @@ export const SettingsModal: React.FC<Props> = ({
               />
             )}
 
-            {/* 🔊 Audio & Sound Tab */}
+            {/* Audio & Sound Tab */}
             {activeTab === 'audio' && (
               <AudioSettingsTab
                 isAudioMuted={isAudioMuted}
@@ -160,12 +160,12 @@ export const SettingsModal: React.FC<Props> = ({
               />
             )}
 
-            {/* ⌨️ Keyboard Shortcuts Tab */}
+            {/* Keyboard Shortcuts Tab */}
             {activeTab === 'shortcuts' && (
               <ShortcutsSettingsTab />
             )}
 
-            {/* 🌐 Language Tab */}
+            {/* Language Tab */}
             {activeTab === 'language' && (
               <div className="space-y-4">
                 <div className="space-y-1">
@@ -191,7 +191,7 @@ export const SettingsModal: React.FC<Props> = ({
                   >
                     <div className="space-y-1">
                       <div className="flex items-center space-x-2 text-xs font-semibold text-theme-text">
-                        <span className="text-base">🇪🇸</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-theme-column border border-white/[0.08] text-theme-accent">ES</span>
                         <span>{t('settings.spanish')}</span>
                       </div>
                       <p className="text-[11px] text-theme-muted">
@@ -215,7 +215,7 @@ export const SettingsModal: React.FC<Props> = ({
                   >
                     <div className="space-y-1">
                       <div className="flex items-center space-x-2 text-xs font-semibold text-theme-text">
-                        <span className="text-base">🇺🇸</span>
+                        <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-theme-column border border-white/[0.08] text-theme-accent">EN</span>
                         <span>{t('settings.english')}</span>
                       </div>
                       <p className="text-[11px] text-theme-muted">

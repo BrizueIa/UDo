@@ -13,6 +13,19 @@ export interface RichTextParserOptions {
   t: (key: string, options?: any) => string;
 }
 
+export interface RenderRichTitleOptions {
+  ignoreSize?: boolean;
+  isNoteTitle?: boolean;
+}
+
+export const TITLE_SIZE_MAP: Record<string, string> = {
+  sm: 'text-xl font-bold',
+  base: 'text-2xl font-bold',
+  lg: 'text-3xl font-bold',
+  xl: 'text-4xl font-extrabold',
+  '2xl': 'text-5xl font-extrabold',
+};
+
 const SIZE_MAP: Record<string, string> = {
   sm: 'text-xs', base: 'text-sm', lg: 'text-lg font-medium', xl: 'text-xl font-semibold', '2xl': 'text-2xl font-bold',
 };
@@ -27,7 +40,12 @@ export function stripRichTextFormatting(text: string): string {
     .replace(/<\/?u>/gi, '').replace(/~~/g, '').replace(/\*\*/g, '').replace(/\*/g, '').replace(/`/g, '');
 }
 
-export function renderRichTitle(text: string, keyPrefix = 'title', depth = 0): React.ReactNode {
+export function renderRichTitle(
+  text: string,
+  keyPrefix = 'title',
+  depth = 0,
+  options?: RenderRichTitleOptions
+): React.ReactNode {
   if (!text) return null;
   if (depth > 4) return text;
 
@@ -43,17 +61,17 @@ export function renderRichTitle(text: string, keyPrefix = 'title', depth = 0): R
       );
     }
     if (part.startsWith('**') && part.endsWith('**')) {
-      return <strong key={key} className="font-bold">{renderRichTitle(part.slice(2, -2), `${key}-b`, depth + 1)}</strong>;
+      return <strong key={key} className="font-bold">{renderRichTitle(part.slice(2, -2), `${key}-b`, depth + 1, options)}</strong>;
     }
     if (part.startsWith('~~') && part.endsWith('~~')) {
-      return <del key={key} className="line-through opacity-75">{renderRichTitle(part.slice(2, -2), `${key}-del`, depth + 1)}</del>;
+      return <del key={key} className="line-through opacity-75">{renderRichTitle(part.slice(2, -2), `${key}-del`, depth + 1, options)}</del>;
     }
     if (part.startsWith('<u>') && part.endsWith('</u>')) {
-      return <u key={key} className="underline underline-offset-2">{renderRichTitle(part.slice(3, -4), `${key}-u`, depth + 1)}</u>;
+      return <u key={key} className="underline underline-offset-2">{renderRichTitle(part.slice(3, -4), `${key}-u`, depth + 1, options)}</u>;
     }
     const colorMatch = part.match(/^\[color=([^\]]+)\]([\s\S]*?)\[\/color\]$/);
     if (colorMatch) {
-      return <span key={key} style={{ color: colorMatch[1] }}>{renderRichTitle(colorMatch[2], `${key}-c`, depth + 1)}</span>;
+      return <span key={key} style={{ color: colorMatch[1] }}>{renderRichTitle(colorMatch[2], `${key}-c`, depth + 1, options)}</span>;
     }
     const bgMatch = part.match(/^\[bg=([^\]]+)\]([\s\S]*?)\[\/bg\]$/);
     if (bgMatch) {
@@ -61,16 +79,26 @@ export function renderRichTitle(text: string, keyPrefix = 'title', depth = 0): R
       const bg = color.startsWith('#') && color.length === 7 ? `${color}33` : 'rgba(255, 201, 95, 0.25)';
       return (
         <mark key={key} style={{ backgroundColor: bg, borderBottom: `2px solid ${color}`, padding: '0 3px', borderRadius: '4px', color: 'inherit' }}>
-          {renderRichTitle(bgMatch[2], `${key}-bg`, depth + 1)}
+          {renderRichTitle(bgMatch[2], `${key}-bg`, depth + 1, options)}
         </mark>
       );
     }
     const sizeMatch = part.match(/^\[size=([^\]]+)\]([\s\S]*?)\[\/size\]$/);
     if (sizeMatch) {
-      return <span key={key} className={SIZE_MAP[sizeMatch[1]] || 'text-base'}>{renderRichTitle(sizeMatch[2], `${key}-sz`, depth + 1)}</span>;
+      if (options?.ignoreSize) {
+        return (
+          <React.Fragment key={key}>
+            {renderRichTitle(sizeMatch[2], `${key}-sz`, depth + 1, options)}
+          </React.Fragment>
+        );
+      }
+      const sizeClass = options?.isNoteTitle
+        ? (TITLE_SIZE_MAP[sizeMatch[1]] || 'text-3xl font-bold')
+        : (SIZE_MAP[sizeMatch[1]] || 'text-base');
+      return <span key={key} className={sizeClass}>{renderRichTitle(sizeMatch[2], `${key}-sz`, depth + 1, options)}</span>;
     }
     if (part.startsWith('*') && part.endsWith('*')) {
-      return <em key={key} className="italic">{renderRichTitle(part.slice(1, -1), `${key}-em`, depth + 1)}</em>;
+      return <em key={key} className="italic">{renderRichTitle(part.slice(1, -1), `${key}-em`, depth + 1, options)}</em>;
     }
     return part;
   });
