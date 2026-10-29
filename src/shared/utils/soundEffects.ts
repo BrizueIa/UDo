@@ -1,9 +1,7 @@
-// Web Audio API high-fidelity acoustic feedback utility for UDo (FR-15)
+// Web Audio API acoustic feedback utility for UDo
 let audioCtx: AudioContext | null = null;
 const STORAGE_MUTE_KEY = 'udo_sound_muted';
 const STORAGE_VOLUME_KEY = 'udo_sound_volume';
-const STORAGE_KEYBOARD_SOUND_KEY = 'udo_sound_keyboard';
-const STORAGE_CLICK_SOUND_KEY = 'udo_sound_click';
 const STORAGE_COMPLETION_SOUND_KEY = 'udo_sound_completion';
 const STORAGE_TIMER_SOUND_KEY = 'udo_sound_timer';
 
@@ -20,18 +18,6 @@ function getAudioContext(): AudioContext | null {
     audioCtx.resume().catch(() => {});
   }
   return audioCtx;
-}
-
-// Proactive user interaction listener to unlock AudioContext on first user action
-if (typeof window !== 'undefined') {
-  const unlockAudio = () => {
-    const ctx = getAudioContext();
-    if (ctx && ctx.state === 'suspended') {
-      ctx.resume().catch(() => {});
-    }
-  };
-  window.addEventListener('pointerdown', unlockAudio, { passive: true, capture: true });
-  window.addEventListener('keydown', unlockAudio, { passive: true, capture: true });
 }
 
 export function isAudioMuted(): boolean {
@@ -66,20 +52,6 @@ export function setAudioVolume(vol: number): void {
   localStorage.setItem(STORAGE_VOLUME_KEY, clamped.toString());
 }
 
-export const isKeyboardSoundEnabled = (): boolean =>
-  typeof window !== 'undefined' && localStorage.getItem(STORAGE_KEYBOARD_SOUND_KEY) !== 'false';
-
-export const setKeyboardSoundEnabled = (enabled: boolean): void => {
-  if (typeof window !== 'undefined') localStorage.setItem(STORAGE_KEYBOARD_SOUND_KEY, String(enabled));
-};
-
-export const isClickSoundEnabled = (): boolean =>
-  typeof window !== 'undefined' && localStorage.getItem(STORAGE_CLICK_SOUND_KEY) !== 'false';
-
-export const setClickSoundEnabled = (enabled: boolean): void => {
-  if (typeof window !== 'undefined') localStorage.setItem(STORAGE_CLICK_SOUND_KEY, String(enabled));
-};
-
 export const isCompletionSoundEnabled = (): boolean =>
   typeof window !== 'undefined' && localStorage.getItem(STORAGE_COMPLETION_SOUND_KEY) !== 'false';
 
@@ -93,105 +65,6 @@ export const isTimerSoundEnabled = (): boolean =>
 export const setTimerSoundEnabled = (enabled: boolean): void => {
   if (typeof window !== 'undefined') localStorage.setItem(STORAGE_TIMER_SOUND_KEY, String(enabled));
 };
-
-/**
- * Emits a crisp, tactile mechanical switch "tic" (Opera GX / mechanical switch style)
- */
-export function playKeyboardClickSound(
-  keyOrForce?: string | boolean,
-  force = false
-): void {
-  const isForced = typeof keyOrForce === 'boolean' ? keyOrForce : force;
-  if (!isForced && (isAudioMuted() || !isKeyboardSoundEnabled())) return;
-  const ctx = getAudioContext();
-  if (!ctx) return;
-  if (ctx.state === 'suspended') {
-    ctx.resume().then(() => playKeyboardClickSound(keyOrForce, true)).catch(() => {});
-    return;
-  }
-
-  try {
-    const volume = getAudioVolume();
-    if (volume <= 0) return;
-    const now = ctx.currentTime;
-
-    const key = typeof keyOrForce === 'string' ? keyOrForce : '';
-    const isSpace = key === ' ';
-    const isEnter = key === 'Enter';
-    const isBackspace = key === 'Backspace' || key === 'Delete';
-
-    // Organic tactile pitch jitter (±3%)
-    const jitter = 0.97 + Math.random() * 0.06;
-    const duration = isSpace ? 0.055 : 0.048;
-    const keyGain = isSpace ? 0.50 : isEnter ? 0.46 : isBackspace ? 0.40 : 0.44;
-
-    const startPitch = (isSpace ? 1200 : 1750) * jitter;
-    const midPitch = (isSpace ? 420 : 580) * jitter;
-    const endPitch = (isSpace ? 140 : 190) * jitter;
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'triangle';
-    // Stage 1 (0 to 8ms): snappy high-frequency tactile "tic" snap
-    osc.frequency.setValueAtTime(startPitch, now);
-    osc.frequency.exponentialRampToValueAtTime(midPitch, now + 0.008);
-    // Stage 2 (8ms to duration): solid mechanical switch body bottom-out
-    osc.frequency.exponentialRampToValueAtTime(endPitch, now + duration);
-
-    // Fast 1.5ms attack to prevent DC pop, followed by clean exponential decay
-    gain.gain.setValueAtTime(0.001, now);
-    gain.gain.linearRampToValueAtTime(keyGain * volume, now + 0.0015);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(now);
-    osc.stop(now + duration);
-  } catch {
-    // Audio context may be restricted
-  }
-}
-
-/**
- * Emits a crisp tactile UI click sound (Opera GX style button click)
- */
-export function playUiClickSound(force = false): void {
-  if (!force && (isAudioMuted() || !isClickSoundEnabled())) return;
-  const ctx = getAudioContext();
-  if (!ctx) return;
-  if (ctx.state === 'suspended') {
-    ctx.resume().catch(() => {});
-  }
-
-  try {
-    const volume = getAudioVolume();
-    if (volume <= 0) return;
-    const now = ctx.currentTime;
-    const duration = 0.032;
-
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-
-    osc.type = 'sine';
-    // Subtle organic variation (460-510Hz)
-    const pitch = 460 + Math.random() * 50;
-    osc.frequency.setValueAtTime(pitch, now);
-    osc.frequency.exponentialRampToValueAtTime(160, now + duration);
-
-    gain.gain.setValueAtTime(0.24 * volume, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
-
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-
-    osc.start(now);
-    osc.stop(now + duration);
-  } catch {
-    // Audio context may be restricted
-  }
-}
 
 /**
  * Emits a crisp, noticeable and rewarding chime + pop upon completing a task or checkbox
@@ -316,42 +189,4 @@ export function playTimerCompleteSound(force = false): void {
   } catch {
     // Audio context may be restricted
   }
-}
-
-const MODIFIERS_ONLY = new Set(['Control', 'Alt', 'Shift', 'Meta', 'CapsLock']);
-
-/**
- * Attaches global window listeners for tactile UI clicks and mechanical keyboard sounds (Opera GX style)
- */
-export function attachGlobalSoundListeners(): () => void {
-  if (typeof window === 'undefined') return () => {};
-
-  const handlePointerDown = (e: PointerEvent) => {
-    // Primary (left click) or secondary (right click) triggers instant tactile sound on every click
-    if (e.button === 0 || e.button === 2) {
-      playUiClickSound();
-    }
-  };
-
-  const handleKeyDown = (e: KeyboardEvent) => {
-    // Prevent duplicate triggers if both window and document receive the event
-    if ((e as unknown as { __udo_handled?: boolean }).__udo_handled) return;
-    (e as unknown as { __udo_handled?: boolean }).__udo_handled = true;
-
-    if (MODIFIERS_ONLY.has(e.key)) return;
-    playKeyboardClickSound(e.key);
-  };
-
-  // Capture on both window and document to ensure 100% detection regardless of focused element
-  window.addEventListener('pointerdown', handlePointerDown, { capture: true, passive: true });
-  document.addEventListener('pointerdown', handlePointerDown, { capture: true, passive: true });
-  window.addEventListener('keydown', handleKeyDown, { capture: true, passive: true });
-  document.addEventListener('keydown', handleKeyDown, { capture: true, passive: true });
-
-  return () => {
-    window.removeEventListener('pointerdown', handlePointerDown, true);
-    document.removeEventListener('pointerdown', handlePointerDown, true);
-    window.removeEventListener('keydown', handleKeyDown, true);
-    document.removeEventListener('keydown', handleKeyDown, true);
-  };
 }

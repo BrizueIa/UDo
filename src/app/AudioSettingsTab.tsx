@@ -5,8 +5,6 @@ import {
   Mic,
   Play,
   Sparkles,
-  Keyboard,
-  MousePointer,
   CheckCircle2,
   Bell,
 } from 'lucide-react';
@@ -14,16 +12,10 @@ import { useTranslation } from 'react-i18next';
 import { CustomSelect } from '../shared/ui/CustomSelect';
 import { useAudioDevices } from '../shared/hooks/useAudioDevices';
 import {
-  isKeyboardSoundEnabled,
-  setKeyboardSoundEnabled,
-  isClickSoundEnabled,
-  setClickSoundEnabled,
   isCompletionSoundEnabled,
   setCompletionSoundEnabled,
   isTimerSoundEnabled,
   setTimerSoundEnabled,
-  playKeyboardClickSound,
-  playUiClickSound,
   playTaskCompleteSound,
   playTimerCompleteSound,
 } from '../shared/utils/soundEffects';
@@ -44,9 +36,7 @@ export const AudioSettingsTab: React.FC<Props> = ({
   const { t } = useTranslation();
   const [micTestError, setMicTestError] = useState<string | null>(null);
 
-  // Opera GX Style Sound Effect States
-  const [keyboardSound, setKeyboardSound] = useState(() => isKeyboardSoundEnabled());
-  const [clickSound, setClickSound] = useState(() => isClickSoundEnabled());
+  // Functional Sound Effect States
   const [completionSound, setCompletionSound] = useState(() => isCompletionSoundEnabled());
   const [timerSound, setTimerSound] = useState(() => isTimerSoundEnabled());
 
@@ -72,20 +62,6 @@ export const AudioSettingsTab: React.FC<Props> = ({
     }
   };
 
-  const handleToggleKeyboard = () => {
-    const next = !keyboardSound;
-    setKeyboardSound(next);
-    setKeyboardSoundEnabled(next);
-    if (next) playKeyboardClickSound(true);
-  };
-
-  const handleToggleClick = () => {
-    const next = !clickSound;
-    setClickSound(next);
-    setClickSoundEnabled(next);
-    if (next) playUiClickSound(true);
-  };
-
   const handleToggleCompletion = () => {
     const next = !completionSound;
     setCompletionSound(next);
@@ -101,24 +77,6 @@ export const AudioSettingsTab: React.FC<Props> = ({
   };
 
   const gxSoundItems = [
-    {
-      id: 'keyboard',
-      title: t('settings.soundKeyboard'),
-      desc: t('settings.soundKeyboardDesc'),
-      icon: <Keyboard size={14} className="text-theme-accent" />,
-      enabled: keyboardSound,
-      onToggle: handleToggleKeyboard,
-      onTest: () => playKeyboardClickSound(true),
-    },
-    {
-      id: 'click',
-      title: t('settings.soundClick'),
-      desc: t('settings.soundClickDesc'),
-      icon: <MousePointer size={14} className="text-theme-accent" />,
-      enabled: clickSound,
-      onToggle: handleToggleClick,
-      onTest: () => playUiClickSound(true),
-    },
     {
       id: 'completion',
       title: t('settings.soundCompletion'),

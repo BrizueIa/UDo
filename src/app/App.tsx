@@ -13,7 +13,6 @@ import { api } from '../shared/api/ipc';
 import {
   playTaskCompleteSound,
   playNoteCreatedSound,
-  attachGlobalSoundListeners,
 } from '../shared/utils/soundEffects';
 import { TopBar } from './TopBar';
 import { SubjectsSidebar } from '../features/subjects/components/SubjectsSidebar';
@@ -176,9 +175,6 @@ export const App: React.FC = () => {
     onRedo: handleWorkspaceRedo,
     onEscape: handleEscape,
   });
-
-  // Global Opera GX style sound feedback listeners (click & keyboard)
-  React.useEffect(() => attachGlobalSoundListeners(), []);
 
   if (isWidgetMode) {
     return (
