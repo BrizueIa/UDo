@@ -266,7 +266,10 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
   return (
     <div className="space-y-3">
       {hasCheckboxes && (
-        <div className="p-3 bg-theme-card/60 border border-white/[0.06] rounded-xl space-y-1.5 shadow-xs">
+        <div
+          style={{ backgroundColor: 'var(--color-bg-card)' }}
+          className="p-3 bg-theme-card border border-theme-border rounded-xl space-y-1.5 shadow-xs"
+        >
           <div className="text-[11px] font-semibold text-theme-muted uppercase tracking-wider">
             {t('note.interactiveChecklists')}
           </div>
@@ -305,7 +308,11 @@ export const MarkdownSheetPreview: React.FC<Props> = ({
         value={content}
         onChange={(e) => onChangeContent(e.target.value)}
         placeholder={t('note.markdownPlaceholder')}
-        className="w-full min-h-[350px] bg-theme-card/30 focus:bg-theme-card/50 text-theme-text p-4 rounded-xl outline-none font-mono text-xs leading-relaxed resize-y border border-white/[0.05] focus:border-theme-accent/50 transition-all shadow-inner"
+        style={{
+          backgroundColor: 'var(--color-bg-sidebar)',
+          color: 'var(--color-text-main)',
+        }}
+        className="w-full min-h-[350px] bg-theme-sidebar focus:bg-theme-card text-theme-text p-4 rounded-xl outline-none font-mono text-xs leading-relaxed resize-y border border-theme-border focus:border-theme-accent/60 transition-all shadow-inner"
       />
     </div>
   );

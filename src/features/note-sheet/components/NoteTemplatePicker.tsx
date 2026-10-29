@@ -98,7 +98,13 @@ export const NoteTemplatePicker: React.FC<Props> = ({
   if (variant === 'dropdown') {
     return (
       <>
-        <div className="absolute right-0 top-full mt-1.5 w-72 bg-theme-card/95 backdrop-blur-md border border-theme-border rounded-xl shadow-2xl py-2 z-40 animate-in fade-in zoom-in-95 duration-100">
+        <div
+          style={{
+            backgroundColor: 'var(--color-bg-card)',
+            color: 'var(--color-text-main)',
+          }}
+          className="absolute right-0 top-full mt-1.5 w-72 bg-theme-card border border-theme-border rounded-xl shadow-2xl py-2 z-50 animate-in fade-in zoom-in-95 duration-100"
+        >
           <div className="flex items-center justify-between px-3 pb-1.5 border-b border-theme-border/50 mb-1">
             <div className="flex items-center space-x-1">
               <button
@@ -213,7 +219,10 @@ export const NoteTemplatePicker: React.FC<Props> = ({
 
   return (
     <>
-      <div className="p-4 rounded-xl border border-dashed border-theme-border/80 bg-theme-card/20 space-y-3 my-2">
+      <div
+        style={{ backgroundColor: 'var(--color-bg-card)' }}
+        className="p-4 rounded-xl border border-dashed border-theme-border bg-theme-card space-y-3 my-2 shadow-xs"
+      >
         <div className="flex items-center justify-between">
           <p className="text-xs text-theme-muted font-medium">{t('templates.starterPrompt')}</p>
           <div className="flex items-center space-x-2">
