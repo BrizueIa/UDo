@@ -117,9 +117,17 @@ pub fn setup_tray(app: &App) -> Result<(), Box<dyn std::error::Error>> {
     let quit_i = MenuItem::with_id(app, "quit", "Quit UDo", true, None::<&str>)?;
     let tray_menu = Menu::with_items(app, &[&open_i, &widget_i, &quick_add_i, &quit_i])?;
 
-    TrayIconBuilder::new()
+    let mut builder = TrayIconBuilder::new()
         .menu(&tray_menu)
-        .show_menu_on_left_click(false)
+        .show_menu_on_left_click(false);
+
+    if let Ok(icon) = tauri::image::Image::from_bytes(include_bytes!("../../icons/icon.png")) {
+        builder = builder.icon(icon);
+    } else if let Some(icon) = app.default_window_icon() {
+        builder = builder.icon(icon.clone());
+    }
+
+    builder
         .on_menu_event(|app, event| match event.id.as_ref() {
             "open" => {
                 if let Some(window) = app.get_webview_window("main") {
