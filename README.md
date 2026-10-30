@@ -18,19 +18,19 @@
 ## ⚡ Highlights
 
 * **100% Local-First & Zero Telemetry:** Your data never leaves your machine. No accounts, no subscriptions, zero network tracking.
-* **3-Column Multi-Branch Workflow:**
-  * **Subjects / Temas:** Color-coded primary branches with dynamic counters.
-  * **Folders & Hierarchy:** Expandable tree folders with spring-physics accordion animations.
-  * **Strikethrough Sheets:** Rich notes with inline task checkboxes, external reference links, and image sketches.
+* **Universal WYSIWYG Flat Sheet (Zero Raw Markup):** Clean document canvas without raw tags (`[color]`, `<u>`, `**`). Live rich text styling (custom colors, highlights, sizes, bold/italic/underline) applied directly on selection.
+* **Inline Mixed Media & Word-Style Wrap:** Embed and reposition images with live resize handles, audio recordings, PC files, links, and sketches at the exact cursor position with natural text flow.
+* **Split-View Workspace:** View and edit two notes side-by-side with an interactive resizable divider, independent auto-saving, and smart column auto-collapse (`Ctrl + B` to restore).
+* **Private Vault (`🔒`):** Protect confidential projects behind a 6-digit numeric PIN. Private notes are completely hidden and excluded from global FTS5 search when locked. Lock/unlock instantly with `Ctrl + L`.
+* **Universal PC Attachments & Native Launch:** Attach any file (.pdf, 3D .stl/.3mf, .blend, code, archives) with built-in security filters and open them directly in your OS default apps.
+* **Voice Notes (`🎙️`):** Quick microphone capture with a compact inline audio player and variable playback speeds (1x, 1.5x, 2x).
+* **Multi-Selection & Batch Actions:** Marquee drag box-selection and Shift/Ctrl selection to batch move across folders or send multiple notes to the Recycle Bin (`Delete`).
+* **Custom Native Context Menu:** Purpose-built, theme-integrated right-click menu replacing generic browser controls across projects, folders, notes, and the editor.
+* **Recycle Bin & Automated Daily Backups:** Soft deletion with 30-day retention and one-click restore, daily JSON snapshots in `~/.local/share/udo/backups/`, and 1-click JSON database export/import.
 * **Always-on-Top Floating Widget:** Shrink UDo to an unobtrusive desktop pill that stays on top of your IDE or browser for rapid task checking.
-* **System Tray & Global Hotkey:** Closes to the system tray like Spotify/Telegram. Summon or hide it globally using `Alt + Shift + Space`.
-* **Quick Add / Spotlight Bar:** Press `Ctrl + Alt + Space` to capture ideas or tasks in 2 seconds without interrupting your workflow.
-* **Visual Annotations & Whiteboard:**
-  * Interactive image viewer with zoom, rotation, crop, pen, highlighter, and callout arrows.
-  * Freehand whiteboard canvas mode for diagrams and design sketches.
-* **Keyboard-First Experience:** Full keyboard navigation (`j/k`, `Tab`, `Ctrl + K`, `Ctrl + D`, `Ctrl + N`).
-* **Multi-Theme System:** Preset color themes (Tokyo Night, Catppuccin Mocha, Nord, Rose Pine, OLED Pure Black, Latte) plus custom accent colors.
-* **Drag & Drop:** Reorder priorities and move notes across branches intuitively.
+* **System Tray & Global Hotkeys:** Closes to the system tray like Spotify/Telegram. Summon or hide globally using `Alt + Shift + Space`, or capture ideas in 2 seconds with Quick Add (`Ctrl + Alt + Space`).
+* **Visual Annotations & Whiteboard Canvas:** Interactive image editor with zoom, crop, highlighter, pen, callout arrows, grid toggle, and export to PNG.
+* **Multi-Theme System:** Official default theme **UDo Original** based on vector brand colors, plus Tokyo Night, Catppuccin, Nord, OLED Pure Black, and VS Code theme importer.
 * **Focus Timer & Short Deadlines:** Built-in countdown timer for task sprints with native desktop notifications.
 
 ---
@@ -53,6 +53,9 @@
 | `Ctrl + Alt + Space` | Quick Add / Scratchpad Bar | OS-Wide |
 | `Alt + W` | Toggle Full Window ↔ Floating Always-on-Top Widget | Global |
 | `Ctrl + K` or `/` | Global Search & Command Palette | Global |
+| `Ctrl + L` | Lock / Unlock Private Vault | Global |
+| `Ctrl + B` | Toggle Projects Sidebar (Column 1) | Global |
+| `Ctrl + \` | Toggle Folders List (Column 2) | Global |
 | `Ctrl + N` | New Note in active folder | Global |
 | `Ctrl + Shift + N` | New Folder / Subject | Global |
 | `Ctrl + D` or `Ctrl + Enter` | Toggle note strikethrough / completed | Global / List |

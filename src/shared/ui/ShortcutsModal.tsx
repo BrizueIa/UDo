@@ -27,6 +27,7 @@ export const ShortcutsModal: React.FC<Props> = ({ isOpen, onClose }) => {
     { key: 'Alt + W', descKey: 'shortcuts.toggleWidget' },
     { key: 'Ctrl + B', descKey: 'shortcuts.toggleSidebar' },
     { key: 'Ctrl + \\', descKey: 'shortcuts.toggleFolders' },
+    { key: 'Ctrl + L', descKey: 'shortcuts.lockVault' },
     { key: 'F11', descKey: 'shortcuts.zenMode' },
     { key: '?', descKey: 'shortcuts.showHelp' },
     { key: 'Esc', descKey: 'shortcuts.escapeAction' },

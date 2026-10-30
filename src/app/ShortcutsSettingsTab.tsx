@@ -10,6 +10,7 @@ export const ShortcutsSettingsTab: React.FC = () => {
       items: [
         { key: 'Ctrl + K  /  /', descKey: 'shortcuts.globalSearch' },
         { key: 'Ctrl + ,', descKey: 'settings.title' },
+        { key: 'Ctrl + L', descKey: 'shortcuts.lockVault' },
         { key: 'Alt + W', descKey: 'shortcuts.toggleWidget' },
         { key: 'F11', descKey: 'shortcuts.zenMode' },
         { key: 'Alt + Shift + Space', descKey: 'shortcuts.summonApp' },

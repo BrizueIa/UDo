@@ -277,6 +277,7 @@
     "toggleWidget": "Alternar Ventana Completa ↔ Widget Flotante",
     "toggleSidebar": "Alternar barra de Proyectos (Columna 1)",
     "toggleFolders": "Alternar lista de Carpetas (Columna 2)",
+    "lockVault": "Bloquear / Desbloquear Bóveda Privada",
     "zenMode": "Modo Zen (Escritura sin distracciones)",
     "showHelp": "Mostrar esta guía de atajos",
     "escapeAction": "Cerrar modales / Limpiar búsqueda / Desenfocar",

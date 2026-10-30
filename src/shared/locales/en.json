@@ -277,6 +277,7 @@
     "toggleWidget": "Toggle Full Window ↔ Floating Widget",
     "toggleSidebar": "Toggle Projects Sidebar (Column 1)",
     "toggleFolders": "Toggle Folders List (Column 2)",
+    "lockVault": "Lock / Unlock Private Vault",
     "zenMode": "Zen Mode (Distraction-free Writing)",
     "showHelp": "Show this Shortcuts Cheat Sheet",
     "escapeAction": "Close modals / Clear search / Unfocus",
