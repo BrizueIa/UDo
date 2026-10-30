@@ -119,7 +119,18 @@
     "browseFileBtn": "Browse image from device...",
     "changeImage": "Change image",
     "attachToNote": "Attach to note",
-    "imageTitle": "Image title"
+    "imageTitle": "Image title",
+    "flatSheetPlaceholder": "Start writing here, paste an image (Ctrl+V), add a voice note or task...",
+    "resizeImage": "Drag to resize width",
+    "viewFullSize": "View full size"
+  },
+  "splitView": {
+    "openInSplitView": "Open in split view",
+    "openSplit": "Split view with another note",
+    "closeSplit": "Close split view",
+    "closePane": "Close this pane",
+    "dropToOpenSplit": "Drop here to open in split view",
+    "resizeHint": "Drag to resize (double-click to reset)"
   },
   "templates": {
     "title": "Templates",

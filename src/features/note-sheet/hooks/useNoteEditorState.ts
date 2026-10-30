@@ -96,7 +96,7 @@ export function useNoteEditorState({
     return () => flushSave();
   }, [flushSave]);
 
-  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement> | { target: { value: string } }) => {
     const val = e.target.value;
     setLocalTitle(val);
     pendingUpdatesRef.current.title = val;

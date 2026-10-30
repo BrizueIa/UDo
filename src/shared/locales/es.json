@@ -119,7 +119,18 @@
     "browseFileBtn": "Elegir archivo del equipo...",
     "changeImage": "Cambiar imagen",
     "attachToNote": "Adjuntar a la nota",
-    "imageTitle": "Título de la imagen"
+    "imageTitle": "Título de la imagen",
+    "flatSheetPlaceholder": "Escribe aquí, pega una imagen (Ctrl+V), añade una nota de voz o tarea...",
+    "resizeImage": "Arrastra para redimensionar ancho",
+    "viewFullSize": "Ver tamaño completo"
+  },
+  "splitView": {
+    "openInSplitView": "Abrir en vista dividida",
+    "openSplit": "Dividir vista con otra nota",
+    "closeSplit": "Cerrar vista dividida",
+    "closePane": "Cerrar este panel",
+    "dropToOpenSplit": "Soltar aquí para abrir en vista dividida",
+    "resizeHint": "Arrastra para redimensionar (doble clic para centrar)"
   },
   "templates": {
     "title": "Plantillas",

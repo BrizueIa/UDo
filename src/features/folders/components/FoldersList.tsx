@@ -41,6 +41,7 @@ interface Props {
   onBatchToggleCompleteNotes?: (ids: string[]) => void;
   onBatchMoveNotesToFolder?: (ids: string[], folderId: string) => void;
   onDuplicateNote?: (id: string) => void;
+  onOpenInSplitView?: (noteId: string) => void;
 }
 
 export const FoldersList: React.FC<Props> = ({
@@ -49,7 +50,7 @@ export const FoldersList: React.FC<Props> = ({
   onSelectFolder, onSelectNote, onToggleNoteComplete, onToggleFolderExpand,
   onAddFolder, onUpdateFolder, onDeleteFolder, onAddNote, onMoveNoteToFolder,
   onReorderOrMoveNote, onReorderFolder, onBatchDeleteNotes, onBatchToggleCompleteNotes,
-  onBatchMoveNotesToFolder, onDuplicateNote,
+  onBatchMoveNotesToFolder, onDuplicateNote, onOpenInSplitView,
 }) => {
   const { t } = useTranslation();
   const [isCreating, setIsCreating] = useState(false);
@@ -147,6 +148,7 @@ export const FoldersList: React.FC<Props> = ({
     onBatchMoveNotesToFolder,
     onBatchDeleteNotes,
     onDuplicateNote,
+    onOpenInSplitView,
     onAddNote,
     onToggleFolderExpand,
     onDeleteFolder,

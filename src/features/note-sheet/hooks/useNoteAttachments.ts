@@ -12,9 +12,15 @@ interface Props {
   note: NoteItem;
   onUpdateNote: (note: NoteItem) => void;
   onAttachImageFile?: (file: File) => void;
+  onInsertEmbedToken?: (token: string, updatedNote?: Partial<NoteItem>) => string;
 }
 
-export function useNoteAttachments({ note, onUpdateNote, onAttachImageFile }: Props) {
+export function useNoteAttachments({
+  note,
+  onUpdateNote,
+  onAttachImageFile,
+  onInsertEmbedToken,
+}: Props) {
   const { t } = useTranslation();
   const [blockedFileError, setBlockedFileError] = useState<string | null>(null);
 
@@ -64,33 +70,44 @@ export function useNoteAttachments({ note, onUpdateNote, onAttachImageFile }: Pr
 
       if (newAttachments.length > 0) {
         const existing = note.attachments || [];
+        const tokens = newAttachments.map((a) => `[embed:attachment:${a.id}]`).join('\n');
+        const nextContent = onInsertEmbedToken ? onInsertEmbedToken(tokens) : note.content;
         onUpdateNote({
           ...note,
+          content: nextContent,
           attachments: [...existing, ...newAttachments],
           updatedAt: new Date().toISOString(),
         });
       }
     },
-    [note, onUpdateNote, onAttachImageFile, t]
+    [note, onUpdateNote, onAttachImageFile, onInsertEmbedToken, t]
   );
 
   const handleAddAttachment = useCallback(
     (attachment: NoteAttachment) => {
       const existing = note.attachments || [];
+      const token = `[embed:attachment:${attachment.id}]`;
+      const nextContent = onInsertEmbedToken ? onInsertEmbedToken(token) : note.content;
       onUpdateNote({
         ...note,
+        content: nextContent,
         attachments: [...existing, attachment],
         updatedAt: new Date().toISOString(),
       });
     },
-    [note, onUpdateNote]
+    [note, onUpdateNote, onInsertEmbedToken]
   );
 
   const handleRemoveAttachment = useCallback(
     (id: string) => {
       const existing = note.attachments || [];
+      const nextContent = (note.content || '')
+        .split('\n')
+        .filter((l) => l.trim() !== `[embed:attachment:${id}]`)
+        .join('\n');
       onUpdateNote({
         ...note,
+        content: nextContent,
         attachments: existing.filter((a) => a.id !== id),
         updatedAt: new Date().toISOString(),
       });

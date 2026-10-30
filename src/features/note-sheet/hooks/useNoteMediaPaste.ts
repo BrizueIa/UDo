@@ -15,22 +15,32 @@ interface Props {
   onUpdateNote: (note: NoteItem) => void;
   onOpenMediaDrawer: () => void;
   onDropFiles?: (files: FileList) => void;
+  onInsertEmbedToken?: (token: string) => string;
 }
 
-export function useNoteMediaPaste({ note, onUpdateNote, onOpenMediaDrawer, onDropFiles }: Props) {
+export function useNoteMediaPaste({
+  note,
+  onUpdateNote,
+  onOpenMediaDrawer,
+  onDropFiles,
+  onInsertEmbedToken,
+}: Props) {
   const { t } = useTranslation();
 
   const attachSketches = useCallback(
     (newSketches: SketchItem[]) => {
       if (newSketches.length === 0) return;
+      const tokens = newSketches.map((s) => `[embed:sketch:${s.id}]`).join('\n');
+      const nextContent = onInsertEmbedToken ? onInsertEmbedToken(tokens) : note.content;
       onUpdateNote({
         ...note,
+        content: nextContent,
         sketches: [...note.sketches, ...newSketches],
         updatedAt: new Date().toISOString(),
       });
       onOpenMediaDrawer();
     },
-    [note, onUpdateNote, onOpenMediaDrawer]
+    [note, onUpdateNote, onOpenMediaDrawer, onInsertEmbedToken]
   );
 
   // Global window paste listener (synchronous preventDefault to prevent pasting paths into textarea)

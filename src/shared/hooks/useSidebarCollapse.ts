@@ -28,6 +28,8 @@ export function useSidebarCollapse() {
   return {
     isSidebarCollapsed,
     isFoldersCollapsed,
+    setIsSidebarCollapsed,
+    setIsFoldersCollapsed,
     toggleSidebar,
     toggleFolders,
   };

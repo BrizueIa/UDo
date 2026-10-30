@@ -13,8 +13,7 @@ import {
 import { FolderItem } from '../../../shared/types';
 import { useTranslation } from 'react-i18next';
 import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
-import { RichTextToolbar } from '../../note-sheet/components/RichTextToolbar';
-import { useRichTextSelection } from '../../note-sheet/hooks/useRichTextSelection';
+import { RichTextInlineInput } from '../../../shared/ui/RichTextInlineInput';
 
 interface Props {
   folder: FolderItem;
@@ -57,13 +56,6 @@ export const FolderItemRow: React.FC<Props> = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isDragOverNote, setIsDragOverNote] = useState(false);
   const [dropPosition, setDropPosition] = useState<'before' | 'after' | null>(null);
-  const {
-    inputRef,
-    coords,
-    handleMouseUp,
-    handleKeyUp,
-    closeToolbar,
-  } = useRichTextSelection<HTMLInputElement>();
 
   const handleDragOver = (e: React.DragEvent) => {
     const isFolder = e.dataTransfer.types.includes('application/udo-folder-id');
@@ -145,9 +137,8 @@ export const FolderItemRow: React.FC<Props> = ({
     }
   };
 
-  const handleSaveEdit = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const trimmed = editingName.trim();
+  const handleSaveEdit = (finalVal?: string) => {
+    const trimmed = (finalVal ?? editingName).trim();
     if (trimmed) {
       onUpdateFolder({
         ...folder,
@@ -160,51 +151,29 @@ export const FolderItemRow: React.FC<Props> = ({
   if (isEditing) {
     return (
       <div className="relative flex items-center space-x-1 px-2 py-1 rounded bg-theme-card border border-theme-accent/50">
-        <input
-          ref={inputRef}
-          type="text"
-          autoFocus
+        <RichTextInlineInput
           value={editingName}
-          onChange={(e) => setEditingName(e.target.value)}
-          onMouseUp={handleMouseUp}
-          onKeyUp={handleKeyUp}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              closeToolbar();
-              handleSaveEdit();
-            }
-            if (e.key === 'Escape') {
-              closeToolbar();
-              setIsEditing(false);
-            }
-          }}
-          className="flex-1 bg-transparent text-xs text-theme-text outline-none px-1"
+          onChange={setEditingName}
+          onCommit={(val) => handleSaveEdit(val)}
+          onCancel={() => setIsEditing(false)}
+          className="text-xs text-theme-text px-1"
         />
         <button
-          onClick={() => {
-            closeToolbar();
-            setIsEditing(false);
-          }}
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => setIsEditing(false)}
           className="p-0.5 text-theme-muted hover:text-theme-text"
         >
           <X size={12} />
         </button>
         <button
-          onClick={() => {
-            closeToolbar();
-            handleSaveEdit();
-          }}
+          type="button"
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => handleSaveEdit()}
           className="p-0.5 text-theme-accent hover:text-theme-accent-hover"
         >
           <Check size={12} />
         </button>
-        <RichTextToolbar
-          inputRef={inputRef}
-          content={editingName}
-          coords={coords}
-          onChangeContent={(newName) => setEditingName(newName)}
-          onClose={closeToolbar}
-        />
       </div>
     );
   }

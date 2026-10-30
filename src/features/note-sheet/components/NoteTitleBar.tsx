@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { NoteFindBar } from './NoteFindBar';
-import { RichTextToolbar } from './RichTextToolbar';
-import { useRichTextSelection } from '../hooks/useRichTextSelection';
+import { RichTextInlineInput } from '../../../shared/ui/RichTextInlineInput';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, Folder, Search } from 'lucide-react';
 import { renderRichTitle, TITLE_SIZE_MAP } from '../utils/inlineRichTextParser';
@@ -14,7 +13,7 @@ interface Props {
   folderName?: string;
   onRevealLocation?: () => void;
   showBreadcrumbs?: boolean;
-  onTitleChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onTitleChange: (e: React.ChangeEvent<HTMLInputElement> | { target: { value: string } }) => void;
   onBlur: () => void;
   isFindBarOpen: boolean;
   findQuery: string;
@@ -45,13 +44,6 @@ export const NoteTitleBar: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
-  const {
-    inputRef,
-    coords,
-    handleMouseUp,
-    handleKeyUp,
-    closeToolbar,
-  } = useRichTextSelection<HTMLInputElement>();
 
   const titleSizeMatch = localTitle.match(/\[size=(sm|base|lg|xl|2xl)\]/);
   const activeSize = titleSizeMatch ? titleSizeMatch[1] : 'lg';
@@ -90,54 +82,25 @@ export const NoteTitleBar: React.FC<Props> = ({
 
       <div className="flex items-center justify-between gap-4">
         {isEditing ? (
-          <div className="relative w-full">
-            <input
-              ref={inputRef}
-              type="text"
-              autoFocus
-              value={localTitle}
-              onChange={onTitleChange}
-              onMouseUp={handleMouseUp}
-              onKeyUp={handleKeyUp}
-              onBlur={(e) => {
-                if (
-                  e.relatedTarget &&
-                  (e.relatedTarget as HTMLElement).closest('[data-rich-toolbar="true"]')
-                ) {
-                  return;
-                }
-                setIsEditing(false);
-                closeToolbar();
-                onBlur();
-              }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  setIsEditing(false);
-                  closeToolbar();
-                  onBlur();
-                }
-              }}
-              placeholder={t('note.titlePlaceholder')}
-              className={`w-full ${titleSizeClass} bg-transparent outline-none border-b border-theme-accent/60 pb-1 transition-all ${
-                isCompleted ? 'line-through text-theme-muted opacity-80' : 'text-theme-text'
-              }`}
-            />
-            <RichTextToolbar
-              inputRef={inputRef}
-              content={localTitle}
-              coords={coords}
-              onChangeContent={(newTitle) => {
-                onTitleChange({ target: { value: newTitle } } as any);
-              }}
-              onClose={closeToolbar}
-            />
-          </div>
+          <RichTextInlineInput
+            value={localTitle}
+            onChange={(val) => onTitleChange({ target: { value: val } })}
+            onCommit={() => {
+              setIsEditing(false);
+              onBlur();
+            }}
+            onCancel={() => {
+              setIsEditing(false);
+              onBlur();
+            }}
+            placeholder={t('note.titlePlaceholder')}
+            className={`w-full ${titleSizeClass} bg-transparent border-b border-theme-accent/60 pb-1 transition-all ${
+              isCompleted ? 'line-through text-theme-muted opacity-80' : 'text-theme-text'
+            }`}
+          />
         ) : (
           <div
-            onClick={() => {
-              setIsEditing(true);
-              setTimeout(() => inputRef.current?.focus(), 20);
-            }}
+            onClick={() => setIsEditing(true)}
             className={`w-full ${titleSizeClass} pb-1 cursor-text select-text transition-all border-b border-transparent hover:border-theme-border/40 ${
               isCompleted ? 'line-through text-theme-muted opacity-80' : 'text-theme-text'
             }`}

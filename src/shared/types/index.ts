@@ -58,6 +58,7 @@ export interface SketchItem {
   id: string;
   title: string;
   dataUrl: string; // Base64 or local image path
+  width?: number; // Custom Notion-style resized width in px
   createdAt: string;
 }
 

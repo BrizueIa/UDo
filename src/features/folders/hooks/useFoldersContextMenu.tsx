@@ -8,6 +8,7 @@ import {
   Link,
   Plus,
   Folder,
+  Columns2,
 } from 'lucide-react';
 import { FolderItem, NoteItem } from '../../../shared/types';
 import { useContextMenu } from '../../../shared/ui/context-menu';
@@ -21,6 +22,7 @@ interface Props {
   onBatchMoveNotesToFolder?: (ids: string[], folderId: string) => void;
   onBatchDeleteNotes?: (ids: string[]) => void;
   onDuplicateNote?: (id: string) => void;
+  onOpenInSplitView?: (noteId: string) => void;
   onAddNote: (folderId: string) => void;
   onToggleFolderExpand: (folderId: string) => void;
   onDeleteFolder: (folderId: string) => void;
@@ -35,6 +37,7 @@ export function useFoldersContextMenu({
   onBatchMoveNotesToFolder,
   onBatchDeleteNotes,
   onDuplicateNote,
+  onOpenInSplitView,
   onAddNote,
   onToggleFolderExpand,
   onDeleteFolder,
@@ -85,6 +88,12 @@ export function useFoldersContextMenu({
       ]);
     } else {
       openContextMenu(e, [
+        {
+          id: 'open-split',
+          label: t('splitView.openInSplitView'),
+          icon: <Columns2 size={14} />,
+          onClick: () => onOpenInSplitView?.(note.id),
+        },
         {
           id: 'toggle-complete',
           label: note.isCompleted

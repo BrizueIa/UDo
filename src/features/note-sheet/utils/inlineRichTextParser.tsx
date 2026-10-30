@@ -97,10 +97,10 @@ export function renderRichTitle(
         : (SIZE_MAP[sizeMatch[1]] || 'text-base');
       return <span key={key} className={sizeClass}>{renderRichTitle(sizeMatch[2], `${key}-sz`, depth + 1, options)}</span>;
     }
-    if (part.startsWith('*') && part.endsWith('*')) {
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
       return <em key={key} className="italic">{renderRichTitle(part.slice(1, -1), `${key}-em`, depth + 1, options)}</em>;
     }
-    return part;
+    return part.replace(/\[\/?(?:color|bg|size)(?:=[^\]]+)?\]/gi, '').replace(/<\/?u>/gi, '');
   });
 }
 
@@ -215,10 +215,11 @@ export function parseInlineRichText(
       return <span key={key} className={SIZE_MAP[sizeMatch[1]] || 'text-base'}>{parseInlineRichText(sizeMatch[2], options, `${key}-sz`, depth + 1)}</span>;
     }
 
-    if (part.startsWith('*') && part.endsWith('*')) {
+    if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
       return <em key={key} className="italic text-theme-muted">{parseInlineRichText(part.slice(1, -1), options, `${key}-em`, depth + 1)}</em>;
     }
 
-    return renderTextWithHighlights(part, key, options);
+    const cleanedPart = part.replace(/\[\/?(?:color|bg|size)(?:=[^\]]+)?\]/gi, '').replace(/<\/?u>/gi, '');
+    return renderTextWithHighlights(cleanedPart, key, options);
   });
 }

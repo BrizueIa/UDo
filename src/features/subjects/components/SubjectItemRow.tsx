@@ -4,8 +4,7 @@ import { Pencil, Trash2, X, Check, Folder, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
-import { RichTextToolbar } from '../../note-sheet/components/RichTextToolbar';
-import { useRichTextSelection } from '../../note-sheet/hooks/useRichTextSelection';
+import { RichTextInlineInput } from '../../../shared/ui/RichTextInlineInput';
 
 const COLOR_PALETTE = [
   '#5551f5', '#1fd4a5', '#a986ff', '#ffc95f',
@@ -48,13 +47,6 @@ export const SubjectItemRow: React.FC<Props> = ({
   const [editName, setEditName] = useState(subject.name);
   const [editColor, setEditColor] = useState(subject.color);
   const [isDeleting, setIsDeleting] = useState(false);
-  const {
-    inputRef,
-    coords,
-    handleMouseUp,
-    handleKeyUp,
-    closeToolbar,
-  } = useRichTextSelection<HTMLInputElement>();
 
   const [isDragOver, setIsDragOver] = useState(false);
   const [showFolderSubmenu, setShowFolderSubmenu] = useState(false);
@@ -143,9 +135,8 @@ export const SubjectItemRow: React.FC<Props> = ({
     }
   };
 
-  const handleSaveEdit = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    const trimmed = editName.trim();
+  const handleSaveEdit = (finalVal?: string) => {
+    const trimmed = (finalVal ?? editName).trim();
     if (trimmed) onUpdateSubject({ ...subject, name: trimmed, color: editColor });
     setIsEditing(false);
   };
@@ -153,31 +144,19 @@ export const SubjectItemRow: React.FC<Props> = ({
   if (isEditing) {
     return (
       <div className="relative p-2.5 bg-theme-card border border-theme-accent/40 rounded-xl space-y-2 shadow-sm">
-        <input
-          ref={inputRef}
-          type="text"
-          autoFocus
+        <RichTextInlineInput
           value={editName}
-          onChange={(e) => setEditName(e.target.value)}
-          onMouseUp={handleMouseUp}
-          onKeyUp={handleKeyUp}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-              closeToolbar();
-              handleSaveEdit();
-            }
-            if (e.key === 'Escape') {
-              closeToolbar();
-              setIsEditing(false);
-            }
-          }}
-          className="w-full bg-theme-column px-2 py-1 rounded text-xs outline-none border border-theme-border text-theme-text"
+          onChange={setEditName}
+          onCommit={(val) => handleSaveEdit(val)}
+          onCancel={() => setIsEditing(false)}
+          className="w-full bg-theme-column px-2 py-1 rounded text-xs border border-theme-border text-theme-text"
         />
         <div className="flex items-center justify-between px-1">
           {COLOR_PALETTE.map((c) => (
             <button
               key={c}
               type="button"
+              onMouseDown={(e) => e.preventDefault()}
               onClick={() => setEditColor(c)}
               className={`w-4 h-4 rounded-[4px] transition-transform ${
                 editColor === c ? 'scale-125 ring-2 ring-white/60' : 'opacity-80 hover:opacity-100'
@@ -188,31 +167,22 @@ export const SubjectItemRow: React.FC<Props> = ({
         </div>
         <div className="flex items-center justify-end space-x-1 pt-1">
           <button
-            onClick={() => {
-              closeToolbar();
-              setIsEditing(false);
-            }}
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => setIsEditing(false)}
             className="p-1 rounded text-theme-muted hover:text-theme-text"
           >
             <X size={13} />
           </button>
           <button
-            onClick={() => {
-              closeToolbar();
-              handleSaveEdit();
-            }}
+            type="button"
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => handleSaveEdit()}
             className="p-1 rounded bg-theme-accent text-white hover:bg-theme-accent-hover"
           >
             <Check size={13} />
           </button>
         </div>
-        <RichTextToolbar
-          inputRef={inputRef}
-          content={editName}
-          coords={coords}
-          onChangeContent={(newName) => setEditName(newName)}
-          onClose={closeToolbar}
-        />
       </div>
     );
   }
