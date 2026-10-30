@@ -30,7 +30,19 @@
     "toggleSubjects": "Alternar barra de Proyectos",
     "toggleFolders": "Alternar lista de Carpetas",
     "activeNoteProject": "Contiene la nota activa en edición",
-    "activeNoteBadge": "abierta"
+    "activeNoteBadge": "abierta",
+    "defaultProjectName": "Mi Proyecto"
+  },
+  "emptyState": {
+    "welcomeTitle": "Bienvenido a UDo",
+    "welcomeDesc": "Para comenzar tu espacio de trabajo, primero crea tu primer proyecto. Ahí podrás organizar tus carpetas y notas.",
+    "createFirstProject": "Crear Primer Proyecto",
+    "noProjectsShort": "Sin proyectos",
+    "noProjectsShortDesc": "Crea tu primer proyecto para empezar a organizar.",
+    "noProjectSelected": "Crea o selecciona un proyecto primero",
+    "emptyProjectTitle": "Proyecto sin contenido",
+    "emptyProjectDesc": "Crea una carpeta para organizar o añade una nota directamente al proyecto.",
+    "projectReadyDesc": "Tu proyecto está listo. Puedes crear una nota directamente o estructurarlo con carpetas."
   },
   "folders": {
     "addFolder": "Nueva Carpeta",

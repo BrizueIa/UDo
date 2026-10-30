@@ -34,6 +34,8 @@ interface Props {
   onWorkspaceRedo?: () => void;
   onOpenInSplitView: (noteId: string) => void;
   onCloseSplitView: (keepWhich?: 'primary' | 'secondary') => void;
+  onCreateSubject?: () => void;
+  onCreateFolder?: () => void;
 }
 
 export const SplitNoteWorkspace: React.FC<Props> = ({
@@ -42,7 +44,7 @@ export const SplitNoteWorkspace: React.FC<Props> = ({
   onOpenFocusTimer, onUpdateNote, onDeleteNote, onSelectNote,
   onCreateNoteWithTitle, onCreateNewNote, onSelectTagFilter,
   onOpenSketchAnnotator, onOpenWhiteboard, onWorkspaceUndo, onWorkspaceRedo,
-  onOpenInSplitView, onCloseSplitView,
+  onOpenInSplitView, onCloseSplitView, onCreateSubject, onCreateFolder,
 }) => {
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -151,7 +153,15 @@ export const SplitNoteWorkspace: React.FC<Props> = ({
   };
 
   if (!primaryNote) {
-    return <EmptyNoteView onCreateNote={onCreateNewNote} />;
+    return (
+      <EmptyNoteView
+        onCreateNote={onCreateNewNote}
+        hasSubjects={subjects.length > 0}
+        hasFolders={folders.length > 0}
+        onCreateSubject={onCreateSubject}
+        onCreateFolder={onCreateFolder}
+      />
+    );
   }
 
   return (

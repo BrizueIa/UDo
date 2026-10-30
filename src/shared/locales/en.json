@@ -30,7 +30,19 @@
     "toggleSubjects": "Toggle Projects Sidebar",
     "toggleFolders": "Toggle Folders List",
     "activeNoteProject": "Contains active open note",
-    "activeNoteBadge": "open"
+    "activeNoteBadge": "open",
+    "defaultProjectName": "My Project"
+  },
+  "emptyState": {
+    "welcomeTitle": "Welcome to UDo",
+    "welcomeDesc": "To get started, create your first project. That is where your folders and notes will live.",
+    "createFirstProject": "Create First Project",
+    "noProjectsShort": "No projects yet",
+    "noProjectsShortDesc": "Create your first project to start organizing.",
+    "noProjectSelected": "Create or select a project first",
+    "emptyProjectTitle": "Project is empty",
+    "emptyProjectDesc": "Create a folder to structure your work or add a note directly.",
+    "projectReadyDesc": "Your project is ready. You can add a note directly or organize with folders."
   },
   "folders": {
     "addFolder": "New Folder",

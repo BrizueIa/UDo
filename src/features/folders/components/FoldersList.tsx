@@ -12,6 +12,7 @@ import { useFoldersContextMenu } from '../hooks/useFoldersContextMenu';
 import { BatchActionBar } from './BatchActionBar';
 import { MarqueeSelectionBox } from './MarqueeSelectionBox';
 import { InlineCreateFolder } from './InlineCreateFolder';
+import { FolderEmptyState } from './FolderEmptyState';
 import { filterAndSortFolderNotes } from '../utils/filterNotes';
 
 interface Props {
@@ -273,10 +274,12 @@ export const FoldersList: React.FC<Props> = ({
         }}
         className="flex-1 overflow-y-auto px-2 py-2 space-y-2 relative"
       >
-        {folders.length === 0 && visibleRootNotes.length === 0 && !isCreating ? (
-          <div data-folders-empty className="text-center py-8 text-xs text-theme-muted">
-            {t('folders.noFoldersAndNotes')}
-          </div>
+        {(!currentSubject || (folders.length === 0 && visibleRootNotes.length === 0 && !isCreating)) ? (
+          <FolderEmptyState
+            currentSubject={currentSubject}
+            onCreateFolder={() => setIsCreating(true)}
+            onCreateNote={() => onAddNote('')}
+          />
         ) : (
           <>
             {/* Root Notes (Notes directly in project) */}

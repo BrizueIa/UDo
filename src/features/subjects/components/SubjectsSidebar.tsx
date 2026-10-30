@@ -263,25 +263,49 @@ export const SubjectsSidebar: React.FC<Props> = ({
       </AnimatePresence>
 
       {/* Subjects List */}
-      <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1">
-        {publicSubjects.map((subject) => (
-          <SubjectItemRow
-            key={subject.id}
-            subject={subject}
-            isSelected={subject.id === selectedSubjectId}
-            hasActiveNote={subject.id === activeNoteSubjectId || subject.id === secondaryNoteSubjectId}
-            count={getSubjectNoteCount(subject.id)}
-            folders={folders}
-            onSelectSubject={onSelectSubject}
-            onUpdateSubject={onUpdateSubject}
-            onDeleteSubject={onDeleteSubject}
-            onMoveNoteToFolder={onMoveNoteToFolder}
-            onMoveNoteToSubject={onMoveNoteToSubject}
-            onBatchMoveNotesToSubject={onBatchMoveNotesToSubject}
-            onMoveFolderToSubject={onMoveFolderToSubject}
-            onContextMenu={(e) => handleSubjectContextMenu(e, subject)}
-          />
-        ))}
+      <div className="flex-1 overflow-y-auto px-2 py-2 space-y-1 flex flex-col">
+        {publicSubjects.length === 0 && !isCreating ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-4 text-center space-y-3 select-none">
+            <div className="w-10 h-10 rounded-xl bg-theme-card border border-white/[0.08] flex items-center justify-center text-theme-muted">
+              <FolderPlus size={18} className="text-theme-accent" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-theme-text">
+                {t('emptyState.noProjectsShort')}
+              </p>
+              <p className="text-[11px] text-theme-muted leading-tight">
+                {t('emptyState.noProjectsShortDesc')}
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleStartCreate}
+              className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-theme-accent text-white text-[11px] font-semibold hover:bg-theme-accent-hover transition-all shadow-xs cursor-pointer hover:scale-[1.02]"
+            >
+              <Plus size={13} />
+              <span>{t('nav.addSubject')}</span>
+            </button>
+          </div>
+        ) : (
+          publicSubjects.map((subject) => (
+            <SubjectItemRow
+              key={subject.id}
+              subject={subject}
+              isSelected={subject.id === selectedSubjectId}
+              hasActiveNote={subject.id === activeNoteSubjectId || subject.id === secondaryNoteSubjectId}
+              count={getSubjectNoteCount(subject.id)}
+              folders={folders}
+              onSelectSubject={onSelectSubject}
+              onUpdateSubject={onUpdateSubject}
+              onDeleteSubject={onDeleteSubject}
+              onMoveNoteToFolder={onMoveNoteToFolder}
+              onMoveNoteToSubject={onMoveNoteToSubject}
+              onBatchMoveNotesToSubject={onBatchMoveNotesToSubject}
+              onMoveFolderToSubject={onMoveFolderToSubject}
+              onContextMenu={(e) => handleSubjectContextMenu(e, subject)}
+            />
+          ))
+        )}
 
         {/* Private Vault Section (only visible when unlocked) */}
         {isVaultUnlocked && privateSubjects.length > 0 && (

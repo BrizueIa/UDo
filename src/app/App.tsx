@@ -341,6 +341,8 @@ export const App: React.FC = () => {
             })}
             onWorkspaceUndo={handleWorkspaceUndo} onWorkspaceRedo={handleWorkspaceRedo}
             onOpenInSplitView={handleOpenInSplitView} onCloseSplitView={handleCloseSplitView}
+            onCreateSubject={() => handleAddSubject(t('nav.defaultProjectName') || 'Mi Proyecto', '#5551f5')}
+            onCreateFolder={() => handleAddFolder(t('folders.addFolder'))}
           />
         </div>
       </main>
