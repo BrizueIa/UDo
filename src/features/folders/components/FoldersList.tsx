@@ -3,7 +3,7 @@ import { FolderItem, NoteItem, SubjectItem, ViewFilter } from '../../../shared/t
 import { FolderItemRow } from './FolderItemRow';
 import { RootNotesList } from './RootNotesList';
 import { FolderNotesAccordion } from './FolderNotesAccordion';
-import { FolderPlus, X, Hash, Plus } from 'lucide-react';
+import { FolderPlus, X, Hash, FilePlus } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { normalizeDiacritics } from '../../../shared/utils/diacritics';
 import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
@@ -185,7 +185,7 @@ export const FoldersList: React.FC<Props> = ({
             className="p-1 rounded-md text-theme-muted hover:text-theme-text hover:bg-theme-hover transition-colors"
             title={`${t('folders.addNote')} (Ctrl+N)`}
           >
-            <Plus size={16} />
+            <FilePlus size={16} />
           </button>
           <button
             onClick={() => setIsCreating(true)}
