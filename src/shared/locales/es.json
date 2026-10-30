@@ -122,7 +122,8 @@
     "imageTitle": "Título de la imagen",
     "flatSheetPlaceholder": "Escribe aquí, pega una imagen (Ctrl+V), añade una nota de voz o tarea...",
     "resizeImage": "Arrastra para redimensionar ancho",
-    "viewFullSize": "Ver tamaño completo"
+    "viewFullSize": "Ver tamaño completo",
+    "sideNotePlaceholder": "Haz clic aquí para escribir al lado de la imagen..."
   },
   "splitView": {
     "openInSplitView": "Abrir en vista dividida",

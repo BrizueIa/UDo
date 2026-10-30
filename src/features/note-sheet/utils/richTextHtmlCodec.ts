@@ -7,7 +7,7 @@ const SIZE_CLASS_MAP: Record<string, string> = {
 };
 
 const INLINE_TOKEN_REGEX =
-  /(\[\[[^\]]+\]\]|`[^`]+`|\*\*[\s\S]*?\*\*|~~[\s\S]*?~~|<u>[\s\S]*?<\/u>|\[color=[^\]]+\][\s\S]*?\[\/color\]|\[bg=[^\]]+\][\s\S]*?\[\/bg\]|\[size=(?:sm|base|lg|xl|2xl)\][\s\S]*?\[\/size\]|\*[^*]+\*)/g;
+  /(\[\[[^\]]+\]\]|`[^`]+`|\*\*[\s\S]*?\*\*|~~[\s\S]*?~~|<u>[\s\S]*?<\/u>|\[color=[^\]]+\][\s\S]*?\[\/color\]|\[bg=[^\]]+\][\s\S]*?\[\/bg\]|\[size=(?:sm|base|lg|xl|2xl|\d+(?:px)?)\][\s\S]*?\[\/size\]|\*[^*]+\*)/g;
 
 function escapeHtml(str: string): string {
   return str
@@ -85,6 +85,13 @@ export function storedToVisualHtml(raw: string, depth = 0): string {
       const sizeMatch = part.match(/^\[size=([^\]]+)\]([\s\S]*?)\[\/size\]$/i);
       if (sizeMatch) {
         const sz = escapeHtml(sizeMatch[1].trim());
+        const numPx = Number(sz.replace(/px$/i, ''));
+        if (!isNaN(numPx) && numPx >= 8 && numPx <= 96) {
+          return `<span data-rt-size="${numPx}" style="font-size:${numPx}px;line-height:1.35">${storedToVisualHtml(
+            sizeMatch[2],
+            depth + 1
+          )}</span>`;
+        }
         const cls = SIZE_CLASS_MAP[sz] || 'text-base';
         return `<span data-rt-size="${sz}" class="${cls}">${storedToVisualHtml(
           sizeMatch[2],

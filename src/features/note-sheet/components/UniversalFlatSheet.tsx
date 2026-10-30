@@ -33,6 +33,7 @@ interface Props {
   onOpenSketchAnnotator: (sketch: SketchItem) => void;
   onRemoveSketch: (sketchId: string) => void;
   onResizeSketch: (sketchId: string, width: number) => void;
+  onUpdateSketchSideNote: (sketchId: string, sideNote: string) => void;
   onRemoveLink: (linkId: string) => void;
   onRemoveAttachment: (attachmentId: string) => void;
   onRenameAttachment: (attachmentId: string, newName: string) => void;
@@ -44,8 +45,8 @@ export const UniversalFlatSheet: React.FC<Props> = ({
   content, notes, sketches, links, attachments, findQuery = '',
   activeCursorLineRef, onChangeContent, onSelectNote, onCreateNoteWithTitle,
   onMatchCountCalculated, onUndoText, onRedoText, onAttachSketchesAtLine,
-  onOpenSketchAnnotator, onRemoveSketch, onResizeSketch, onRemoveLink,
-  onRemoveAttachment, onRenameAttachment,
+  onOpenSketchAnnotator, onRemoveSketch, onResizeSketch, onUpdateSketchSideNote,
+  onRemoveLink, onRemoveAttachment, onRenameAttachment,
 }) => {
   const { t } = useTranslation();
   const { openContextMenu } = useContextMenu();
@@ -73,6 +74,34 @@ export const UniversalFlatSheet: React.FC<Props> = ({
   const orphanSketches = sketches.filter((s) => !referencedSketchIds.has(s.id));
   const orphanAttachments = attachments.filter((a) => !referencedAttachmentIds.has(a.id));
   const orphanLinks = links.filter((l) => !referencedLinkIds.has(l.id));
+
+  // Auto-normalize legacy/orphan items into [embed:...] lines + ensure a trailing editable text line after embeds
+  useEffect(() => {
+    const nextLines = [...lines];
+    let changed = false;
+
+    orphanSketches.forEach((s) => {
+      nextLines.push(`[embed:sketch:${s.id}]`);
+      changed = true;
+    });
+    orphanAttachments.forEach((a) => {
+      nextLines.push(`[embed:attachment:${a.id}]`);
+      changed = true;
+    });
+    orphanLinks.forEach((l) => {
+      nextLines.push(`[embed:link:${l.id}]`);
+      changed = true;
+    });
+
+    if (nextLines.length > 0 && EMBED_REGEX.test(nextLines[nextLines.length - 1].trim())) {
+      nextLines.push('');
+      changed = true;
+    }
+
+    if (changed) {
+      onChangeContent(nextLines.join('\n'));
+    }
+  }, [orphanSketches.length, orphanAttachments.length, orphanLinks.length, lines, onChangeContent]);
 
   useEffect(() => {
     const q = findQuery.trim();
@@ -167,7 +196,8 @@ export const UniversalFlatSheet: React.FC<Props> = ({
   }, [lines, activeCursorLineRef, focusLineAt]);
 
   const handlePasteImageAtLine = useCallback((idx: number, e: React.ClipboardEvent): boolean => {
-    if (!hasClipboardImageContent(e.clipboardData)) return false;
+    const hasPlainText = Boolean(e.clipboardData.getData('text/plain'));
+    if (!hasClipboardImageContent(e.clipboardData) && hasPlainText) return false;
     e.preventDefault();
     e.stopPropagation();
     processImageDropOrPaste(e, t('note.pastedImage')).then((newSketches) => {
@@ -254,6 +284,17 @@ export const UniversalFlatSheet: React.FC<Props> = ({
                 onAnnotate={onOpenSketchAnnotator}
                 onRemove={onRemoveSketch}
                 onResize={onResizeSketch}
+                onUpdateSideNote={onUpdateSketchSideNote}
+                onWriteBelow={() => {
+                  const nextIdx = idx + 1;
+                  if (nextIdx >= lines.length || EMBED_REGEX.test(lines[nextIdx].trim())) {
+                    const nextLines = [...lines];
+                    nextLines.splice(nextIdx, 0, '');
+                    onChangeContent(nextLines.join('\n'));
+                  }
+                  activeCursorLineRef.current = nextIdx;
+                  focusLineAt(nextIdx, true);
+                }}
               />
             );
           }
@@ -311,27 +352,22 @@ export const UniversalFlatSheet: React.FC<Props> = ({
         );
       })}
 
-      {/* Legacy / Unreferenced Inline Blocks seamlessly rendered in sheet flow */}
-      {orphanSketches.map((sk) => (
-        <ResizableSketchBlock
-          key={`legacy-sk-${sk.id}`}
-          sketch={sk}
-          onAnnotate={onOpenSketchAnnotator}
-          onRemove={onRemoveSketch}
-          onResize={onResizeSketch}
-        />
-      ))}
-      {orphanAttachments.map((att) => (
-        <InlineAttachmentBlock
-          key={`legacy-att-${att.id}`}
-          attachment={att}
-          onRemove={onRemoveAttachment}
-          onRename={onRenameAttachment}
-        />
-      ))}
-      {orphanLinks.map((lnk) => (
-        <InlineLinkBlock key={`legacy-lnk-${lnk.id}`} link={lnk} onRemove={onRemoveLink} />
-      ))}
+      {/* Clickable bottom space to always place cursor at the bottom of the sheet */}
+      <div
+        onClick={() => {
+          const lastIdx = lines.length - 1;
+          if (EMBED_REGEX.test((lines[lastIdx] || '').trim())) {
+            const nextLines = [...lines, ''];
+            onChangeContent(nextLines.join('\n'));
+            activeCursorLineRef.current = nextLines.length - 1;
+            focusLineAt(nextLines.length - 1, true);
+          } else {
+            activeCursorLineRef.current = lastIdx;
+            focusLineAt(lastIdx, true);
+          }
+        }}
+        className="min-h-[120px] w-full cursor-text"
+      />
     </div>
   );
 };

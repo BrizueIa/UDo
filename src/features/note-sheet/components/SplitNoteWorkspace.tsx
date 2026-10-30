@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NoteItem, SubjectItem, FolderItem, SketchItem } from '../../../shared/types';
 import { NoteDetailView } from './NoteDetailView';
 import { EmptyNoteView } from './EmptyNoteView';
@@ -50,6 +50,13 @@ export const SplitNoteWorkspace: React.FC<Props> = ({
   const [isDragOverRightZone, setIsDragOverRightZone] = useState(false);
 
   const isSplitActive = Boolean(primaryNote && secondaryNote && primaryNote.id !== secondaryNote.id);
+
+  // Reset split ratio to 50/50 whenever a new split view session is opened
+  useEffect(() => {
+    if (isSplitActive) {
+      setSplitRatio(50);
+    }
+  }, [isSplitActive, secondaryNote?.id]);
 
   const handleStartDividerDrag = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -183,9 +190,9 @@ export const SplitNoteWorkspace: React.FC<Props> = ({
             onMouseDown={handleStartDividerDrag}
             onDoubleClick={() => setSplitRatio(50)}
             title={t('splitView.resizeHint')}
-            className="w-1.5 h-full bg-theme-border/60 hover:bg-theme-accent/80 cursor-col-resize transition-colors flex items-center justify-center shrink-0 z-20 group"
+            className="w-2.5 h-full bg-theme-sidebar/80 hover:bg-theme-accent/25 border-x border-white/[0.08] hover:border-theme-accent/60 cursor-col-resize transition-all flex items-center justify-center shrink-0 z-20 group"
           >
-            <div className="w-0.5 h-8 rounded-full bg-white/25 group-hover:bg-white" />
+            <div className="w-1 h-44 rounded-full bg-theme-accent/45 group-hover:bg-theme-accent group-hover:h-64 transition-all shadow-[0_0_8px_var(--color-accent)]" />
           </div>
 
           <div

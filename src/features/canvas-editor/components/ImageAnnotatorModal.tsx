@@ -305,12 +305,14 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
   const handleSave = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    onSave({
+    const dataUrl = canvas.toDataURL('image/png');
+    const finalSketch: SketchItem = {
       ...sketch,
       title: title.trim() || sketch.title,
-      dataUrl: canvas.toDataURL('image/png'),
-    });
+      dataUrl,
+    };
     onClose();
+    setTimeout(() => onSave(finalSketch), 0);
   };
 
   const handleWheel = (e: React.WheelEvent) => {

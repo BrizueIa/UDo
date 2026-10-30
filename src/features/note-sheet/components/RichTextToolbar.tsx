@@ -328,18 +328,21 @@ export const RichTextToolbar: React.FC<Props> = ({
             {activeTab === 'size' && (
               <div className="flex items-center space-x-1">
                 {[
-                  { id: 'sm', label: t('richText.sizeSmall') },
-                  { id: 'base', label: t('richText.sizeNormal') },
-                  { id: 'lg', label: t('richText.sizeLarge') },
-                  { id: 'xl', label: t('richText.sizeSubtitle') },
-                  { id: '2xl', label: t('richText.sizeTitle') },
+                  { id: '12', label: '12' },
+                  { id: '14', label: '14' },
+                  { id: '16', label: '16' },
+                  { id: '18', label: '18' },
+                  { id: '22', label: '22' },
+                  { id: '26', label: '26' },
+                  { id: '32', label: '32' },
+                  { id: '40', label: '40' },
                 ].map((s) => (
                   <button
                     key={s.id}
                     type="button"
                     onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
                     onClick={() => applySize(s.id)}
-                    className="px-1.5 py-0.5 rounded text-[10px] text-theme-muted hover:text-theme-text hover:bg-theme-hover transition-colors cursor-pointer"
+                    className="px-1.5 py-0.5 rounded text-[11px] font-mono text-theme-muted hover:text-theme-text hover:bg-theme-hover transition-colors cursor-pointer"
                   >
                     {s.label}
                   </button>

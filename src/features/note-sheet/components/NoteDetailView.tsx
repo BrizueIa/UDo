@@ -146,6 +146,13 @@ export const NoteDetailView: React.FC<Props> = ({
     });
   };
 
+  const handleUpdateSketchSideNote = (sketchId: string, sideNote: string) => {
+    onUpdateNote({
+      ...note, sketches: note.sketches.map((s) => (s.id === sketchId ? { ...s, sideNote } : s)),
+      updatedAt: new Date().toISOString(),
+    });
+  };
+
   const handleSelectTemplate = (templateContent: string, templateTitle?: string) => {
     const updatedTitle = (!localTitle.trim() || localTitle === t('note.titlePlaceholder')) && templateTitle ? templateTitle : localTitle;
     handleTitleChange({ target: { value: updatedTitle } });
@@ -307,6 +314,7 @@ export const NoteDetailView: React.FC<Props> = ({
           onOpenSketchAnnotator={onOpenSketchAnnotator}
           onRemoveSketch={handleRemoveSketch}
           onResizeSketch={handleResizeSketch}
+          onUpdateSketchSideNote={handleUpdateSketchSideNote}
           onRemoveLink={handleRemoveLink}
           onRemoveAttachment={handleRemoveAttachment}
           onRenameAttachment={(id, name) => handleUpdateAttachment(id, { name })}

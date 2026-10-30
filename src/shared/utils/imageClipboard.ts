@@ -165,5 +165,20 @@ export async function processImageDropOrPaste(
     }
   }
 
+  // 3. Fallback to native Tauri OS clipboard image reader (essential on Linux X11/Wayland)
+  try {
+    const nativeDataUrl = await api.getClipboardImage();
+    if (nativeDataUrl) {
+      items.push({
+        id: `sketch-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`,
+        title: fallbackTitle,
+        dataUrl: nativeDataUrl,
+        createdAt: new Date().toISOString(),
+      });
+    }
+  } catch (err) {
+    console.warn('api.getClipboardImage fallback failed:', err);
+  }
+
   return items;
 }

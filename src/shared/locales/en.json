@@ -122,7 +122,8 @@
     "imageTitle": "Image title",
     "flatSheetPlaceholder": "Start writing here, paste an image (Ctrl+V), add a voice note or task...",
     "resizeImage": "Drag to resize width",
-    "viewFullSize": "View full size"
+    "viewFullSize": "View full size",
+    "sideNotePlaceholder": "Click here to write beside the image..."
   },
   "splitView": {
     "openInSplitView": "Open in split view",

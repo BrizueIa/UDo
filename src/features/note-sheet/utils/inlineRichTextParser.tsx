@@ -30,7 +30,7 @@ const SIZE_MAP: Record<string, string> = {
   sm: 'text-xs', base: 'text-sm', lg: 'text-lg font-medium', xl: 'text-xl font-semibold', '2xl': 'text-2xl font-bold',
 };
 
-const INLINE_TOKEN_REGEX = /(\[\[[^\]]+\]\]|`[^`]+`|\*\*[\s\S]*?\*\*|~~[\s\S]*?~~|<u>[\s\S]*?<\/u>|\[color=[^\]]+\][\s\S]*?\[\/color\]|\[bg=[^\]]+\][\s\S]*?\[\/bg\]|\[size=(?:sm|base|lg|xl|2xl)\][\s\S]*?\[\/size\]|\*[^*]+\*)/g;
+const INLINE_TOKEN_REGEX = /(\[\[[^\]]+\]\]|`[^`]+`|\*\*[\s\S]*?\*\*|~~[\s\S]*?~~|<u>[\s\S]*?<\/u>|\[color=[^\]]+\][\s\S]*?\[\/color\]|\[bg=[^\]]+\][\s\S]*?\[\/bg\]|\[size=(?:sm|base|lg|xl|2xl|\d+(?:px)?)\][\s\S]*?\[\/size\]|\*[^*]+\*)/g;
 
 export function stripRichTextFormatting(text: string): string {
   return text
@@ -92,9 +92,14 @@ export function renderRichTitle(
           </React.Fragment>
         );
       }
+      const szVal = sizeMatch[1].trim();
+      const numPx = Number(szVal.replace(/px$/i, ''));
+      if (!isNaN(numPx) && numPx >= 8 && numPx <= 96) {
+        return <span key={key} style={{ fontSize: `${numPx}px`, lineHeight: 1.3 }}>{renderRichTitle(sizeMatch[2], `${key}-sz`, depth + 1, options)}</span>;
+      }
       const sizeClass = options?.isNoteTitle
-        ? (TITLE_SIZE_MAP[sizeMatch[1]] || 'text-3xl font-bold')
-        : (SIZE_MAP[sizeMatch[1]] || 'text-base');
+        ? (TITLE_SIZE_MAP[szVal] || 'text-3xl font-bold')
+        : (SIZE_MAP[szVal] || 'text-base');
       return <span key={key} className={sizeClass}>{renderRichTitle(sizeMatch[2], `${key}-sz`, depth + 1, options)}</span>;
     }
     if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
@@ -212,7 +217,12 @@ export function parseInlineRichText(
 
     const sizeMatch = part.match(/^\[size=([^\]]+)\]([\s\S]*?)\[\/size\]$/);
     if (sizeMatch) {
-      return <span key={key} className={SIZE_MAP[sizeMatch[1]] || 'text-base'}>{parseInlineRichText(sizeMatch[2], options, `${key}-sz`, depth + 1)}</span>;
+      const szVal = sizeMatch[1].trim();
+      const numPx = Number(szVal.replace(/px$/i, ''));
+      if (!isNaN(numPx) && numPx >= 8 && numPx <= 96) {
+        return <span key={key} style={{ fontSize: `${numPx}px`, lineHeight: 1.35 }}>{parseInlineRichText(sizeMatch[2], options, `${key}-sz`, depth + 1)}</span>;
+      }
+      return <span key={key} className={SIZE_MAP[szVal] || 'text-base'}>{parseInlineRichText(sizeMatch[2], options, `${key}-sz`, depth + 1)}</span>;
     }
 
     if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {

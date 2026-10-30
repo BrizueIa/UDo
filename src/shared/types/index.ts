@@ -59,6 +59,7 @@ export interface SketchItem {
   title: string;
   dataUrl: string; // Base64 or local image path
   width?: number; // Custom Notion-style resized width in px
+  sideNote?: string; // Text written right beside the resized canvas/image
   createdAt: string;
 }
 

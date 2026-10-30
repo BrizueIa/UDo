@@ -1,5 +1,6 @@
 import { useEffect, useCallback } from 'react';
 import { NoteItem, SketchItem } from '../../../shared/types';
+import { api } from '../../../shared/api/ipc';
 import {
   processImageDropOrPaste,
   isImagePath,
@@ -57,6 +58,16 @@ export function useNoteMediaPaste({
 
         const sketches = await processImageDropOrPaste(e, t('note.pastedImage'));
         attachSketches(sketches);
+        return;
+      }
+
+      // If clipboard has no plain text, check native Tauri OS clipboard for binary image (Linux X11/Wayland)
+      const plainText = e.clipboardData.getData('text/plain');
+      if (!plainText) {
+        const sketches = await processImageDropOrPaste(e, t('note.pastedImage'));
+        if (sketches.length > 0) {
+          attachSketches(sketches);
+        }
       }
     };
 
@@ -75,11 +86,25 @@ export function useNoteMediaPaste({
         target &&
         (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable);
 
-      // If outside inputs, handle Ctrl+V via navigator.clipboard
-      if (!isInput && typeof navigator !== 'undefined' && navigator.clipboard) {
+      // If outside inputs, handle Ctrl+V via native Tauri clipboard or navigator.clipboard
+      if (!isInput) {
         try {
-          // Try reading clipboard items first (binary image)
-          if (navigator.clipboard.read) {
+          const nativeDataUrl = await api.getClipboardImage();
+          if (nativeDataUrl) {
+            e.preventDefault();
+            attachSketches([
+              {
+                id: `sketch-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+                title: t('note.pastedImage'),
+                dataUrl: nativeDataUrl,
+                createdAt: new Date().toISOString(),
+              },
+            ]);
+            return;
+          }
+
+          if (typeof navigator !== 'undefined' && navigator.clipboard) {
+            if (navigator.clipboard.read) {
             const items = await navigator.clipboard.read();
             const sketches: SketchItem[] = [];
             for (const item of items) {
@@ -116,6 +141,7 @@ export function useNoteMediaPaste({
               }
               attachSketches(sketches);
             }
+          }
           }
         } catch (err) {
           console.warn('Clipboard read error on Ctrl+V:', err);

@@ -85,7 +85,9 @@ export const App: React.FC = () => {
   const handleCloseSplitView = useCallback((keepWhich: 'primary' | 'secondary' = 'primary') => {
     if (keepWhich === 'secondary' && splitSecondaryNoteId) setSelectedNoteId(splitSecondaryNoteId);
     setSplitSecondaryNoteId(null);
-  }, [splitSecondaryNoteId, setSelectedNoteId]);
+    setIsSidebarCollapsed(false);
+    localStorage.setItem('udo:sidebar-collapsed', 'false');
+  }, [splitSecondaryNoteId, setSelectedNoteId, setIsSidebarCollapsed]);
 
   const handleRevealLocation = (targetNote: NoteItem) => {
     setSelectedSubjectId(targetNote.subjectId);
