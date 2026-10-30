@@ -73,18 +73,29 @@ export const UniversalFlatSheet: React.FC<Props> = ({
   const orphanAttachments = attachments.filter((a) => !referencedAttachmentIds.has(a.id));
   const orphanLinks = links.filter((l) => !referencedLinkIds.has(l.id));
 
+  const lastMatchCountRef = useRef<number>(0);
   useEffect(() => {
     const q = findQuery.trim();
     if (!q) {
-      onMatchCountCalculated?.(0);
+      if (lastMatchCountRef.current !== 0) {
+        lastMatchCountRef.current = 0;
+        onMatchCountCalculated?.(0);
+      }
       return;
     }
     try {
       const regex = buildDiacriticRegex(q, 'gi');
       const matches = content.match(regex);
-      onMatchCountCalculated?.(matches ? matches.length : 0);
+      const count = matches ? matches.length : 0;
+      if (lastMatchCountRef.current !== count) {
+        lastMatchCountRef.current = count;
+        onMatchCountCalculated?.(count);
+      }
     } catch {
-      onMatchCountCalculated?.(0);
+      if (lastMatchCountRef.current !== 0) {
+        lastMatchCountRef.current = 0;
+        onMatchCountCalculated?.(0);
+      }
     }
   }, [content, findQuery, onMatchCountCalculated]);
 

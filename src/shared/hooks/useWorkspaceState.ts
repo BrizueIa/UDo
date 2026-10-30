@@ -110,10 +110,10 @@ export function useWorkspaceState() {
   const currentNote = notes.find((n) => n.id === selectedNoteId);
   const currentFolder = folders.find((f) => f.id === (currentNote?.folderId || selectedFolderId));
 
-  const handleUpdateNote = (updatedNote: NoteItem) => {
+  const handleUpdateNote = useCallback((updatedNote: NoteItem) => {
     setNotes((prev) => prev.map((n) => (n.id === updatedNote.id ? updatedNote : n)));
     api.saveNote(updatedNote);
-  };
+  }, []);
 
   const handleToggleNoteComplete = (id: string) => {
     recordSnapshot(getSnapshot());

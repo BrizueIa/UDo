@@ -91,10 +91,15 @@ export function useNoteEditorState({
     }
   }, [onUpdateNote]);
 
-  // Flush on unmount
+  const flushSaveRef = useRef(flushSave);
+  flushSaveRef.current = flushSave;
+
+  // Flush only on true unmount of the note editor
   useEffect(() => {
-    return () => flushSave();
-  }, [flushSave]);
+    return () => {
+      flushSaveRef.current();
+    };
+  }, []);
 
   const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement> | { target: { value: string } }) => {
     const val = e.target.value;

@@ -299,7 +299,7 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
     }
     const finalSketch: SketchItem = { ...sketch, title: title.trim() || sketch.title, dataUrl };
     onClose();
-    setTimeout(() => onSave(finalSketch), 0);
+    onSave(finalSketch);
   };
 
   const handleWheel = (e: React.WheelEvent) => {
