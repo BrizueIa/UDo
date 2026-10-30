@@ -158,7 +158,7 @@ export const App: React.FC = () => {
       : [...effectiveCurrentNote.sketches, updatedSketch];
     const nextContent = exists
       ? effectiveCurrentNote.content
-      : `${effectiveCurrentNote.content ? `${effectiveCurrentNote.content}\n` : ''}[embed:sketch:${updatedSketch.id}]\n`;
+      : `${effectiveCurrentNote.content ? `${effectiveCurrentNote.content}\n` : '\n'}[embed:sketch:${updatedSketch.id}]\n`;
     handleUpdateNote({ ...effectiveCurrentNote, content: nextContent, sketches: newSketches });
     modalState.setActiveSketch(null);
   }, [effectiveCurrentNote, handleUpdateNote, modalState]);

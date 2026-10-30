@@ -123,7 +123,14 @@
     "flatSheetPlaceholder": "Start writing here, paste an image (Ctrl+V), add a voice note or task...",
     "resizeImage": "Drag to resize width",
     "viewFullSize": "View full size",
-    "sideNotePlaceholder": "Click here to write beside the image..."
+    "sideNotePlaceholder": "Click here to write beside...",
+    "wrapMode": "Text wrap & position",
+    "wrapSquareLeft": "Square (Left)",
+    "wrapSquareRight": "Square (Right)",
+    "wrapInline": "In line with text",
+    "wrapBehind": "Behind text (Free)",
+    "wrapFront": "In front of text (Free)",
+    "dragPosition": "Drag to move freely"
   },
   "splitView": {
     "openInSplitView": "Open in split view",
@@ -405,7 +412,8 @@
     "removeHighlight": "Clear highlight",
     "clearFormatting": "Clear formatting",
     "selectionActive": "Selection active",
-    "sampleText": "text"
+    "sampleText": "text",
+    "customSizePlaceholder": "Enter any font size (1 - 200 px)"
   },
   "batch": {
     "selectedCount": "{{count}} selected",

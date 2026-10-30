@@ -123,7 +123,14 @@
     "flatSheetPlaceholder": "Escribe aquí, pega una imagen (Ctrl+V), añade una nota de voz o tarea...",
     "resizeImage": "Arrastra para redimensionar ancho",
     "viewFullSize": "Ver tamaño completo",
-    "sideNotePlaceholder": "Haz clic aquí para escribir al lado de la imagen..."
+    "sideNotePlaceholder": "Haz clic aquí para escribir al lado...",
+    "wrapMode": "Ajuste de texto y posición",
+    "wrapSquareLeft": "Cuadrado (Izquierda)",
+    "wrapSquareRight": "Cuadrado (Derecha)",
+    "wrapInline": "En línea con el texto",
+    "wrapBehind": "Detrás del texto (Libre)",
+    "wrapFront": "Delante del texto (Libre)",
+    "dragPosition": "Arrastra para mover libremente"
   },
   "splitView": {
     "openInSplitView": "Abrir en vista dividida",
@@ -405,7 +412,8 @@
     "removeHighlight": "Quitar resaltado",
     "clearFormatting": "Limpiar formato",
     "selectionActive": "Selección activa",
-    "sampleText": "texto"
+    "sampleText": "texto",
+    "customSizePlaceholder": "Escribe cualquier tamaño (1 - 200 px)"
   },
   "batch": {
     "selectedCount": "{{count}} seleccionadas",

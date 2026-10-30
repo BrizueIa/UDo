@@ -86,8 +86,8 @@ export function storedToVisualHtml(raw: string, depth = 0): string {
       if (sizeMatch) {
         const sz = escapeHtml(sizeMatch[1].trim());
         const numPx = Number(sz.replace(/px$/i, ''));
-        if (!isNaN(numPx) && numPx >= 8 && numPx <= 96) {
-          return `<span data-rt-size="${numPx}" style="font-size:${numPx}px;line-height:1.35">${storedToVisualHtml(
+        if (!isNaN(numPx) && numPx >= 1 && numPx <= 200) {
+          return `<span data-rt-size="${numPx}" style="font-size:${numPx}px;line-height:1.3">${storedToVisualHtml(
             sizeMatch[2],
             depth + 1
           )}</span>`;

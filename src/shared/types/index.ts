@@ -54,12 +54,17 @@ export interface LinkItem {
   url: string;
 }
 
+export type SketchWrapMode = 'inline' | 'square-left' | 'square-right' | 'behind' | 'front';
+
 export interface SketchItem {
   id: string;
   title: string;
   dataUrl: string; // Base64 or local image path
   width?: number; // Custom Notion-style resized width in px
   sideNote?: string; // Text written right beside the resized canvas/image
+  wrapMode?: SketchWrapMode; // Word-style text wrapping mode
+  posX?: number; // Free offset X when floating (behind/front)
+  posY?: number; // Free offset Y when floating (behind/front)
   createdAt: string;
 }
 

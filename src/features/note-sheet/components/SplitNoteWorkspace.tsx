@@ -190,9 +190,12 @@ export const SplitNoteWorkspace: React.FC<Props> = ({
             onMouseDown={handleStartDividerDrag}
             onDoubleClick={() => setSplitRatio(50)}
             title={t('splitView.resizeHint')}
-            className="w-2.5 h-full bg-theme-sidebar/80 hover:bg-theme-accent/25 border-x border-white/[0.08] hover:border-theme-accent/60 cursor-col-resize transition-all flex items-center justify-center shrink-0 z-20 group"
+            className="relative w-3 -mx-1 h-full cursor-col-resize flex items-center justify-center shrink-0 z-20 group select-none"
           >
-            <div className="w-1 h-44 rounded-full bg-theme-accent/45 group-hover:bg-theme-accent group-hover:h-64 transition-all shadow-[0_0_8px_var(--color-accent)]" />
+            {/* Full-height subtle seam line like Column 1 & 2 */}
+            <div className="w-px h-full bg-theme-border group-hover:bg-theme-accent/70 transition-colors" />
+            {/* Discreet center grip handle */}
+            <div className="absolute w-1 h-10 rounded-full bg-theme-muted/35 group-hover:bg-theme-accent group-hover:h-16 transition-all" />
           </div>
 
           <div

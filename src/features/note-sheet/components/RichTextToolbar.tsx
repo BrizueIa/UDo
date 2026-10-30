@@ -53,6 +53,7 @@ export const RichTextToolbar: React.FC<Props> = ({
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'color' | 'bg' | 'size' | null>(null);
   const [customColor, setCustomColor] = useState('#5551f5');
+  const [customSize, setCustomSize] = useState('16');
   const toolbarRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -327,26 +328,47 @@ export const RichTextToolbar: React.FC<Props> = ({
 
             {activeTab === 'size' && (
               <div className="flex items-center space-x-1">
-                {[
-                  { id: '12', label: '12' },
-                  { id: '14', label: '14' },
-                  { id: '16', label: '16' },
-                  { id: '18', label: '18' },
-                  { id: '22', label: '22' },
-                  { id: '26', label: '26' },
-                  { id: '32', label: '32' },
-                  { id: '40', label: '40' },
-                ].map((s) => (
+                {['10', '12', '14', '16', '20', '24', '32', '48'].map((sz) => (
                   <button
-                    key={s.id}
+                    key={sz}
                     type="button"
                     onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); }}
-                    onClick={() => applySize(s.id)}
+                    onClick={() => {
+                      setCustomSize(sz);
+                      applySize(sz);
+                    }}
                     className="px-1.5 py-0.5 rounded text-[11px] font-mono text-theme-muted hover:text-theme-text hover:bg-theme-hover transition-colors cursor-pointer"
                   >
-                    {s.label}
+                    {sz}
                   </button>
                 ))}
+                <div className="flex items-center space-x-0.5 pl-1 border-l border-theme-border/60">
+                  <input
+                    type="number"
+                    min={1}
+                    max={200}
+                    value={customSize}
+                    onMouseDown={(e) => e.stopPropagation()}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setCustomSize(val);
+                      const n = Number(val);
+                      if (!isNaN(n) && n >= 1 && n <= 200) {
+                        applySize(String(n));
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const n = Number(customSize);
+                        if (!isNaN(n) && n >= 1 && n <= 200) applySize(String(n));
+                      }
+                    }}
+                    className="w-11 px-1 py-0.5 rounded bg-theme-column border border-theme-border text-[11px] font-mono text-theme-text text-center outline-none focus:border-theme-accent"
+                    title={t('richText.customSizePlaceholder')}
+                  />
+                  <span className="text-[9px] text-theme-muted font-mono">px</span>
+                </div>
               </div>
             )}
           </div>

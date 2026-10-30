@@ -61,9 +61,9 @@ export const NoteDetailView: React.FC<Props> = ({
       const idx = Math.max(0, Math.min(explicitLineIdx ?? activeCursorLineRef.current, lines.length - 1));
       const tokenLines = tokenBlock.split('\n');
       if (lines.length === 1 && !lines[0].trim()) {
-        const next = [...tokenLines, ''].join('\n');
+        const next = ['', ...tokenLines, ''].join('\n');
         handleContentChange(next);
-        activeCursorLineRef.current = tokenLines.length;
+        activeCursorLineRef.current = tokenLines.length + 1;
         return next;
       }
       lines.splice(idx + 1, 0, ...tokenLines, '');
@@ -139,16 +139,10 @@ export const NoteDetailView: React.FC<Props> = ({
     });
   };
 
-  const handleResizeSketch = (sketchId: string, width: number) => {
+  const handleUpdateSketch = (sketchId: string, updates: Partial<SketchItem>) => {
     onUpdateNote({
-      ...note, sketches: note.sketches.map((s) => (s.id === sketchId ? { ...s, width } : s)),
-      updatedAt: new Date().toISOString(),
-    });
-  };
-
-  const handleUpdateSketchSideNote = (sketchId: string, sideNote: string) => {
-    onUpdateNote({
-      ...note, sketches: note.sketches.map((s) => (s.id === sketchId ? { ...s, sideNote } : s)),
+      ...note,
+      sketches: note.sketches.map((s) => (s.id === sketchId ? { ...s, ...updates } : s)),
       updatedAt: new Date().toISOString(),
     });
   };
@@ -313,8 +307,7 @@ export const NoteDetailView: React.FC<Props> = ({
           onAttachSketchesAtLine={handleAttachSketchesAtLine}
           onOpenSketchAnnotator={onOpenSketchAnnotator}
           onRemoveSketch={handleRemoveSketch}
-          onResizeSketch={handleResizeSketch}
-          onUpdateSketchSideNote={handleUpdateSketchSideNote}
+          onUpdateSketch={handleUpdateSketch}
           onRemoveLink={handleRemoveLink}
           onRemoveAttachment={handleRemoveAttachment}
           onRenameAttachment={(id, name) => handleUpdateAttachment(id, { name })}

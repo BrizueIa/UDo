@@ -94,7 +94,7 @@ export function renderRichTitle(
       }
       const szVal = sizeMatch[1].trim();
       const numPx = Number(szVal.replace(/px$/i, ''));
-      if (!isNaN(numPx) && numPx >= 8 && numPx <= 96) {
+      if (!isNaN(numPx) && numPx >= 1 && numPx <= 200) {
         return <span key={key} style={{ fontSize: `${numPx}px`, lineHeight: 1.3 }}>{renderRichTitle(sizeMatch[2], `${key}-sz`, depth + 1, options)}</span>;
       }
       const sizeClass = options?.isNoteTitle
@@ -219,8 +219,8 @@ export function parseInlineRichText(
     if (sizeMatch) {
       const szVal = sizeMatch[1].trim();
       const numPx = Number(szVal.replace(/px$/i, ''));
-      if (!isNaN(numPx) && numPx >= 8 && numPx <= 96) {
-        return <span key={key} style={{ fontSize: `${numPx}px`, lineHeight: 1.35 }}>{parseInlineRichText(sizeMatch[2], options, `${key}-sz`, depth + 1)}</span>;
+      if (!isNaN(numPx) && numPx >= 1 && numPx <= 200) {
+        return <span key={key} style={{ fontSize: `${numPx}px`, lineHeight: 1.3 }}>{parseInlineRichText(sizeMatch[2], options, `${key}-sz`, depth + 1)}</span>;
       }
       return <span key={key} className={SIZE_MAP[szVal] || 'text-base'}>{parseInlineRichText(sizeMatch[2], options, `${key}-sz`, depth + 1)}</span>;
     }
