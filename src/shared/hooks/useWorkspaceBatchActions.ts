@@ -7,7 +7,11 @@ interface Props {
   notes: NoteItem[];
   folders: FolderItem[];
   selectedNoteId: string;
+  selectedFolderId?: string;
+  selectedSubjectId?: string;
   setNotes: React.Dispatch<React.SetStateAction<NoteItem[]>>;
+  setFolders: React.Dispatch<React.SetStateAction<FolderItem[]>>;
+  setSelectedFolderId?: React.Dispatch<React.SetStateAction<string>>;
   setSubjects: React.Dispatch<React.SetStateAction<SubjectItem[]>>;
   setSelectedNoteId: React.Dispatch<React.SetStateAction<string>>;
   recordSnapshot: (snapshot: WorkspaceSnapshot) => void;
@@ -18,12 +22,33 @@ export function useWorkspaceBatchActions({
   notes,
   folders,
   selectedNoteId,
+  selectedFolderId,
+  selectedSubjectId,
   setNotes,
+  setFolders,
+  setSelectedFolderId,
   setSubjects,
   setSelectedNoteId,
   recordSnapshot,
   getSnapshot,
 }: Props) {
+  const handleBatchDeleteFolders = useCallback(
+    (folderIds: string[]) => {
+      if (!folderIds || folderIds.length === 0) return;
+      recordSnapshot(getSnapshot());
+      const idSet = new Set(folderIds);
+
+      setFolders((prev) => prev.filter((f) => !idSet.has(f.id)));
+      setNotes((prev) => prev.filter((n) => !n.folderId || !idSet.has(n.folderId)));
+      folderIds.forEach((id) => api.deleteFolder(id));
+
+      if (selectedFolderId && idSet.has(selectedFolderId) && setSelectedFolderId) {
+        const remaining = folders.filter((f) => !idSet.has(f.id) && f.subjectId === selectedSubjectId);
+        setSelectedFolderId(remaining[0]?.id || '');
+      }
+    },
+    [folders, selectedFolderId, selectedSubjectId, recordSnapshot, getSnapshot, setFolders, setNotes, setSelectedFolderId]
+  );
   const handleBatchDeleteNotes = useCallback(
     (ids: string[]) => {
       if (!ids || ids.length === 0) return;
@@ -169,6 +194,7 @@ export function useWorkspaceBatchActions({
 
   return {
     handleBatchDeleteNotes,
+    handleBatchDeleteFolders,
     handleBatchToggleCompleteNotes,
     handleBatchMoveNotesToFolder,
     handleBatchMoveNotesToSubject,

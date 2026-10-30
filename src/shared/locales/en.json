@@ -44,8 +44,10 @@
     "empty": "No folders in this project yet.",
     "noNotes": "No notes in this folder",
     "deleteFolder": "Delete Folder",
+    "deleteFoldersCount": "Delete {{count}} folders",
     "renameFolder": "Rename Folder",
-    "deleteFolderConfirm": "Delete this folder?"
+    "deleteFolderConfirm": "Delete this folder?",
+    "deleteFoldersConfirm": "Delete {{count}} folders?"
   },
   "note": {
     "titlePlaceholder": "Note title...",

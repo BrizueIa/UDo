@@ -51,6 +51,7 @@ export function useWorkspaceState() {
 
   const {
     handleBatchDeleteNotes,
+    handleBatchDeleteFolders,
     handleBatchToggleCompleteNotes,
     handleBatchMoveNotesToFolder,
     handleBatchMoveNotesToSubject,
@@ -60,7 +61,11 @@ export function useWorkspaceState() {
     notes,
     folders,
     selectedNoteId,
+    selectedFolderId,
+    selectedSubjectId,
     setNotes,
+    setFolders,
+    setSelectedFolderId,
     setSubjects,
     setSelectedNoteId,
     recordSnapshot,
@@ -229,16 +234,7 @@ export function useWorkspaceState() {
   };
 
   const handleDeleteFolder = (id: string) => {
-    recordSnapshot(getSnapshot());
-    const remainingFolders = folders.filter((f) => f.id !== id);
-    setNotes((prev) => prev.filter((n) => n.folderId !== id));
-    api.deleteFolder(id);
-
-    setFolders(remainingFolders);
-    if (selectedFolderId === id) {
-      const activeSubjFolders = remainingFolders.filter((f) => f.subjectId === selectedSubjectId);
-      setSelectedFolderId(activeSubjFolders[0]?.id || '');
-    }
+    handleBatchDeleteFolders([id]);
   };
 
   const handleToggleFolderExpand = (id: string) => {
@@ -356,6 +352,7 @@ export function useWorkspaceState() {
     handleWorkspaceRedo,
     reloadWorkspaceData,
     handleBatchDeleteNotes,
+    handleBatchDeleteFolders,
     handleBatchToggleCompleteNotes,
     handleBatchMoveNotesToFolder,
     handleBatchMoveNotesToSubject,

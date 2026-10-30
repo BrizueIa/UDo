@@ -16,11 +16,13 @@ import { useContextMenu } from '../../../shared/ui/context-menu';
 interface Props {
   folders: FolderItem[];
   selectedNoteIds: Set<string>;
+  selectedFolderIds?: Set<string>;
   onToggleNoteComplete: (id: string) => void;
   onBatchToggleCompleteNotes?: (ids: string[]) => void;
   onMoveNoteToFolder?: (noteId: string, folderId: string) => void;
   onBatchMoveNotesToFolder?: (ids: string[], folderId: string) => void;
   onBatchDeleteNotes?: (ids: string[]) => void;
+  onBatchDeleteFolders?: (ids: string[]) => void;
   onDuplicateNote?: (id: string) => void;
   onOpenInSplitView?: (noteId: string) => void;
   onAddNote: (folderId: string) => void;
@@ -31,11 +33,13 @@ interface Props {
 export function useFoldersContextMenu({
   folders,
   selectedNoteIds,
+  selectedFolderIds,
   onToggleNoteComplete,
   onBatchToggleCompleteNotes,
   onMoveNoteToFolder,
   onBatchMoveNotesToFolder,
   onBatchDeleteNotes,
+  onBatchDeleteFolders,
   onDuplicateNote,
   onOpenInSplitView,
   onAddNote,
@@ -146,6 +150,30 @@ export function useFoldersContextMenu({
   const handleFolderContextMenu = (e: React.MouseEvent, folder: FolderItem) => {
     e.preventDefault();
     e.stopPropagation();
+
+    const isTargetMulti = selectedFolderIds?.has(folder.id) && selectedFolderIds.size > 1;
+    const targetFolderIds = isTargetMulti ? Array.from(selectedFolderIds!) : [folder.id];
+
+    if (isTargetMulti) {
+      openContextMenu(e, [
+        {
+          id: 'delete-folders',
+          label:
+            t('folders.deleteFoldersCount', { count: targetFolderIds.length }) ||
+            `Eliminar ${targetFolderIds.length} carpetas`,
+          icon: <Trash2 size={14} />,
+          danger: true,
+          onClick: () => {
+            if (onBatchDeleteFolders) {
+              onBatchDeleteFolders(targetFolderIds);
+            } else {
+              targetFolderIds.forEach((id) => onDeleteFolder(id));
+            }
+          },
+        },
+      ]);
+      return;
+    }
 
     openContextMenu(e, [
       {

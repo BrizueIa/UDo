@@ -33,7 +33,7 @@ export const App: React.FC = () => {
     handleAddFolder, handleUpdateFolder, handleDeleteFolder, handleToggleFolderExpand,
     handleAddSubject, handleUpdateSubject, handleDeleteSubject, getSubjectNoteCount,
     handleWorkspaceUndo, handleWorkspaceRedo, reloadWorkspaceData,
-    handleBatchDeleteNotes, handleBatchToggleCompleteNotes, handleBatchMoveNotesToFolder,
+    handleBatchDeleteNotes, handleBatchDeleteFolders, handleBatchToggleCompleteNotes, handleBatchMoveNotesToFolder,
     handleBatchMoveNotesToSubject, handleToggleSubjectPrivate, handleDuplicateNote,
   } = useWorkspaceState();
 
@@ -310,6 +310,7 @@ export const App: React.FC = () => {
             onAddNote={(folderId) => handleCreateNewNote(folderId)}
             onMoveNoteToFolder={handleMoveNoteToFolder} onReorderOrMoveNote={handleReorderOrMoveNote}
             onReorderFolder={handleReorderFolder} onBatchDeleteNotes={handleBatchDeleteNotes}
+            onBatchDeleteFolders={handleBatchDeleteFolders}
             onBatchToggleCompleteNotes={handleBatchToggleCompleteNotes}
             onBatchMoveNotesToFolder={handleBatchMoveNotesToFolder}
             onDuplicateNote={handleDuplicateNote} onOpenInSplitView={handleOpenInSplitView}

@@ -40,6 +40,7 @@ interface Props {
   onReorderOrMoveNote?: (draggedNoteId: string, targetFolderId: string, targetNoteId?: string, position?: 'before' | 'after') => void;
   onReorderFolder?: (draggedFolderId: string, targetFolderId: string, position?: 'before' | 'after') => void;
   onBatchDeleteNotes?: (ids: string[]) => void;
+  onBatchDeleteFolders?: (ids: string[]) => void;
   onBatchToggleCompleteNotes?: (ids: string[]) => void;
   onBatchMoveNotesToFolder?: (ids: string[], folderId: string) => void;
   onDuplicateNote?: (id: string) => void;
@@ -52,7 +53,7 @@ export const FoldersList: React.FC<Props> = ({
   filter, searchQuery = '', activeTagFilter, isFocused = false, onClearTagFilter,
   onSelectFolder, onSelectNote, onToggleNoteComplete, onToggleFolderExpand,
   onAddFolder, onUpdateFolder, onDeleteFolder, onAddNote, onMoveNoteToFolder,
-  onReorderOrMoveNote, onReorderFolder, onBatchDeleteNotes, onBatchToggleCompleteNotes,
+  onReorderOrMoveNote, onReorderFolder, onBatchDeleteNotes, onBatchDeleteFolders, onBatchToggleCompleteNotes,
   onBatchMoveNotesToFolder, onDuplicateNote, onOpenInSplitView,
 }) => {
   const { t } = useTranslation();
@@ -137,7 +138,11 @@ export const FoldersList: React.FC<Props> = ({
     onBatchDelete: (noteIds, folderIds) => {
       if (noteIds.length > 0) onBatchDeleteNotes?.(noteIds);
       if (folderIds && folderIds.length > 0) {
-        folderIds.forEach((fId) => onDeleteFolder(fId));
+        if (onBatchDeleteFolders) {
+          onBatchDeleteFolders(folderIds);
+        } else {
+          folderIds.forEach((fId) => onDeleteFolder(fId));
+        }
       }
     },
   });
@@ -145,11 +150,13 @@ export const FoldersList: React.FC<Props> = ({
   const { handleNoteContextMenu, handleFolderContextMenu } = useFoldersContextMenu({
     folders,
     selectedNoteIds,
+    selectedFolderIds,
     onToggleNoteComplete,
     onBatchToggleCompleteNotes,
     onMoveNoteToFolder,
     onBatchMoveNotesToFolder,
     onBatchDeleteNotes,
+    onBatchDeleteFolders,
     onDuplicateNote,
     onOpenInSplitView,
     onAddNote,
@@ -354,7 +361,12 @@ export const FoldersList: React.FC<Props> = ({
           onDeleteAll={() => {
             if (selectedNoteIds.size > 0) onBatchDeleteNotes?.(Array.from(selectedNoteIds));
             if (selectedFolderIds.size > 0) {
-              selectedFolderIds.forEach((fId) => onDeleteFolder(fId));
+              const fIds = Array.from(selectedFolderIds);
+              if (onBatchDeleteFolders) {
+                onBatchDeleteFolders(fIds);
+              } else {
+                fIds.forEach((fId) => onDeleteFolder(fId));
+              }
             }
             clearSelection();
           }}

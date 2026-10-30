@@ -278,7 +278,7 @@ export function useMultiSelection({
         const notesToDelete =
           selectedNoteIds.size > 0
             ? Array.from(selectedNoteIds)
-            : activeNoteId
+            : selectedFolderIds.size === 0 && activeNoteId && lastSelectionType === 'note'
             ? [activeNoteId]
             : [];
         const foldersToDelete = Array.from(selectedFolderIds);
@@ -292,6 +292,35 @@ export function useMultiSelection({
       }
 
       if (e.shiftKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+        if (lastSelectionType === 'folder' || (selectedFolderIds.size > 0 && selectedNoteIds.size === 0)) {
+          const sequence = allVisibleFolderIds;
+          if (sequence.length === 0) return;
+          e.preventDefault();
+
+          const anchor = lastFocusedFolderId || sequence[0];
+          const anchorIdx = sequence.indexOf(anchor);
+          const curIdx = lastFocusedFolderId ? sequence.indexOf(lastFocusedFolderId) : anchorIdx;
+          const validCurIdx = curIdx === -1 ? anchorIdx : curIdx;
+
+          let nextIdx = validCurIdx;
+          if (e.key === 'ArrowDown') {
+            nextIdx = Math.min(sequence.length - 1, validCurIdx + 1);
+          } else {
+            nextIdx = Math.max(0, validCurIdx - 1);
+          }
+
+          const nextFolderId = sequence[nextIdx];
+          setLastFocusedFolderId(nextFolderId);
+          setLastSelectionType('folder');
+
+          const start = Math.min(anchorIdx, nextIdx);
+          const end = Math.max(anchorIdx, nextIdx);
+          const rangeIds = sequence.slice(start, end + 1);
+          setSelectedFolderIds(new Set(rangeIds));
+          setSelectedNoteIds(new Set());
+          return;
+        }
+
         const sequence = currentFolderNoteIds.length > 0 ? currentFolderNoteIds : allVisibleNoteIds;
         if (sequence.length === 0) return;
         e.preventDefault();

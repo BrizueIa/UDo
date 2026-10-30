@@ -44,8 +44,10 @@
     "empty": "No hay carpetas en este proyecto todavía.",
     "noNotes": "No hay notas en esta carpeta",
     "deleteFolder": "Eliminar Carpeta",
+    "deleteFoldersCount": "Eliminar {{count}} carpetas",
     "renameFolder": "Renombrar Carpeta",
-    "deleteFolderConfirm": "¿Eliminar esta carpeta?"
+    "deleteFolderConfirm": "¿Eliminar esta carpeta?",
+    "deleteFoldersConfirm": "¿Eliminar {{count}} carpetas?"
   },
   "note": {
     "titlePlaceholder": "Título de la nota...",
