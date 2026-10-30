@@ -73,7 +73,6 @@ export const UniversalFlatSheet: React.FC<Props> = ({
     });
   }, []);
 
-  const [, setMeasureKey] = useState(0);
   const getLineExclusion = useCallback(
     (lineIdx: number) => {
       if (boundsMap.size === 0) return undefined;
@@ -174,16 +173,8 @@ export const UniversalFlatSheet: React.FC<Props> = ({
   }, [content, findQuery, onMatchCountCalculated]);
 
   const registerLineEl = useCallback((idx: number, el: HTMLDivElement | null) => {
-    if (el) {
-      if (!lineElementsRef.current.has(idx)) {
-        lineElementsRef.current.set(idx, el);
-        setMeasureKey((k) => k + 1);
-      } else {
-        lineElementsRef.current.set(idx, el);
-      }
-    } else {
-      lineElementsRef.current.delete(idx);
-    }
+    if (el) lineElementsRef.current.set(idx, el);
+    else lineElementsRef.current.delete(idx);
   }, []);
 
   const focusLineAt = useCallback((idx: number, toEnd = true) => {
