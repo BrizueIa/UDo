@@ -5,6 +5,7 @@ import { NoteItemRow } from './NoteItemRow';
 interface Props {
   notes: NoteItem[];
   selectedNoteId: string;
+  secondaryNoteId?: string;
   selectedNoteIds: Set<string>;
   onSelectFolder: (id: string) => void;
   onSelectNote: (id: string) => void;
@@ -22,6 +23,7 @@ interface Props {
 export const RootNotesList: React.FC<Props> = ({
   notes,
   selectedNoteId,
+  secondaryNoteId,
   selectedNoteIds,
   onSelectFolder,
   onSelectNote,
@@ -38,7 +40,7 @@ export const RootNotesList: React.FC<Props> = ({
         <NoteItemRow
           key={note.id}
           note={note}
-          isSelected={note.id === selectedNoteId}
+          isSelected={note.id === selectedNoteId || note.id === secondaryNoteId}
           isMultiSelected={selectedNoteIds.has(note.id)}
           multiSelectedIds={Array.from(selectedNoteIds)}
           onSelect={() => {

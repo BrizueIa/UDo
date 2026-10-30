@@ -131,15 +131,6 @@ export const SplitNoteWorkspace: React.FC<Props> = ({
         activeTagFilter={activeTagFilter}
         activeTimerFormatted={isTimerOnThis ? focusTimer.formattedTime : undefined}
         isTimerRunning={focusTimer.isRunning && focusTimer.noteId === targetNote.id}
-        isSplitView={isSplitActive}
-        onToggleSplitView={() => {
-          if (isSplitActive) {
-            onCloseSplitView('primary');
-          } else {
-            const candidate = notes.find((n) => n.id !== targetNote.id);
-            if (candidate) onOpenInSplitView(candidate.id);
-          }
-        }}
         onCloseSplitPane={
           isSplitActive
             ? () => onCloseSplitView(paneType === 'primary' ? 'secondary' : 'primary')

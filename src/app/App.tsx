@@ -244,7 +244,9 @@ export const App: React.FC = () => {
         {!isZenMode && !isSidebarCollapsed && (
           <SubjectsSidebar
             subjects={subjects} folders={folders} selectedSubjectId={selectedSubjectId}
-            activeNoteSubjectId={effectiveCurrentNote?.subjectId} isFocused={activeColumn === 1}
+            activeNoteSubjectId={effectiveCurrentNote?.subjectId}
+            secondaryNoteSubjectId={secondaryNote?.subjectId}
+            isFocused={activeColumn === 1}
             isVaultUnlocked={vault.isVaultUnlocked} onToggleVault={vault.handleToggleVault}
             onOpenTrash={() => modalState.setIsTrashModalOpen(true)}
             onToggleSubjectPrivate={handleToggleSubjectPrivate}
@@ -264,7 +266,10 @@ export const App: React.FC = () => {
           <FoldersList
             currentSubject={currentSubject} folders={currentSubjectFolders} notes={notes}
             selectedFolderId={selectedFolderId} selectedNoteId={selectedNoteId}
-            activeNoteFolderId={effectiveCurrentNote?.folderId} filter={filter}
+            secondaryNoteId={secondaryNote?.id}
+            activeNoteFolderId={effectiveCurrentNote?.folderId}
+            secondaryNoteFolderId={secondaryNote?.folderId}
+            filter={filter}
             searchQuery={searchQuery} activeTagFilter={activeTagFilter}
             isFocused={activeColumn === 2} onClearTagFilter={() => setActiveTagFilter(null)}
             onSelectFolder={(id) => { setSelectedFolderId(id); setActiveColumn(2); }}

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NoteItem, FolderItem } from '../../../shared/types';
-import { CheckSquare, Pin, ChevronDown, Trash2, Timer, Folder, FileText, Columns2, X } from 'lucide-react';
+import { CheckSquare, Pin, ChevronDown, Trash2, Timer, Folder, FileText, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { renderRichTitle } from '../utils/inlineRichTextParser';
@@ -11,8 +11,6 @@ interface Props {
   folders: FolderItem[];
   activeTimerFormatted?: string;
   isTimerRunning?: boolean;
-  isSplitView?: boolean;
-  onToggleSplitView?: () => void;
   onCloseSplitPane?: () => void;
   onToggleComplete: () => void;
   onTogglePin: () => void;
@@ -27,8 +25,6 @@ export const NoteActionRibbon: React.FC<Props> = ({
   folders,
   activeTimerFormatted,
   isTimerRunning,
-  isSplitView,
-  onToggleSplitView,
   onCloseSplitPane,
   onToggleComplete,
   onTogglePin,
@@ -185,21 +181,6 @@ export const NoteActionRibbon: React.FC<Props> = ({
       </div>
 
       <div className="flex items-center space-x-1">
-        {onToggleSplitView && (
-          <button
-            type="button"
-            onClick={onToggleSplitView}
-            className={`p-1.5 rounded-md transition-colors cursor-pointer ${
-              isSplitView
-                ? 'text-theme-accent bg-theme-accent/15'
-                : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover'
-            }`}
-            title={isSplitView ? t('splitView.closeSplit') : t('splitView.openSplit')}
-          >
-            <Columns2 size={15} />
-          </button>
-        )}
-
         {/* Delete note button */}
         <button
           type="button"

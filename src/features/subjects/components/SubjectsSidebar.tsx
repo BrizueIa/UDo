@@ -16,6 +16,7 @@ interface Props {
   folders: FolderItem[];
   selectedSubjectId: string;
   activeNoteSubjectId?: string;
+  secondaryNoteSubjectId?: string;
   isFocused?: boolean;
   isVaultUnlocked?: boolean;
   onToggleVault?: () => void;
@@ -40,6 +41,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
   folders,
   selectedSubjectId,
   activeNoteSubjectId,
+  secondaryNoteSubjectId,
   isFocused = false,
   isVaultUnlocked = false,
   onToggleVault,
@@ -267,7 +269,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
             key={subject.id}
             subject={subject}
             isSelected={subject.id === selectedSubjectId}
-            hasActiveNote={subject.id === activeNoteSubjectId}
+            hasActiveNote={subject.id === activeNoteSubjectId || subject.id === secondaryNoteSubjectId}
             count={getSubjectNoteCount(subject.id)}
             folders={folders}
             onSelectSubject={onSelectSubject}
@@ -296,7 +298,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
                   key={subject.id}
                   subject={subject}
                   isSelected={subject.id === selectedSubjectId}
-                  hasActiveNote={subject.id === activeNoteSubjectId}
+                  hasActiveNote={subject.id === activeNoteSubjectId || subject.id === secondaryNoteSubjectId}
                   count={getSubjectNoteCount(subject.id)}
                   folders={folders}
                   onSelectSubject={onSelectSubject}

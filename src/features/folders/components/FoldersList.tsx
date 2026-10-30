@@ -20,7 +20,9 @@ interface Props {
   notes: NoteItem[];
   selectedFolderId?: string;
   selectedNoteId: string;
+  secondaryNoteId?: string;
   activeNoteFolderId?: string;
+  secondaryNoteFolderId?: string;
   filter: ViewFilter;
   searchQuery?: string;
   activeTagFilter?: string | null;
@@ -45,7 +47,8 @@ interface Props {
 }
 
 export const FoldersList: React.FC<Props> = ({
-  currentSubject, folders, notes, selectedFolderId, selectedNoteId, activeNoteFolderId,
+  currentSubject, folders, notes, selectedFolderId, selectedNoteId, secondaryNoteId,
+  activeNoteFolderId, secondaryNoteFolderId,
   filter, searchQuery = '', activeTagFilter, isFocused = false, onClearTagFilter,
   onSelectFolder, onSelectNote, onToggleNoteComplete, onToggleFolderExpand,
   onAddFolder, onUpdateFolder, onDeleteFolder, onAddNote, onMoveNoteToFolder,
@@ -273,6 +276,7 @@ export const FoldersList: React.FC<Props> = ({
             <RootNotesList
               notes={visibleRootNotes}
               selectedNoteId={selectedNoteId}
+              secondaryNoteId={secondaryNoteId}
               selectedNoteIds={selectedNoteIds}
               onSelectFolder={onSelectFolder}
               onSelectNote={onSelectNote}
@@ -300,7 +304,7 @@ export const FoldersList: React.FC<Props> = ({
                     noteCount={folderNotes.length}
                     isSelected={isFolderSelected}
                     isMultiSelected={selectedFolderIds.has(folder.id)}
-                    hasActiveNote={folder.id === activeNoteFolderId}
+                    hasActiveNote={folder.id === activeNoteFolderId || folder.id === secondaryNoteFolderId}
                     onSelectFolder={() => onSelectFolder(folder.id)}
                     onSelectWithEvent={(e) => handleFolderClick(folder.id, e)}
                     onToggleExpand={() => onToggleFolderExpand(folder.id)}
@@ -325,6 +329,7 @@ export const FoldersList: React.FC<Props> = ({
                     folder={folder}
                     visibleNotes={visibleNotes}
                     selectedNoteId={selectedNoteId}
+                    secondaryNoteId={secondaryNoteId}
                     selectedNoteIds={selectedNoteIds}
                     onSelectFolder={onSelectFolder}
                     onSelectNote={onSelectNote}

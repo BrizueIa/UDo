@@ -9,6 +9,7 @@ interface Props {
   folder: FolderItem;
   visibleNotes: NoteItem[];
   selectedNoteId: string;
+  secondaryNoteId?: string;
   selectedNoteIds: Set<string>;
   onSelectFolder: (id: string) => void;
   onSelectNote: (id: string) => void;
@@ -29,6 +30,7 @@ export const FolderNotesAccordion: React.FC<Props> = ({
   folder,
   visibleNotes,
   selectedNoteId,
+  secondaryNoteId,
   selectedNoteIds,
   onSelectFolder,
   onSelectNote,
@@ -113,7 +115,7 @@ export const FolderNotesAccordion: React.FC<Props> = ({
               <NoteItemRow
                 key={note.id}
                 note={note}
-                isSelected={note.id === selectedNoteId}
+                isSelected={note.id === selectedNoteId || note.id === secondaryNoteId}
                 isMultiSelected={selectedNoteIds.has(note.id)}
                 multiSelectedIds={Array.from(selectedNoteIds)}
                 onSelect={() => {

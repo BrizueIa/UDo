@@ -20,8 +20,8 @@ interface Props {
   note: NoteItem; notes: NoteItem[]; folderName: string; folders: FolderItem[];
   subjectName?: string; subjectColor?: string; onRevealLocation?: () => void;
   showBreadcrumbs?: boolean; activeTagFilter?: string | null;
-  activeTimerFormatted?: string; isTimerRunning?: boolean; isSplitView?: boolean;
-  onToggleSplitView?: () => void; onCloseSplitPane?: () => void;
+  activeTimerFormatted?: string; isTimerRunning?: boolean;
+  onCloseSplitPane?: () => void;
   onOpenFocusTimer?: () => void; onUpdateNote: (note: NoteItem) => void;
   onDeleteNote: (id: string) => void;
   onSelectNote: (noteId: string, subjectId: string) => void;
@@ -35,7 +35,7 @@ interface Props {
 export const NoteDetailView: React.FC<Props> = ({
   note, notes, folderName, folders, subjectName, subjectColor,
   onRevealLocation, showBreadcrumbs, activeTagFilter, activeTimerFormatted,
-  isTimerRunning, isSplitView, onToggleSplitView, onCloseSplitPane,
+  isTimerRunning, onCloseSplitPane,
   onOpenFocusTimer, onUpdateNote, onDeleteNote, onSelectNote,
   onCreateNoteWithTitle, onSelectTagFilter, onOpenSketchAnnotator,
   onOpenWhiteboard, onWorkspaceUndo, onWorkspaceRedo,
@@ -167,8 +167,6 @@ export const NoteDetailView: React.FC<Props> = ({
         folders={folders}
         activeTimerFormatted={activeTimerFormatted}
         isTimerRunning={isTimerRunning}
-        isSplitView={isSplitView}
-        onToggleSplitView={onToggleSplitView}
         onCloseSplitPane={onCloseSplitPane}
         onToggleComplete={() => {
           const nextState = !note.isCompleted;
