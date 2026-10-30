@@ -4,6 +4,34 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fix WebKitGTK / Linux dark theme black box selection artifact */
+::selection {
+  background-color: var(--color-accent, #5b57f7) !important;
+  color: #ffffff !important;
+}
+::-moz-selection {
+  background-color: var(--color-accent, #5b57f7) !important;
+  color: #ffffff !important;
+}
+
+/* Global desktop app unselectable UI to prevent accidental text highlights */
+* {
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Allow text selection only where editing or reading text is intentional */
+input,
+textarea,
+[contenteditable="true"],
+.selectable-text,
+.note-sheet-content,
+[data-selectable="true"] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
 /* Custom scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
