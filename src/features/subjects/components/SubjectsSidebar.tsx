@@ -170,7 +170,7 @@ export const SubjectsSidebar: React.FC<Props> = ({
     >
       {/* Header */}
       <div className="flex items-center justify-between px-3 py-3 border-b border-white/[0.06]">
-        <span className="text-xs font-semibold tracking-wider text-theme-muted uppercase truncate">
+        <span className="text-xs font-semibold tracking-wider text-theme-muted uppercase truncate select-none pointer-events-none">
           {t('nav.subjects')}
         </span>
         <div className="flex items-center space-x-1 shrink-0">

@@ -58,7 +58,7 @@ export const FloatingWidgetSelectors: React.FC<Props> = ({
 
         {showSubjectMenu && (
           <div className="absolute top-full left-0 mt-1 w-40 bg-theme-card border border-white/[0.08] rounded-xl shadow-2xl py-1 z-40 max-h-40 overflow-y-auto">
-            {subjects.map((s) => (
+            {subjects.filter((s) => !s.isPrivate).map((s) => (
               <button
                 key={s.id}
                 type="button"

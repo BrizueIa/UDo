@@ -130,16 +130,15 @@ export const TopBar: React.FC<Props> = ({
 
   return (
     <header
-      data-tauri-drag-region
       className="h-12 bg-theme-sidebar border-b border-theme-border flex items-center justify-between px-3 select-none flex-shrink-0 z-20 gap-2"
     >
       {/* Left: Window Controls (if left) + Column Toggles + App Title */}
-      <div className="flex items-center space-x-2 shrink-0">
+      <div className="flex items-center space-x-2 shrink-0 pointer-events-auto" data-tauri-drag-region="false">
         {windowEnv.controlsSide === 'left' && (
           <TrafficLights showMinMax={windowEnv.showMinMax} styleMode="mac" />
         )}
 
-        <div className="flex items-center space-x-1.5">
+        <div className="flex items-center space-x-1.5" data-tauri-drag-region="false">
           {/* Column 1 Toggle (Subjects, Ctrl+B) */}
           {onToggleSidebar && (
             <button
@@ -201,15 +200,31 @@ export const TopBar: React.FC<Props> = ({
         </div>
       </div>
 
+      {/* Draggable spacer Left */}
+      <div
+        data-tauri-drag-region
+        onDoubleClick={() => api.toggleMaximizeWindow()}
+        className="flex-1 h-full min-w-4 cursor-move"
+      />
+
       {/* Middle: Unified Search Bar */}
-      <TopBarSearch
-        searchQuery={searchQuery}
-        onSearchChange={onSearchChange}
-        onOpenSearchPalette={onOpenSearchPalette}
+      <div className="shrink-0 flex-1 max-w-md mx-1 min-w-0 pointer-events-auto" data-tauri-drag-region="false">
+        <TopBarSearch
+          searchQuery={searchQuery}
+          onSearchChange={onSearchChange}
+          onOpenSearchPalette={onOpenSearchPalette}
+        />
+      </div>
+
+      {/* Draggable spacer Right */}
+      <div
+        data-tauri-drag-region
+        onDoubleClick={() => api.toggleMaximizeWindow()}
+        className="flex-1 h-full min-w-4 cursor-move"
       />
 
       {/* Right: Filter Pills + Quick Tools */}
-      <div className="flex items-center space-x-2 shrink-0">
+      <div className="flex items-center space-x-2 shrink-0 pointer-events-auto" data-tauri-drag-region="false">
         {/* Active Focus Sprint Timer (FR-14) */}
         {timer && (timer.isRunning || timer.isPaused) && (
           <div
@@ -257,7 +272,7 @@ export const TopBar: React.FC<Props> = ({
         />
 
         {/* Quick Icon Actions */}
-        <div className="flex items-center space-x-1 pl-1 sm:pl-2 border-l border-white/[0.06] text-theme-muted">
+        <div className="flex items-center space-x-1 pl-1 sm:pl-2 border-l border-white/[0.06] text-theme-muted pointer-events-auto" data-tauri-drag-region="false">
           {/* Always-on-top Widget toggle */}
           <button
             type="button"

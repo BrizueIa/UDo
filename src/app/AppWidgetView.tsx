@@ -39,11 +39,19 @@ export const AppWidgetView: React.FC<Props> = ({
 }) => {
   const { t } = useTranslation();
 
+  const visibleSubjects = isVaultUnlocked ? subjects : subjects.filter((s) => !s.isPrivate);
+  const visibleNotes = isVaultUnlocked
+    ? notes
+    : notes.filter((n) => {
+        const s = subjects.find((sub) => sub.id === n.subjectId);
+        return !s?.isPrivate;
+      });
+
   return (
     <div className="h-screen w-screen bg-transparent text-theme-text font-sans antialiased overflow-hidden flex flex-col">
       <FloatingWidget
-        notes={notes}
-        subjects={subjects}
+        notes={visibleNotes}
+        subjects={visibleSubjects}
         folders={folders}
         selectedSubjectId={selectedSubjectId}
         selectedFolderId={selectedFolderId}

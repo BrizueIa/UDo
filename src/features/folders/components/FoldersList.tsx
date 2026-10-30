@@ -184,7 +184,7 @@ export const FoldersList: React.FC<Props> = ({
     >
       {/* Header with active subject title, New Note button and New Folder button */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
-        <h2 className="text-sm font-semibold text-theme-text truncate">
+        <h2 className="text-sm font-semibold text-theme-text truncate select-none pointer-events-none">
           {renderRichTitle(currentSubject?.name || t('nav.subjects'), 'folders-hdr', 0, { ignoreSize: true })}
         </h2>
         <div className="flex items-center space-x-1 shrink-0">

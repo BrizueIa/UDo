@@ -40,7 +40,7 @@ export const TrafficLights: React.FC<Props> = ({
   }
 
   return (
-    <div className="flex items-center space-x-1 select-none" data-tauri-drag-region="false">
+    <div className="flex items-center space-x-1 select-none pointer-events-auto" data-tauri-drag-region="false">
       {/* Minimize */}
       {showMinMax && (
         <button

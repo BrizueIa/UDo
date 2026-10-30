@@ -52,8 +52,17 @@ export const FloatingWidget: React.FC<Props> = ({
   const visibleSubjects = isVaultUnlocked ? subjects : subjects.filter((s) => !s.isPrivate);
   const [isExpanded, setIsExpanded] = useState(false);
   const [quickInput, setQuickInput] = useState('');
-  const [activeSubjectId, setActiveSubjectId] = useState(selectedSubjectId || visibleSubjects[0]?.id || '');
+  const initialSubjectId = visibleSubjects.some((s) => s.id === selectedSubjectId)
+    ? selectedSubjectId
+    : visibleSubjects[0]?.id || '';
+  const [activeSubjectId, setActiveSubjectId] = useState(initialSubjectId);
   const [activeFolderId, setActiveFolderId] = useState(selectedFolderId || folders[0]?.id || '');
+
+  useEffect(() => {
+    if (!visibleSubjects.some((s) => s.id === activeSubjectId)) {
+      setActiveSubjectId(visibleSubjects[0]?.id || '');
+    }
+  }, [visibleSubjects, activeSubjectId]);
 
   const [showSubjectMenu, setShowSubjectMenu] = useState(false);
   const [showFolderMenu, setShowFolderMenu] = useState(false);
@@ -225,7 +234,7 @@ export const FloatingWidget: React.FC<Props> = ({
       {/* Project Selector & Folder Selector Bar */}
       <div className="px-2.5 py-1.5 bg-theme-card/30 border-b border-white/[0.04] flex items-center justify-between text-xs space-x-1.5">
         <FloatingWidgetSelectors
-          subjects={subjects}
+          subjects={visibleSubjects}
           projectFolders={projectFolders}
           currentSubject={currentSubject}
           currentFolder={currentFolder}
