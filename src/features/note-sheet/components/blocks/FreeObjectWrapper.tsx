@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Move, ArrowUp, ArrowDown, Maximize2, Pencil, Trash2, Layers } from 'lucide-react';
+import { Move, Maximize2, Pencil, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 export interface FreeBounds {
@@ -8,7 +8,6 @@ export interface FreeBounds {
   top: number;
   width: number;
   height: number;
-  isBackground: boolean;
 }
 
 interface Props {
@@ -18,14 +17,12 @@ interface Props {
   width?: number;
   height?: number;
   zIndex?: number;
-  isBackground?: boolean;
   onUpdateTransform: (updates: {
     posX?: number;
     posY?: number;
     width?: number;
     height?: number;
     zIndex?: number;
-    isBackground?: boolean;
   }) => void;
   onRemove: () => void;
   onOpenEdit?: () => void;
@@ -42,7 +39,6 @@ export const FreeObjectWrapper: React.FC<Props> = ({
   width = 340,
   height,
   zIndex = 10,
-  isBackground = false,
   onUpdateTransform,
   onRemove,
   onOpenEdit,
@@ -79,9 +75,8 @@ export const FreeObjectWrapper: React.FC<Props> = ({
       top: livePos.y,
       width: liveWidth,
       height: h,
-      isBackground,
     });
-  }, [id, livePos.x, livePos.y, liveWidth, liveHeight, isBackground, reportBounds]);
+  }, [id, livePos.x, livePos.y, liveWidth, liveHeight, reportBounds]);
 
   useEffect(() => {
     updateBounds();
@@ -155,8 +150,6 @@ export const FreeObjectWrapper: React.FC<Props> = ({
     document.addEventListener('mouseup', onUp);
   };
 
-  const effectiveZ = isBackground ? 0 : Math.max(5, zIndex);
-
   return (
     <div
       ref={wrapperRef}
@@ -164,12 +157,11 @@ export const FreeObjectWrapper: React.FC<Props> = ({
         transform: `translate3d(${livePos.x}px, ${livePos.y}px, 0)`,
         width: `${liveWidth}px`,
         height: liveHeight ? `${liveHeight}px` : undefined,
-        zIndex: effectiveZ,
-        opacity: isBackground ? 0.72 : 1,
+        zIndex: zIndex || 10,
       }}
-      className={`absolute top-0 left-0 group select-none transition-shadow ${
+      className={`absolute top-0 left-0 group select-none pointer-events-auto transition-shadow ${
         isDragging ? 'shadow-2xl ring-2 ring-theme-accent cursor-grabbing' : 'hover:shadow-xl'
-      } ${isBackground ? 'pointer-events-none' : 'pointer-events-auto'}`}
+      }`}
     >
       {/* Floating Action Controls */}
       <div
@@ -183,30 +175,6 @@ export const FreeObjectWrapper: React.FC<Props> = ({
           title={t('note.dragPosition')}
         >
           <Move size={12} />
-        </button>
-        <button
-          type="button"
-          onClick={() => onUpdateTransform({ isBackground: !isBackground, zIndex: isBackground ? 10 : 0 })}
-          className={`p-1 rounded transition-colors ${isBackground ? 'text-amber-400 bg-amber-400/20' : 'hover:text-theme-accent'}`}
-          title={isBackground ? t('note.normalLayer') : t('note.backgroundLayer')}
-        >
-          <Layers size={12} />
-        </button>
-        <button
-          type="button"
-          onClick={() => onUpdateTransform({ zIndex: Math.min(100, zIndex + 2), isBackground: false })}
-          className="p-1 hover:text-theme-accent rounded"
-          title={t('note.bringToFront')}
-        >
-          <ArrowUp size={12} />
-        </button>
-        <button
-          type="button"
-          onClick={() => onUpdateTransform({ zIndex: Math.max(1, zIndex - 2) })}
-          className="p-1 hover:text-theme-accent rounded"
-          title={t('note.sendToBack')}
-        >
-          <ArrowDown size={12} />
         </button>
         {onOpenEdit && (
           <button type="button" onClick={onOpenEdit} className="p-1 hover:text-theme-accent rounded" title={t('note.annotate')}>

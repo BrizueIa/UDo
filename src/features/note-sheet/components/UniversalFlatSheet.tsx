@@ -13,27 +13,15 @@ import { useContextMenu } from '../../../shared/ui/context-menu';
 import { playTaskCompleteSound } from '../../../shared/utils/soundEffects';
 
 interface Props {
-  content: string;
-  notes: NoteItem[];
-  sketches: SketchItem[];
-  links: LinkItem[];
-  attachments: NoteAttachment[];
-  findQuery?: string;
-  currentMatchIndex?: number;
-  activeCursorLineRef: React.MutableRefObject<number>;
-  onChangeContent: (newContent: string) => void;
-  onSelectNote: (noteId: string, subjectId: string) => void;
-  onCreateNoteWithTitle: (title: string) => void;
-  onMatchCountCalculated?: (count: number) => void;
-  onUndoText?: () => void;
-  onRedoText?: () => void;
+  content: string; notes: NoteItem[]; sketches: SketchItem[]; links: LinkItem[]; attachments: NoteAttachment[];
+  findQuery?: string; currentMatchIndex?: number; activeCursorLineRef: React.MutableRefObject<number>;
+  onChangeContent: (newContent: string) => void; onSelectNote: (noteId: string, subjectId: string) => void;
+  onCreateNoteWithTitle: (title: string) => void; onMatchCountCalculated?: (count: number) => void;
+  onUndoText?: () => void; onRedoText?: () => void;
   onAttachSketchesAtLine: (sketches: SketchItem[], lineIdx: number) => void;
-  onOpenSketchAnnotator: (sketch: SketchItem) => void;
-  onRemoveSketch: (sketchId: string) => void;
-  onUpdateSketch: (sketchId: string, updates: Partial<SketchItem>) => void;
-  onRemoveLink: (linkId: string) => void;
-  onRemoveAttachment: (attachmentId: string) => void;
-  onRenameAttachment: (attachmentId: string, newName: string) => void;
+  onOpenSketchAnnotator: (sketch: SketchItem) => void; onRemoveSketch: (sketchId: string) => void;
+  onUpdateSketch: (sketchId: string, updates: Partial<SketchItem>) => void; onRemoveLink: (linkId: string) => void;
+  onRemoveAttachment: (attachmentId: string) => void; onRenameAttachment: (attachmentId: string, newName: string) => void;
   onUpdateAttachment?: (attachmentId: string, updates: Partial<NoteAttachment>) => void;
 }
 
@@ -68,17 +56,8 @@ export const UniversalFlatSheet: React.FC<Props> = ({
 
   const handleReportBounds = useCallback((b: FreeBounds) => {
     setBoundsMap((prev) => {
-      const existing = prev.get(b.id);
-      if (
-        existing &&
-        existing.left === b.left &&
-        existing.top === b.top &&
-        existing.width === b.width &&
-        existing.height === b.height &&
-        existing.isBackground === b.isBackground
-      ) {
-        return prev;
-      }
+      const ex = prev.get(b.id);
+      if (ex && ex.left === b.left && ex.top === b.top && ex.width === b.width && ex.height === b.height) return prev;
       const next = new Map(prev);
       next.set(b.id, b);
       return next;
@@ -94,34 +73,71 @@ export const UniversalFlatSheet: React.FC<Props> = ({
     });
   }, []);
 
+  const [, setMeasureKey] = useState(0);
   const getLineExclusion = useCallback(
     (lineIdx: number) => {
       if (boundsMap.size === 0) return undefined;
       const el = lineElementsRef.current.get(lineIdx);
-      const lineTop = el ? el.offsetTop : lineIdx * 28;
-      const lineBottom = lineTop + (el ? Math.max(el.offsetHeight, 24) : 28);
       const containerW = sheetContainerRef.current?.offsetWidth || 760;
+
+      let lineTop = lineIdx * 28;
+      let lineBottom = lineTop + 28;
+      let naturalLineTop = lineTop;
+
+      if (el && sheetContainerRef.current) {
+        const cRect = sheetContainerRef.current.getBoundingClientRect();
+        const lRect = el.getBoundingClientRect();
+        const groupEl = el.closest('.group') as HTMLElement | null;
+        const currentMarginTop = groupEl ? parseFloat(groupEl.style.marginTop) || 0 : 0;
+        naturalLineTop = (lRect.top - cRect.top + sheetContainerRef.current.scrollTop) - currentMarginTop;
+        lineTop = naturalLineTop;
+        lineBottom = lineTop + Math.max(lRect.height, 24);
+      }
 
       let left = 0;
       let right = 0;
+      let maxOverlappingBottom = 0;
+      let isFullBarrier = false;
 
       boundsMap.forEach((b) => {
-        if (b.isBackground) return;
         const objBottom = b.top + b.height;
         if (b.top <= lineBottom - 3 && objBottom >= lineTop + 3) {
-          const objCenter = b.left + b.width / 2;
-          if (objCenter < containerW / 2) {
-            left = Math.max(left, b.left + b.width + 16);
-          } else {
-            right = Math.max(right, containerW - b.left + 16);
-          }
+          if (objBottom > maxOverlappingBottom) maxOverlappingBottom = objBottom;
+          if (b.width > containerW - 220 || (b.left < 100 && b.left + b.width > containerW - 100)) isFullBarrier = true;
         }
       });
 
-      if (containerW - left - right < 160) {
-        if (left > right) left = Math.min(left, containerW - 160);
-        else right = Math.min(right, containerW - 160);
+      if (!isFullBarrier && boundsMap.size >= 2) {
+        boundsMap.forEach((b1) => {
+          boundsMap.forEach((b2) => {
+            if (b1.id >= b2.id) return;
+            const b1Bottom = b1.top + b1.height;
+            const b2Bottom = b2.top + b2.height;
+            const pairTop = Math.max(b1.top, b2.top);
+            const pairBottom = Math.min(b1Bottom, b2Bottom);
+            if (pairBottom > pairTop + 10 && pairTop <= lineBottom - 3 && pairBottom >= lineTop + 3) {
+              const gap = Math.abs(b2.left - b1.left) - Math.min(b1.width, b2.width);
+              if (gap < 240) {
+                isFullBarrier = true;
+                maxOverlappingBottom = Math.max(maxOverlappingBottom, b1Bottom, b2Bottom);
+              }
+            }
+          });
+        });
       }
+
+      if (isFullBarrier) {
+        return { marginTop: Math.round(Math.max(0, maxOverlappingBottom - naturalLineTop + 14)) };
+      }
+
+      boundsMap.forEach((b) => {
+        const objBottom = b.top + b.height;
+        if (b.top <= lineBottom - 3 && objBottom >= lineTop + 3) {
+          const objCenter = b.left + b.width / 2;
+          if (objCenter < containerW / 2) left = Math.max(left, b.left + b.width + 16);
+          else right = Math.max(right, containerW - b.left + 16);
+        }
+      });
 
       if (left <= 0 && right <= 0) return undefined;
       return {
@@ -143,8 +159,7 @@ export const UniversalFlatSheet: React.FC<Props> = ({
       return;
     }
     try {
-      const regex = buildDiacriticRegex(q, 'gi');
-      const matches = content.match(regex);
+      const matches = content.match(buildDiacriticRegex(q, 'gi'));
       const count = matches ? matches.length : 0;
       if (lastMatchCountRef.current !== count) {
         lastMatchCountRef.current = count;
@@ -159,8 +174,16 @@ export const UniversalFlatSheet: React.FC<Props> = ({
   }, [content, findQuery, onMatchCountCalculated]);
 
   const registerLineEl = useCallback((idx: number, el: HTMLDivElement | null) => {
-    if (el) lineElementsRef.current.set(idx, el);
-    else lineElementsRef.current.delete(idx);
+    if (el) {
+      if (!lineElementsRef.current.has(idx)) {
+        lineElementsRef.current.set(idx, el);
+        setMeasureKey((k) => k + 1);
+      } else {
+        lineElementsRef.current.set(idx, el);
+      }
+    } else {
+      lineElementsRef.current.delete(idx);
+    }
   }, []);
 
   const focusLineAt = useCallback((idx: number, toEnd = true) => {
@@ -258,35 +281,26 @@ export const UniversalFlatSheet: React.FC<Props> = ({
     openContextMenu(e, [
       { id: 'cut', label: t('editor.cut'), icon: <Scissors size={14} />, shortcut: 'Ctrl+X', onClick: () => document.execCommand('cut') },
       { id: 'copy', label: t('editor.copy'), icon: <Copy size={14} />, shortcut: 'Ctrl+C', onClick: () => document.execCommand('copy') },
-      {
-        id: 'paste', label: t('editor.paste'), icon: <Clipboard size={14} />, shortcut: 'Ctrl+V',
-        onClick: async () => {
-          try {
-            const text = await navigator.clipboard.readText();
-            if (text) {
-              const idx = activeCursorLineRef.current;
-              const nextLines = [...lines];
-              nextLines[idx] = `${nextLines[idx] || ''}${text}`;
-              onChangeContent(nextLines.join('\n'));
-            }
-          } catch {}
-        },
-      },
+      { id: 'paste', label: t('editor.paste'), icon: <Clipboard size={14} />, shortcut: 'Ctrl+V', onClick: async () => {
+        try {
+          const text = await navigator.clipboard.readText();
+          if (text) {
+            const idx = activeCursorLineRef.current;
+            const nextLines = [...lines];
+            nextLines[idx] = `${nextLines[idx] || ''}${text}`;
+            onChangeContent(nextLines.join('\n'));
+          }
+        } catch {}
+      }},
       { id: 'sep-1', label: '', separator: true },
-      {
-        id: 'insert-task', label: t('editor.insertTask'), icon: <CheckSquare size={14} />,
-        onClick: () => {
-          const idx = Math.min(activeCursorLineRef.current, lines.length - 1);
-          const nextLines = [...lines];
-          if (!(nextLines[idx] || '').trim()) nextLines[idx] = '- [ ] ';
-          else nextLines.splice(idx + 1, 0, '- [ ] ');
-          onChangeContent(nextLines.join('\n'));
-        },
-      },
-      {
-        id: 'find', label: t('editor.find'), icon: <Search size={14} />, shortcut: 'Ctrl+F',
-        onClick: () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', ctrlKey: true, bubbles: true })),
-      },
+      { id: 'insert-task', label: t('editor.insertTask'), icon: <CheckSquare size={14} />, onClick: () => {
+        const idx = Math.min(activeCursorLineRef.current, lines.length - 1);
+        const nextLines = [...lines];
+        if (!(nextLines[idx] || '').trim()) nextLines[idx] = '- [ ] ';
+        else nextLines.splice(idx + 1, 0, '- [ ] ');
+        onChangeContent(nextLines.join('\n'));
+      }},
+      { id: 'find', label: t('editor.find'), icon: <Search size={14} />, shortcut: 'Ctrl+F', onClick: () => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'f', ctrlKey: true, bubbles: true })) },
     ]);
   };
 
@@ -321,16 +335,12 @@ export const UniversalFlatSheet: React.FC<Props> = ({
 
       {/* Capa 2: Free Universal Media Layer */}
       <FreeMediaLayer
-        sketches={sketches}
-        attachments={attachments}
-        onUpdateSketch={onUpdateSketch}
-        onRemoveSketch={onRemoveSketch}
+        sketches={sketches} attachments={attachments}
+        onUpdateSketch={onUpdateSketch} onRemoveSketch={onRemoveSketch}
         onOpenSketchAnnotator={onOpenSketchAnnotator}
         onUpdateAttachment={onUpdateAttachment || (() => {})}
-        onRemoveAttachment={onRemoveAttachment}
-        onRenameAttachment={onRenameAttachment}
-        reportBounds={handleReportBounds}
-        unregisterBounds={handleUnregisterBounds}
+        onRemoveAttachment={onRemoveAttachment} onRenameAttachment={onRenameAttachment}
+        reportBounds={handleReportBounds} unregisterBounds={handleUnregisterBounds}
       />
 
       {/* Capa 1: Continuous Flat Text Lines */}
@@ -348,23 +358,15 @@ export const UniversalFlatSheet: React.FC<Props> = ({
 
         return (
           <EditableTextLine
-            key={`line-${idx}`}
-            lineIndex={idx}
-            rawLine={line}
-            notes={notes}
+            key={`line-${idx}`} lineIndex={idx} rawLine={line} notes={notes}
             placeholder={idx === 0 && lines.length === 1 ? t('note.flatSheetPlaceholder') : undefined}
             exclusionPadding={getLineExclusion(idx)}
-            onUpdateLine={handleUpdateLine}
-            onSplitLine={handleSplitLine}
-            onMergeWithPrev={handleMergeWithPrev}
-            onToggleCheckbox={handleToggleCheckbox}
+            onUpdateLine={handleUpdateLine} onSplitLine={handleSplitLine}
+            onMergeWithPrev={handleMergeWithPrev} onToggleCheckbox={handleToggleCheckbox}
             onFocusLine={(i) => { activeCursorLineRef.current = i; }}
-            onSelectionChange={handleSelectionChange}
-            onNavigateLine={handleNavigateLine}
-            onSelectNote={onSelectNote}
-            onCreateNoteWithTitle={onCreateNoteWithTitle}
-            onPasteImageAtLine={handlePasteImageAtLine}
-            registerLineEl={registerLineEl}
+            onSelectionChange={handleSelectionChange} onNavigateLine={handleNavigateLine}
+            onSelectNote={onSelectNote} onCreateNoteWithTitle={onCreateNoteWithTitle}
+            onPasteImageAtLine={handlePasteImageAtLine} registerLineEl={registerLineEl}
           />
         );
       })}

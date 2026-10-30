@@ -175,6 +175,30 @@ export const App: React.FC = () => {
     handleCreateNewNote(folderId, title, subjectId);
   };
 
+  const handleAppUndo = useCallback(() => {
+    if (activeColumn === 3 && effectiveCurrentNote) {
+      const customEvent = new CustomEvent('udo-note-undo', { cancelable: true });
+      window.dispatchEvent(customEvent);
+      if (!customEvent.defaultPrevented) {
+        handleWorkspaceUndo();
+      }
+    } else {
+      handleWorkspaceUndo();
+    }
+  }, [activeColumn, effectiveCurrentNote, handleWorkspaceUndo]);
+
+  const handleAppRedo = useCallback(() => {
+    if (activeColumn === 3 && effectiveCurrentNote) {
+      const customEvent = new CustomEvent('udo-note-redo', { cancelable: true });
+      window.dispatchEvent(customEvent);
+      if (!customEvent.defaultPrevented) {
+        handleWorkspaceRedo();
+      }
+    } else {
+      handleWorkspaceRedo();
+    }
+  }, [activeColumn, effectiveCurrentNote, handleWorkspaceRedo]);
+
   useKeyboardShortcuts({
     onToggleSearchPalette: () => {
       modalState.setSearchPaletteInitialQuery(searchQuery);
@@ -198,8 +222,8 @@ export const App: React.FC = () => {
     onNavigateVertical: handleVerticalNavigate,
     onNavigateHorizontal: handleHorizontalNavigate,
     onEnterTreeItem: handleEnterTreeItem,
-    onUndo: handleWorkspaceUndo,
-    onRedo: handleWorkspaceRedo,
+    onUndo: handleAppUndo,
+    onRedo: handleAppRedo,
     onEscape: handleEscape,
   });
 

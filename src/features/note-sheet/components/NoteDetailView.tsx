@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { NoteItem, SketchItem, FolderItem } from '../../../shared/types';
+import { NoteItem, SketchItem, FolderItem, NoteAttachment } from '../../../shared/types';
 import { NoteActionRibbon } from './NoteActionRibbon';
 import { UniversalFlatSheet } from './UniversalFlatSheet';
 import { NoteMetadataBar } from './NoteMetadataBar';
@@ -52,7 +52,7 @@ export const NoteDetailView: React.FC<Props> = ({
     localTitle, localContent, isFindBarOpen, setIsFindBarOpen,
     findQuery, setFindQuery, currentMatchIndex, setCurrentMatchIndex,
     totalMatches, setTotalMatches, handleTitleChange, handleContentChange,
-    handleUndoText, handleRedoText, flushSave,
+    handleUndoNote, handleRedoNote, pushSnapshot, flushSave,
   } = useNoteEditorState({ note, onUpdateNote, onWorkspaceUndo, onWorkspaceRedo });
 
   const insertTokenAtCursor = useCallback(
@@ -100,6 +100,7 @@ export const NoteDetailView: React.FC<Props> = ({
   const handleAttachSketchesAtLine = useCallback(
     (newSketches: SketchItem[], lineIdx: number) => {
       if (newSketches.length === 0) return;
+      pushSnapshot();
       const cursorY = Math.max(20, lineIdx * 28 + 10);
       const initialSketches = newSketches.map((s, i) => ({
         ...s,
@@ -113,7 +114,7 @@ export const NoteDetailView: React.FC<Props> = ({
         updatedAt: new Date().toISOString(),
       });
     },
-    [note, onUpdateNote]
+    [note, onUpdateNote, pushSnapshot]
   );
 
   const handleInsertTaskAtCursor = useCallback(() => {
@@ -134,6 +135,7 @@ export const NoteDetailView: React.FC<Props> = ({
   }, [localContent, handleContentChange, note, onUpdateNote]);
 
   const handleRemoveSketch = (sketchId: string) => {
+    pushSnapshot();
     const nextContent = (localContent || '').split('\n').filter((l) => l.trim() !== `[embed:sketch:${sketchId}]`).join('\n');
     handleContentChange(nextContent);
     onUpdateNote({
@@ -144,12 +146,23 @@ export const NoteDetailView: React.FC<Props> = ({
   };
 
   const handleUpdateSketch = (sketchId: string, updates: Partial<SketchItem>) => {
+    pushSnapshot();
     onUpdateNote({
       ...note,
       sketches: note.sketches.map((s) => (s.id === sketchId ? { ...s, ...updates } : s)),
       updatedAt: new Date().toISOString(),
     });
   };
+
+  const handleRemoveAttachmentWithSnapshot = useCallback((attachmentId: string) => {
+    pushSnapshot();
+    handleRemoveAttachment(attachmentId);
+  }, [handleRemoveAttachment, pushSnapshot]);
+
+  const handleUpdateAttachmentWithSnapshot = useCallback((attachmentId: string, updates: Partial<NoteAttachment>) => {
+    pushSnapshot();
+    handleUpdateAttachment(attachmentId, updates);
+  }, [handleUpdateAttachment, pushSnapshot]);
 
   const handleSelectTemplate = (templateContent: string, templateTitle?: string) => {
     const updatedTitle = (!localTitle.trim() || localTitle === t('note.titlePlaceholder')) && templateTitle ? templateTitle : localTitle;
@@ -304,16 +317,16 @@ export const NoteDetailView: React.FC<Props> = ({
           onSelectNote={onSelectNote}
           onCreateNoteWithTitle={onCreateNoteWithTitle}
           onMatchCountCalculated={setTotalMatches}
-          onUndoText={handleUndoText}
-          onRedoText={handleRedoText}
+          onUndoText={handleUndoNote}
+          onRedoText={handleRedoNote}
           onAttachSketchesAtLine={handleAttachSketchesAtLine}
           onOpenSketchAnnotator={onOpenSketchAnnotator}
           onRemoveSketch={handleRemoveSketch}
           onUpdateSketch={handleUpdateSketch}
           onRemoveLink={handleRemoveLink}
-          onRemoveAttachment={handleRemoveAttachment}
-          onRenameAttachment={(id, name) => handleUpdateAttachment(id, { name })}
-          onUpdateAttachment={handleUpdateAttachment}
+          onRemoveAttachment={handleRemoveAttachmentWithSnapshot}
+          onRenameAttachment={(id, name) => handleUpdateAttachmentWithSnapshot(id, { name })}
+          onUpdateAttachment={handleUpdateAttachmentWithSnapshot}
         />
       </div>
 

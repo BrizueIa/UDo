@@ -45,7 +45,6 @@ export const FreeMediaLayer: React.FC<Props> = ({
             width={sk.width || 360}
             height={sk.height}
             zIndex={sk.zIndex || 10}
-            isBackground={sk.isBackground}
             onUpdateTransform={(updates) => onUpdateSketch(sk.id, updates)}
             onRemove={() => onRemoveSketch(sk.id)}
             onOpenEdit={() => onOpenSketchAnnotator(sk)}
@@ -80,7 +79,6 @@ export const FreeMediaLayer: React.FC<Props> = ({
             width={att.width || (att.kind === 'audio' ? 320 : 340)}
             height={att.height}
             zIndex={att.zIndex || 10}
-            isBackground={att.isBackground}
             onUpdateTransform={(updates) => onUpdateAttachment(att.id, updates)}
             onRemove={() => onRemoveAttachment(att.id)}
             reportBounds={reportBounds}
