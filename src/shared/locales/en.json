@@ -130,7 +130,12 @@
     "wrapInline": "In line with text",
     "wrapBehind": "Behind text (Free)",
     "wrapFront": "In front of text (Free)",
-    "dragPosition": "Drag to move freely"
+    "dragPosition": "Drag to move freely",
+    "bringToFront": "Bring to front",
+    "sendToBack": "Send to back",
+    "backgroundLayer": "Background layer (Watermark)",
+    "normalLayer": "Floating layer with text push",
+    "openAttachment": "Open file"
   },
   "splitView": {
     "openInSplitView": "Open in split view",

@@ -6,11 +6,9 @@ import { buildDiacriticRegex } from '../../../shared/utils/diacritics';
 import { hasClipboardImageContent, processImageDropOrPaste } from '../../../shared/utils/imageClipboard';
 import { RichTextToolbar, RichFormatAction } from './RichTextToolbar';
 import { EditableTextLine } from './blocks/EditableTextLine';
-import {
-  ResizableSketchBlock,
-  InlineLinkBlock,
-  InlineAttachmentBlock,
-} from './blocks/InlineMediaBlocks';
+import { FreeMediaLayer } from './blocks/FreeMediaLayer';
+import { FreeBounds } from './blocks/FreeObjectWrapper';
+import { InlineLinkBlock } from './blocks/InlineMediaBlocks';
 import { useContextMenu } from '../../../shared/ui/context-menu';
 import { playTaskCompleteSound } from '../../../shared/utils/soundEffects';
 
@@ -36,6 +34,7 @@ interface Props {
   onRemoveLink: (linkId: string) => void;
   onRemoveAttachment: (attachmentId: string) => void;
   onRenameAttachment: (attachmentId: string, newName: string) => void;
+  onUpdateAttachment?: (attachmentId: string, updates: Partial<NoteAttachment>) => void;
 }
 
 const EMBED_REGEX = /^\[embed:(sketch|attachment|link):([^\]]+)\]$/i;
@@ -45,7 +44,7 @@ export const UniversalFlatSheet: React.FC<Props> = ({
   activeCursorLineRef, onChangeContent, onSelectNote, onCreateNoteWithTitle,
   onMatchCountCalculated, onUndoText, onRedoText, onAttachSketchesAtLine,
   onOpenSketchAnnotator, onRemoveSketch, onUpdateSketch,
-  onRemoveLink, onRemoveAttachment, onRenameAttachment,
+  onRemoveLink, onRemoveAttachment, onRenameAttachment, onUpdateAttachment,
 }) => {
   const { t } = useTranslation();
   const { openContextMenu } = useContextMenu();
@@ -53,25 +52,85 @@ export const UniversalFlatSheet: React.FC<Props> = ({
   const activeApplyFormatRef = useRef<((action: RichFormatAction) => void) | null>(null);
   const lineElementsRef = useRef<Map<number, HTMLDivElement>>(new Map());
   const sheetContainerRef = useRef<HTMLDivElement>(null);
+  const [boundsMap, setBoundsMap] = useState<Map<string, FreeBounds>>(new Map());
 
   const lines = (content || '').split('\n');
 
-  const referencedSketchIds = new Set<string>();
-  const referencedAttachmentIds = new Set<string>();
   const referencedLinkIds = new Set<string>();
-
   lines.forEach((line) => {
     const m = line.trim().match(EMBED_REGEX);
     if (!m) return;
     const [, kind, id] = m;
-    if (kind.toLowerCase() === 'sketch') referencedSketchIds.add(id);
-    else if (kind.toLowerCase() === 'attachment') referencedAttachmentIds.add(id);
-    else if (kind.toLowerCase() === 'link') referencedLinkIds.add(id);
+    if (kind.toLowerCase() === 'link') referencedLinkIds.add(id);
   });
 
-  const orphanSketches = sketches.filter((s) => !referencedSketchIds.has(s.id));
-  const orphanAttachments = attachments.filter((a) => !referencedAttachmentIds.has(a.id));
   const orphanLinks = links.filter((l) => !referencedLinkIds.has(l.id));
+
+  const handleReportBounds = useCallback((b: FreeBounds) => {
+    setBoundsMap((prev) => {
+      const existing = prev.get(b.id);
+      if (
+        existing &&
+        existing.left === b.left &&
+        existing.top === b.top &&
+        existing.width === b.width &&
+        existing.height === b.height &&
+        existing.isBackground === b.isBackground
+      ) {
+        return prev;
+      }
+      const next = new Map(prev);
+      next.set(b.id, b);
+      return next;
+    });
+  }, []);
+
+  const handleUnregisterBounds = useCallback((id: string) => {
+    setBoundsMap((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Map(prev);
+      next.delete(id);
+      return next;
+    });
+  }, []);
+
+  const getLineExclusion = useCallback(
+    (lineIdx: number) => {
+      if (boundsMap.size === 0) return undefined;
+      const el = lineElementsRef.current.get(lineIdx);
+      const lineTop = el ? el.offsetTop : lineIdx * 28;
+      const lineBottom = lineTop + (el ? Math.max(el.offsetHeight, 24) : 28);
+      const containerW = sheetContainerRef.current?.offsetWidth || 760;
+
+      let left = 0;
+      let right = 0;
+
+      boundsMap.forEach((b) => {
+        if (b.isBackground) return;
+        const objBottom = b.top + b.height;
+        if (b.top <= lineBottom - 3 && objBottom >= lineTop + 3) {
+          const objCenter = b.left + b.width / 2;
+          if (objCenter < containerW / 2) {
+            left = Math.max(left, b.left + b.width + 16);
+          } else {
+            right = Math.max(right, containerW - b.left + 16);
+          }
+        }
+      });
+
+      if (containerW - left - right < 160) {
+        if (left > right) left = Math.min(left, containerW - 160);
+        else right = Math.min(right, containerW - 160);
+      }
+
+      if (left <= 0 && right <= 0) return undefined;
+      return {
+        left: left > 0 ? Math.round(left) : undefined,
+        right: right > 0 ? Math.round(right) : undefined,
+      };
+    },
+    [boundsMap]
+  );
 
   const lastMatchCountRef = useRef<number>(0);
   useEffect(() => {
@@ -231,6 +290,11 @@ export const UniversalFlatSheet: React.FC<Props> = ({
     ]);
   };
 
+  let maxBottom = 380;
+  boundsMap.forEach((b) => {
+    if (b.top + b.height + 80 > maxBottom) maxBottom = b.top + b.height + 80;
+  });
+
   return (
     <div
       ref={sheetContainerRef}
@@ -240,15 +304,13 @@ export const UniversalFlatSheet: React.FC<Props> = ({
         if (isCtrl && !e.shiftKey && e.key.toLowerCase() === 'z') {
           e.preventDefault();
           onUndoText?.();
-        } else if (
-          (isCtrl && e.key.toLowerCase() === 'y') ||
-          (isCtrl && e.shiftKey && e.key.toLowerCase() === 'z')
-        ) {
+        } else if ((isCtrl && e.key.toLowerCase() === 'y') || (isCtrl && e.shiftKey && e.key.toLowerCase() === 'z')) {
           e.preventDefault();
           onRedoText?.();
         }
       }}
-      className="min-h-[380px] py-1 space-y-1 text-sm text-theme-text leading-relaxed select-text"
+      style={{ minHeight: `${maxBottom}px` }}
+      className="relative py-1 space-y-1 text-sm text-theme-text leading-relaxed select-text"
     >
       <RichTextToolbar
         inputRef={sheetContainerRef}
@@ -257,56 +319,30 @@ export const UniversalFlatSheet: React.FC<Props> = ({
         onClose={() => setToolbarCoords(null)}
       />
 
-      {/* Clickable Top Zone if the first line is an embed */}
-      {EMBED_REGEX.test((lines[0] || '').trim()) && (
-        <div
-          onClick={() => {
-            const nextLines = ['', ...lines];
-            onChangeContent(nextLines.join('\n'));
-            activeCursorLineRef.current = 0;
-            focusLineAt(0, true);
-          }}
-          className="h-5 w-full cursor-text hover:bg-white/[0.02] rounded transition-colors"
-        />
-      )}
+      {/* Capa 2: Free Universal Media Layer */}
+      <FreeMediaLayer
+        sketches={sketches}
+        attachments={attachments}
+        onUpdateSketch={onUpdateSketch}
+        onRemoveSketch={onRemoveSketch}
+        onOpenSketchAnnotator={onOpenSketchAnnotator}
+        onUpdateAttachment={onUpdateAttachment || (() => {})}
+        onRemoveAttachment={onRemoveAttachment}
+        onRenameAttachment={onRenameAttachment}
+        reportBounds={handleReportBounds}
+        unregisterBounds={handleUnregisterBounds}
+      />
 
+      {/* Capa 1: Continuous Flat Text Lines */}
       {lines.map((line, idx) => {
         const embedMatch = line.trim().match(EMBED_REGEX);
         if (embedMatch) {
           const [, rawKind, itemId] = embedMatch;
           const kind = rawKind.toLowerCase();
-
-          if (kind === 'sketch') {
-            const sk = sketches.find((s) => s.id === itemId);
-            if (!sk) return null;
-            return (
-              <ResizableSketchBlock
-                key={`sk-${sk.id}-${idx}`}
-                sketch={sk}
-                onAnnotate={onOpenSketchAnnotator}
-                onRemove={onRemoveSketch}
-                onUpdateSketch={onUpdateSketch}
-              />
-            );
-          }
-
-          if (kind === 'attachment') {
-            const att = attachments.find((a) => a.id === itemId);
-            if (!att) return null;
-            return (
-              <InlineAttachmentBlock
-                key={`att-${att.id}-${idx}`}
-                attachment={att}
-                onRemove={onRemoveAttachment}
-                onRename={onRenameAttachment}
-              />
-            );
-          }
-
+          if (kind === 'sketch' || kind === 'attachment') return null;
           if (kind === 'link') {
             const lnk = links.find((l) => l.id === itemId);
-            if (!lnk) return null;
-            return <InlineLinkBlock key={`lnk-${lnk.id}-${idx}`} link={lnk} onRemove={onRemoveLink} />;
+            return lnk ? <InlineLinkBlock key={`lnk-${lnk.id}-${idx}`} link={lnk} onRemove={onRemoveLink} /> : null;
           }
         }
 
@@ -317,13 +353,12 @@ export const UniversalFlatSheet: React.FC<Props> = ({
             rawLine={line}
             notes={notes}
             placeholder={idx === 0 && lines.length === 1 ? t('note.flatSheetPlaceholder') : undefined}
+            exclusionPadding={getLineExclusion(idx)}
             onUpdateLine={handleUpdateLine}
             onSplitLine={handleSplitLine}
             onMergeWithPrev={handleMergeWithPrev}
             onToggleCheckbox={handleToggleCheckbox}
-            onFocusLine={(i) => {
-              activeCursorLineRef.current = i;
-            }}
+            onFocusLine={(i) => { activeCursorLineRef.current = i; }}
             onSelectionChange={handleSelectionChange}
             onNavigateLine={handleNavigateLine}
             onSelectNote={onSelectNote}
@@ -334,43 +369,17 @@ export const UniversalFlatSheet: React.FC<Props> = ({
         );
       })}
 
-      {/* Legacy unreferenced items */}
-      {orphanSketches.map((sk) => (
-        <ResizableSketchBlock
-          key={`legacy-sk-${sk.id}`}
-          sketch={sk}
-          onAnnotate={onOpenSketchAnnotator}
-          onRemove={onRemoveSketch}
-          onUpdateSketch={onUpdateSketch}
-        />
-      ))}
-      {orphanAttachments.map((att) => (
-        <InlineAttachmentBlock
-          key={`legacy-att-${att.id}`}
-          attachment={att}
-          onRemove={onRemoveAttachment}
-          onRename={onRenameAttachment}
-        />
-      ))}
       {orphanLinks.map((lnk) => (
         <InlineLinkBlock key={`legacy-lnk-${lnk.id}`} link={lnk} onRemove={onRemoveLink} />
       ))}
 
-      {/* Clickable bottom space to always place cursor at the bottom of the sheet */}
       <div
         onClick={() => {
-          const lastIdx = lines.length - 1;
-          if (EMBED_REGEX.test((lines[lastIdx] || '').trim())) {
-            const nextLines = [...lines, ''];
-            onChangeContent(nextLines.join('\n'));
-            activeCursorLineRef.current = nextLines.length - 1;
-            focusLineAt(nextLines.length - 1, true);
-          } else {
-            activeCursorLineRef.current = lastIdx;
-            focusLineAt(lastIdx, true);
-          }
+          const lastIdx = Math.max(0, lines.length - 1);
+          activeCursorLineRef.current = lastIdx;
+          focusLineAt(lastIdx, true);
         }}
-        className="clear-both min-h-[120px] w-full cursor-text"
+        className="clear-both min-h-[140px] w-full cursor-text"
       />
     </div>
   );

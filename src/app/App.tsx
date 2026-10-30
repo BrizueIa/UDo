@@ -153,9 +153,15 @@ export const App: React.FC = () => {
   const handleSaveSketch = useCallback((updatedSketch: SketchItem) => {
     if (!effectiveCurrentNote) return;
     const exists = effectiveCurrentNote.sketches.some((s) => s.id === updatedSketch.id);
+    const sketchWithPos: SketchItem = {
+      ...updatedSketch,
+      posX: updatedSketch.posX !== undefined ? updatedSketch.posX : 0,
+      posY: updatedSketch.posY !== undefined ? updatedSketch.posY : effectiveCurrentNote.sketches.length * 180 + 40,
+      zIndex: updatedSketch.zIndex || 10,
+    };
     const newSketches = exists
-      ? effectiveCurrentNote.sketches.map((s) => (s.id === updatedSketch.id ? updatedSketch : s))
-      : [...effectiveCurrentNote.sketches, updatedSketch];
+      ? effectiveCurrentNote.sketches.map((s) => (s.id === updatedSketch.id ? sketchWithPos : s))
+      : [...effectiveCurrentNote.sketches, sketchWithPos];
     const nextContent = exists
       ? effectiveCurrentNote.content
       : `${effectiveCurrentNote.content ? `${effectiveCurrentNote.content}\n` : '\n'}[embed:sketch:${updatedSketch.id}]\n`;

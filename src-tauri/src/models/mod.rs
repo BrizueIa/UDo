@@ -1,23 +1,37 @@
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct LinkItem {
     pub id: String,
     pub title: String,
     pub url: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct SketchItem {
     pub id: String,
     pub title: String,
     #[serde(rename = "dataUrl")]
     pub data_url: String,
+    #[serde(default)]
+    pub width: Option<u32>,
+    #[serde(default)]
+    pub height: Option<u32>,
+    #[serde(rename = "posX", default)]
+    pub pos_x: Option<f64>,
+    #[serde(rename = "posY", default)]
+    pub pos_y: Option<f64>,
+    #[serde(rename = "zIndex", default)]
+    pub z_index: Option<i32>,
+    #[serde(rename = "wrapMode", default)]
+    pub wrap_mode: Option<String>,
+    #[serde(rename = "isBackground", default)]
+    pub is_background: Option<bool>,
     #[serde(rename = "createdAt")]
     pub created_at: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct NoteAttachment {
     pub id: String,
     pub name: String,
@@ -31,6 +45,18 @@ pub struct NoteAttachment {
     pub kind: String, // "file" | "audio"
     #[serde(rename = "durationSeconds", default)]
     pub duration_seconds: Option<f64>,
+    #[serde(default)]
+    pub width: Option<u32>,
+    #[serde(default)]
+    pub height: Option<u32>,
+    #[serde(rename = "posX", default)]
+    pub pos_x: Option<f64>,
+    #[serde(rename = "posY", default)]
+    pub pos_y: Option<f64>,
+    #[serde(rename = "zIndex", default)]
+    pub z_index: Option<i32>,
+    #[serde(rename = "isBackground", default)]
+    pub is_background: Option<bool>,
     #[serde(rename = "createdAt")]
     pub created_at: String,
 }

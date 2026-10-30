@@ -130,7 +130,12 @@
     "wrapInline": "En línea con el texto",
     "wrapBehind": "Detrás del texto (Libre)",
     "wrapFront": "Delante del texto (Libre)",
-    "dragPosition": "Arrastra para mover libremente"
+    "dragPosition": "Arrastra para mover libremente",
+    "bringToFront": "Traer al frente",
+    "sendToBack": "Enviar al fondo",
+    "backgroundLayer": "Capa de fondo (Marca de agua)",
+    "normalLayer": "Capa flotante con empuje",
+    "openAttachment": "Abrir archivo"
   },
   "splitView": {
     "openInSplitView": "Abrir en vista dividida",

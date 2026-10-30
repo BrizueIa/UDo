@@ -60,11 +60,14 @@ export interface SketchItem {
   id: string;
   title: string;
   dataUrl: string; // Base64 or local image path
-  width?: number; // Custom Notion-style resized width in px
-  sideNote?: string; // Text written right beside the resized canvas/image
-  wrapMode?: SketchWrapMode; // Word-style text wrapping mode
-  posX?: number; // Free offset X when floating (behind/front)
-  posY?: number; // Free offset Y when floating (behind/front)
+  width?: number; // Custom resized width in px
+  height?: number; // Custom resized height in px
+  sideNote?: string;
+  wrapMode?: SketchWrapMode;
+  posX?: number; // Free offset X
+  posY?: number; // Free offset Y
+  zIndex?: number; // Visual layer depth
+  isBackground?: boolean; // When true, behaves as watermark/background behind text
   createdAt: string;
 }
 
@@ -77,6 +80,12 @@ export interface NoteAttachment {
   extension: string;
   kind: 'file' | 'audio';
   durationSeconds?: number;
+  width?: number; // Free card width in px
+  height?: number; // Free card height in px
+  posX?: number; // Free offset X
+  posY?: number; // Free offset Y
+  zIndex?: number; // Visual layer depth
+  isBackground?: boolean; // When true, behaves as background behind text
   createdAt: string;
 }
 

@@ -11,6 +11,7 @@ interface Props {
   rawLine: string;
   notes: NoteItem[];
   placeholder?: string;
+  exclusionPadding?: { left?: number; right?: number };
   onUpdateLine: (idx: number, nextRaw: string) => void;
   onSplitLine: (idx: number, beforeRaw: string, afterRaw: string) => void;
   onMergeWithPrev: (idx: number, currentTailRaw: string) => void;
@@ -29,6 +30,7 @@ export const EditableTextLine: React.FC<Props> = ({
   rawLine,
   notes,
   placeholder,
+  exclusionPadding,
   onUpdateLine,
   onSplitLine,
   onMergeWithPrev,
@@ -168,13 +170,17 @@ export const EditableTextLine: React.FC<Props> = ({
 
   return (
     <div
+      style={{
+        paddingLeft: exclusionPadding?.left ? `${exclusionPadding.left}px` : undefined,
+        paddingRight: exclusionPadding?.right ? `${exclusionPadding.right}px` : undefined,
+      }}
       className={`group relative ${
         taskMatch
           ? isChecked
             ? 'flex items-start gap-2 bg-[#1fd4a5]/[0.06] px-2 py-1 text-theme-muted'
             : 'flex items-start gap-2 hover:bg-theme-hover/30 px-2 py-1'
           : 'block py-0.5'
-      } rounded-lg transition-colors`}
+      } rounded-lg transition-[padding] duration-75`}
     >
       {taskMatch && (
         <button

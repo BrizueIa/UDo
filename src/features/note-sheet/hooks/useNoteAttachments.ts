@@ -53,6 +53,7 @@ export function useNoteAttachments({
             new Uint8Array(buffer)
           );
 
+          const existingCount = (note.attachments || []).length;
           newAttachments.push({
             id: `attach-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
             name: file.name,
@@ -62,6 +63,9 @@ export function useNoteAttachments({
             extension: getFileExtension(file.name),
             kind: 'file',
             createdAt: new Date().toISOString(),
+            posX: 20,
+            posY: (existingCount + newAttachments.length) * 110 + 40,
+            zIndex: 10,
           });
         } catch (err) {
           console.error('Failed to attach file:', file.name, err);
@@ -88,10 +92,16 @@ export function useNoteAttachments({
       const existing = note.attachments || [];
       const token = `[embed:attachment:${attachment.id}]`;
       const nextContent = onInsertEmbedToken ? onInsertEmbedToken(token) : note.content;
+      const positionedAttachment: NoteAttachment = {
+        ...attachment,
+        posX: attachment.posX !== undefined ? attachment.posX : 20,
+        posY: attachment.posY !== undefined ? attachment.posY : existing.length * 110 + 40,
+        zIndex: attachment.zIndex || 10,
+      };
       onUpdateNote({
         ...note,
         content: nextContent,
-        attachments: [...existing, attachment],
+        attachments: [...existing, positionedAttachment],
         updatedAt: new Date().toISOString(),
       });
     },

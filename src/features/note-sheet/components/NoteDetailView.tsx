@@ -100,16 +100,20 @@ export const NoteDetailView: React.FC<Props> = ({
   const handleAttachSketchesAtLine = useCallback(
     (newSketches: SketchItem[], lineIdx: number) => {
       if (newSketches.length === 0) return;
-      const tokens = newSketches.map((s) => `[embed:sketch:${s.id}]`).join('\n');
-      const nextContent = insertTokenAtCursor(tokens, lineIdx);
+      const cursorY = Math.max(20, lineIdx * 28 + 10);
+      const initialSketches = newSketches.map((s, i) => ({
+        ...s,
+        posX: s.posX !== undefined ? s.posX : 0,
+        posY: s.posY !== undefined ? s.posY : cursorY + i * 220,
+        zIndex: s.zIndex || 10,
+      }));
       onUpdateNote({
         ...note,
-        content: nextContent,
-        sketches: [...note.sketches, ...newSketches],
+        sketches: [...note.sketches, ...initialSketches],
         updatedAt: new Date().toISOString(),
       });
     },
-    [insertTokenAtCursor, note, onUpdateNote]
+    [note, onUpdateNote]
   );
 
   const handleInsertTaskAtCursor = useCallback(() => {
@@ -309,6 +313,7 @@ export const NoteDetailView: React.FC<Props> = ({
           onRemoveLink={handleRemoveLink}
           onRemoveAttachment={handleRemoveAttachment}
           onRenameAttachment={(id, name) => handleUpdateAttachment(id, { name })}
+          onUpdateAttachment={handleUpdateAttachment}
         />
       </div>
 

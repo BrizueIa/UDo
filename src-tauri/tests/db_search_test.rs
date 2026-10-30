@@ -104,6 +104,7 @@ fn test_database_init_and_search() {
             title: "Boceto de Circuito".to_string(),
             data_url: "data:...".to_string(),
             created_at: "2026-10-27T00:00:00Z".to_string(),
+            ..Default::default()
         }],
         attachments: vec![
             udo_lib::models::NoteAttachment {
@@ -116,6 +117,7 @@ fn test_database_init_and_search() {
                 kind: "file".to_string(),
                 duration_seconds: None,
                 created_at: "2026-10-27T00:00:00Z".to_string(),
+                ..Default::default()
             },
             udo_lib::models::NoteAttachment {
                 id: "att-voice-1".to_string(),
@@ -127,6 +129,7 @@ fn test_database_init_and_search() {
                 kind: "audio".to_string(),
                 duration_seconds: Some(5.0),
                 created_at: "2026-10-27T00:00:00Z".to_string(),
+                ..Default::default()
             },
         ],
         created_at: "2026-10-27T00:00:00Z".to_string(),
