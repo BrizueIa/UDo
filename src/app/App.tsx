@@ -19,9 +19,12 @@ import { SplitNoteWorkspace } from '../features/note-sheet/components/SplitNoteW
 import { AppWidgetView } from './AppWidgetView';
 import { AppModals } from './AppModals';
 import { useTranslation } from 'react-i18next';
+import { useUpdateChecker } from '../shared/hooks/useUpdateChecker';
+import { UpdateNotificationBanner } from '../shared/components/UpdateNotificationBanner';
 
 export const App: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const { updateInfo, dismissUpdate, openReleasePage } = useUpdateChecker();
 
   const {
     subjects, folders, notes, selectedSubjectId, selectedFolderId, selectedNoteId, activeTagFilter,
@@ -354,6 +357,12 @@ export const App: React.FC = () => {
         onSaveSketch={handleSaveSketch}
         onSelectNoteFromPalette={(noteId, subjectId) => { setSelectedSubjectId(subjectId); setSelectedNoteId(noteId); setActiveColumn(3); }}
         onQuickAddSave={handleQuickAddSave} onNotesRestored={reloadWorkspaceData}
+      />
+
+      <UpdateNotificationBanner
+        updateInfo={updateInfo}
+        onDismiss={dismissUpdate}
+        onOpenRelease={openReleasePage}
       />
     </div>
   );

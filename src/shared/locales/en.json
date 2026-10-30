@@ -510,5 +510,16 @@
     "importSuccess": "Backup restored successfully",
     "importError": "Failed to restore backup",
     "importWebUnavailable": "Backup restore is only available in the desktop app"
+  },
+  "updates": {
+    "badge": "Update",
+    "availableTitle": "New version available",
+    "availableDesc": "Improvements and fixes are ready for UDo.",
+    "viewAndDownload": "View & Update",
+    "dismiss": "Later",
+    "checkUpdates": "Check for updates",
+    "checking": "Checking for updates...",
+    "upToDate": "UDo is up to date",
+    "upToDateDesc": "You are already running the latest version (v{{version}})."
   }
 }

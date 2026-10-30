@@ -63,6 +63,7 @@ pub fn run() {
             commands::empty_trash,
             commands::get_clipboard_image,
             commands::read_image_as_data_url,
+            commands::open_external_url,
             window::toggle_widget_mode,
             window::set_widget_size,
             window::minimize_window,

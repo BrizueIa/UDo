@@ -214,3 +214,37 @@ pub fn read_image_as_data_url(path: String) -> Result<String, String> {
     let b64 = general_purpose::STANDARD.encode(&bytes);
     Ok(format!("data:{};base64,{}", mime, b64))
 }
+
+#[tauri::command]
+pub fn open_external_url(url: String) -> Result<(), String> {
+    let trimmed = url.trim();
+    if !trimmed.starts_with("https://") && !trimmed.starts_with("http://") {
+        return Err("Only http/https URLs are permitted".to_string());
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        std::process::Command::new("xdg-open")
+            .arg(trimmed)
+            .spawn()
+            .map_err(|e| format!("Failed to launch browser: {}", e))?;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        std::process::Command::new("open")
+            .arg(trimmed)
+            .spawn()
+            .map_err(|e| format!("Failed to launch browser: {}", e))?;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        std::process::Command::new("cmd")
+            .args(["/C", "start", "", trimmed])
+            .spawn()
+            .map_err(|e| format!("Failed to launch browser: {}", e))?;
+    }
+
+    Ok(())
+}

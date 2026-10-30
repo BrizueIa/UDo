@@ -510,5 +510,16 @@
     "importSuccess": "Copia importada con éxito",
     "importError": "Error al restaurar la copia",
     "importWebUnavailable": "Solo disponible en la app de escritorio"
+  },
+  "updates": {
+    "badge": "Actualización",
+    "availableTitle": "Nueva versión disponible",
+    "availableDesc": "Hay mejoras y correcciones listas para UDo.",
+    "viewAndDownload": "Ver y Actualizar",
+    "dismiss": "Más tarde",
+    "checkUpdates": "Buscar actualizaciones",
+    "checking": "Buscando actualizaciones...",
+    "upToDate": "UDo está actualizado",
+    "upToDateDesc": "Ya cuentas con la versión más reciente (v{{version}})."
   }
 }
