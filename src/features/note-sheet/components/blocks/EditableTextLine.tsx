@@ -168,13 +168,13 @@ export const EditableTextLine: React.FC<Props> = ({
 
   return (
     <div
-      className={`group relative flex items-start gap-2 py-0.5 rounded-lg transition-colors ${
+      className={`group relative ${
         taskMatch
           ? isChecked
-            ? 'bg-[#1fd4a5]/[0.06] px-2 py-1 text-theme-muted'
-            : 'hover:bg-theme-hover/30 px-2 py-1'
-          : ''
-      }`}
+            ? 'flex items-start gap-2 bg-[#1fd4a5]/[0.06] px-2 py-1 text-theme-muted'
+            : 'flex items-start gap-2 hover:bg-theme-hover/30 px-2 py-1'
+          : 'block py-0.5'
+      } rounded-lg transition-colors`}
     >
       {taskMatch && (
         <button
@@ -192,10 +192,10 @@ export const EditableTextLine: React.FC<Props> = ({
       )}
 
       {bulletMatch && (
-        <span className="mt-2 w-1.5 h-1.5 rounded-full bg-theme-accent/70 shrink-0 ml-1.5" />
+        <span className="inline-block mt-2 w-1.5 h-1.5 rounded-full bg-theme-accent/70 shrink-0 ml-1.5 mr-2 align-middle" />
       )}
 
-      <div className="relative flex-1 min-w-0">
+      <div className={`relative ${taskMatch ? 'flex-1 min-w-0' : 'w-full'}`}>
         <div
           ref={(el) => {
             editorRef.current = el;

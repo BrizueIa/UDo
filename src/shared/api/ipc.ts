@@ -127,19 +127,24 @@ export const api = {
     if (isTauri) {
       try {
         const { invoke } = await import('@tauri-apps/api/core');
-        return await invoke<NoteItem>('save_note', { note });
+        await invoke('save_note', { note });
+        return note;
       } catch (err) {
         console.warn('Tauri invoke failed, using local storage fallback', err);
       }
     }
-    const state = getLocalState();
-    const index = state.notes.findIndex((n) => n.id === note.id);
-    if (index >= 0) {
-      state.notes[index] = note;
-    } else {
-      state.notes.push(note);
+    try {
+      const state = getLocalState();
+      const index = state.notes.findIndex((n) => n.id === note.id);
+      if (index >= 0) {
+        state.notes[index] = note;
+      } else {
+        state.notes.push(note);
+      }
+      saveLocalState(state);
+    } catch (e) {
+      console.warn('LocalStorage save fallback skipped:', e);
     }
-    saveLocalState(state);
     return note;
   },
 

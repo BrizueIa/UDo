@@ -25,17 +25,7 @@ export function storedToVisualHtml(raw: string, depth = 0): string {
   if (!raw) return '';
   if (depth > 6) return escapeHtml(raw);
 
-  // Strip stray unclosed tags so raw markup never leaks visually
-  const cleaned =
-    depth === 0
-      ? raw
-          .replace(/\[\/?(?:color|bg|size)(?:=[^\]]+)?\](?![\s\S]*\[\/(?:color|bg|size)\])/gi, (m) => {
-            // Only strip if it wasn't matched as a balanced pair below
-            return m;
-          })
-      : raw;
-
-  const parts = cleaned.split(INLINE_TOKEN_REGEX);
+  const parts = raw.split(INLINE_TOKEN_REGEX);
   const rendered = parts
     .map((part) => {
       if (!part) return '';

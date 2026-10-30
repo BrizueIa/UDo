@@ -275,29 +275,6 @@ export const UniversalFlatSheet: React.FC<Props> = ({
                 onAnnotate={onOpenSketchAnnotator}
                 onRemove={onRemoveSketch}
                 onUpdateSketch={onUpdateSketch}
-                onSelectionChange={handleSelectionChange}
-                onWriteAbove={() => {
-                  if (idx === 0 || EMBED_REGEX.test(lines[idx - 1].trim())) {
-                    const nextLines = [...lines];
-                    nextLines.splice(idx, 0, '');
-                    onChangeContent(nextLines.join('\n'));
-                    activeCursorLineRef.current = idx;
-                    focusLineAt(idx, true);
-                  } else {
-                    activeCursorLineRef.current = idx - 1;
-                    focusLineAt(idx - 1, true);
-                  }
-                }}
-                onWriteBelow={() => {
-                  const nextIdx = idx + 1;
-                  if (nextIdx >= lines.length || EMBED_REGEX.test(lines[nextIdx].trim())) {
-                    const nextLines = [...lines];
-                    nextLines.splice(nextIdx, 0, '');
-                    onChangeContent(nextLines.join('\n'));
-                  }
-                  activeCursorLineRef.current = nextIdx;
-                  focusLineAt(nextIdx, true);
-                }}
               />
             );
           }
@@ -354,7 +331,6 @@ export const UniversalFlatSheet: React.FC<Props> = ({
           onAnnotate={onOpenSketchAnnotator}
           onRemove={onRemoveSketch}
           onUpdateSketch={onUpdateSketch}
-          onSelectionChange={handleSelectionChange}
         />
       ))}
       {orphanAttachments.map((att) => (
@@ -383,7 +359,7 @@ export const UniversalFlatSheet: React.FC<Props> = ({
             focusLineAt(lastIdx, true);
           }
         }}
-        className="min-h-[120px] w-full cursor-text"
+        className="clear-both min-h-[120px] w-full cursor-text"
       />
     </div>
   );

@@ -18,9 +18,9 @@ pub fn search_notes(
 }
 
 #[tauri::command]
-pub fn save_note(db: State<'_, DatabaseManager>, note: NoteItem) -> Result<NoteItem, String> {
+pub fn save_note(db: State<'_, DatabaseManager>, note: NoteItem) -> Result<(), String> {
     db.save_note(&note).map_err(|e| e.to_string())?;
-    Ok(note)
+    Ok(())
 }
 
 #[tauri::command]

@@ -75,9 +75,16 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
     img.crossOrigin = 'anonymous';
     img.src = sketch.dataUrl;
     img.onload = () => {
-      canvas.width = img.width || 800;
-      canvas.height = img.height || 600;
-      ctx.drawImage(img, 0, 0);
+      let w = img.width || 800;
+      let h = img.height || 600;
+      if (w > 1920 || h > 1920) {
+        const ratio = Math.min(1920 / w, 1920 / h);
+        w = Math.round(w * ratio);
+        h = Math.round(h * ratio);
+      }
+      canvas.width = w;
+      canvas.height = h;
+      ctx.drawImage(img, 0, 0, w, h);
       const initial = ctx.getImageData(0, 0, canvas.width, canvas.height);
       updateHistory([initial]);
       updateRedoStack([]);
@@ -130,25 +137,17 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
     const handleKeyDown = (e: KeyboardEvent) => {
       const target = e.target as HTMLElement | null;
       const isInput = target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA');
-
       const isCtrl = e.ctrlKey || e.metaKey;
       const isZ = e.code === 'KeyZ' || e.key.toLowerCase() === 'z';
       const isY = e.code === 'KeyY' || e.key.toLowerCase() === 'y';
 
       if (!isInput && isCtrl && !e.shiftKey && isZ) {
-        e.preventDefault();
-        e.stopPropagation();
-        handleUndo();
+        e.preventDefault(); e.stopPropagation(); handleUndo();
       } else if (!isInput && ((isCtrl && isY) || (isCtrl && e.shiftKey && isZ))) {
-        e.preventDefault();
-        e.stopPropagation();
-        handleRedo();
+        e.preventDefault(); e.stopPropagation(); handleRedo();
       } else if (e.key === 'Escape') {
-        if (cropSelection) {
-          setCropSelection(null);
-        } else {
-          onClose();
-        }
+        if (cropSelection) setCropSelection(null);
+        else onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown, true);
@@ -159,26 +158,20 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    return {
-      x: (e.clientX - rect.left) / zoom,
-      y: (e.clientY - rect.top) / zoom,
-    };
+    return { x: (e.clientX - rect.left) / zoom, y: (e.clientY - rect.top) / zoom };
   };
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const { x, y } = getCanvasCoords(e);
     setStartPos({ x, y });
-
     if (activeTool === 'crop') {
       setIsCropping(true);
       setCropSelection(null);
       return;
     }
-
     setIsDrawing(true);
     const ctx = canvasRef.current?.getContext('2d');
     if (!ctx) return;
-
     if (activeTool === 'pen' || activeTool === 'highlighter' || activeTool === 'eraser') {
       ctx.beginPath();
       ctx.moveTo(x, y);
@@ -187,7 +180,6 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const { x, y } = getCanvasCoords(e);
-
     if (isCropping && startPos) {
       setCropSelection({
         x: Math.max(0, Math.min(startPos.x, x)),
@@ -197,7 +189,6 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
       });
       return;
     }
-
     if (!isDrawing || !canvasRef.current) return;
     const ctx = canvasRef.current.getContext('2d');
     if (!ctx) return;
@@ -228,19 +219,15 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
   const handleMouseUp = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (isCropping) {
       setIsCropping(false);
-      if (cropSelection && (cropSelection.w < 15 || cropSelection.h < 15)) {
-        setCropSelection(null);
-      }
+      if (cropSelection && (cropSelection.w < 15 || cropSelection.h < 15)) setCropSelection(null);
       return;
     }
-
     if (!isDrawing) return;
     setIsDrawing(false);
     const canvas = canvasRef.current;
     if (!canvas || !startPos) return;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
-
     const { x: endX, y: endY } = getCanvasCoords(e);
 
     if (activeTool === 'rectangle') {
@@ -305,12 +292,12 @@ export const ImageAnnotatorModal: React.FC<Props> = ({
   const handleSave = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const dataUrl = canvas.toDataURL('image/png');
-    const finalSketch: SketchItem = {
-      ...sketch,
-      title: title.trim() || sketch.title,
-      dataUrl,
-    };
+    let dataUrl = canvas.toDataURL('image/png');
+    if (dataUrl.length > 1.2 * 1024 * 1024) {
+      const compressed = canvas.toDataURL('image/jpeg', 0.9);
+      if (compressed.length < dataUrl.length) dataUrl = compressed;
+    }
+    const finalSketch: SketchItem = { ...sketch, title: title.trim() || sketch.title, dataUrl };
     onClose();
     setTimeout(() => onSave(finalSketch), 0);
   };
