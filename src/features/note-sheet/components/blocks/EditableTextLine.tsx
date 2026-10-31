@@ -11,6 +11,11 @@ interface Props {
   totalLines?: number;
   rawLine: string;
   notes: NoteItem[];
+  isSelected?: boolean;
+  onMouseDown?: (e: React.MouseEvent) => void;
+  onMouseEnter?: () => void;
+  onExtendSelection?: (dir: 'up' | 'down') => void;
+  onSelectAll?: () => void;
   placeholder?: string;
   exclusionPadding?: { left?: number; right?: number; marginTop?: number };
   onUpdateLine: (idx: number, nextRaw: string) => void;
@@ -30,7 +35,7 @@ interface Props {
 
 function isCaretAtStart(el: HTMLElement): boolean {
   const sel = window.getSelection();
-  if (!sel || !sel.rangeCount || !sel.isCollapsed) return false;
+  if (!sel || !sel.rangeCount) return false;
   const range = sel.getRangeAt(0);
   if (!el.contains(range.startContainer)) return false;
   const preRange = range.cloneRange();
@@ -41,7 +46,7 @@ function isCaretAtStart(el: HTMLElement): boolean {
 
 function isCaretAtEnd(el: HTMLElement): boolean {
   const sel = window.getSelection();
-  if (!sel || !sel.rangeCount || !sel.isCollapsed) return false;
+  if (!sel || !sel.rangeCount) return false;
   const range = sel.getRangeAt(0);
   if (!el.contains(range.endContainer)) return false;
   const postRange = range.cloneRange();
@@ -52,7 +57,7 @@ function isCaretAtEnd(el: HTMLElement): boolean {
 
 function isCaretAtFirstLine(el: HTMLElement): boolean {
   const sel = window.getSelection();
-  if (!sel || !sel.rangeCount || !sel.isCollapsed) return false;
+  if (!sel || !sel.rangeCount) return false;
   const range = sel.getRangeAt(0);
   if (!el.contains(range.startContainer)) return false;
 
@@ -71,7 +76,7 @@ function isCaretAtFirstLine(el: HTMLElement): boolean {
 
 function isCaretAtLastLine(el: HTMLElement): boolean {
   const sel = window.getSelection();
-  if (!sel || !sel.rangeCount || !sel.isCollapsed) return false;
+  if (!sel || !sel.rangeCount) return false;
   const range = sel.getRangeAt(0);
   if (!el.contains(range.startContainer)) return false;
 
@@ -120,6 +125,11 @@ export const EditableTextLine: React.FC<Props> = ({
   totalLines,
   rawLine,
   notes,
+  isSelected,
+  onMouseDown,
+  onMouseEnter,
+  onExtendSelection,
+  onSelectAll,
   placeholder,
   exclusionPadding,
   onUpdateLine,
@@ -263,6 +273,8 @@ export const EditableTextLine: React.FC<Props> = ({
 
   return (
     <div
+      onMouseDown={onMouseDown}
+      onMouseEnter={onMouseEnter}
       style={{
         paddingLeft: exclusionPadding?.left ? `${exclusionPadding.left}px` : undefined,
         paddingRight: exclusionPadding?.right ? `${exclusionPadding.right}px` : undefined,
@@ -286,12 +298,14 @@ export const EditableTextLine: React.FC<Props> = ({
         }
       }}
       className={`group relative ${
-        taskMatch
+        isSelected
+          ? 'bg-theme-accent/20 ring-1 ring-theme-accent/50 text-theme-text rounded-md px-1'
+          : taskMatch
           ? isChecked
             ? 'flex items-start gap-2 bg-[#1fd4a5]/[0.06] px-2 py-1 text-theme-muted'
             : 'flex items-start gap-2 hover:bg-theme-hover/30 px-2 py-1'
           : 'block py-0.5'
-      } rounded-lg transition-[padding,margin] duration-75`}
+      } rounded-lg transition-[padding,margin,background-color] duration-75`}
     >
       {taskMatch && (
         <button
@@ -416,42 +430,72 @@ export const EditableTextLine: React.FC<Props> = ({
               }
             }
 
-            if (e.key === 'ArrowUp') {
-              if (isCaretAtFirstLine(el)) {
-                e.preventDefault();
-                const sel = window.getSelection();
-                const range = sel?.rangeCount ? sel.getRangeAt(0) : null;
-                const rect = range?.getBoundingClientRect();
-                onNavigateLine(lineIndex, 'up', rect?.left);
-              }
+            if (isCtrl && !e.shiftKey && e.key.toLowerCase() === 'a') {
+              e.preventDefault();
+              onSelectAll?.();
               return;
             }
 
-            if (e.key === 'ArrowDown') {
-              if (isCaretAtLastLine(el)) {
-                e.preventDefault();
-                const sel = window.getSelection();
-                const range = sel?.rangeCount ? sel.getRangeAt(0) : null;
-                const rect = range?.getBoundingClientRect();
-                onNavigateLine(lineIndex, 'down', rect?.left);
+            if (e.key === 'ArrowUp') {
+              const sel = window.getSelection();
+              if (e.shiftKey) {
+                if (isCaretAtFirstLine(el) || (sel && !sel.isCollapsed)) {
+                  e.preventDefault();
+                  onExtendSelection?.('up');
+                  return;
+                }
+              } else {
+                if (isCaretAtFirstLine(el)) {
+                  e.preventDefault();
+                  const range = sel?.rangeCount ? sel.getRangeAt(0) : null;
+                  const rect = range?.getBoundingClientRect();
+                  onNavigateLine(lineIndex, 'up', rect?.left);
+                  return;
+                }
               }
-              return;
+            }
+
+            if (e.key === 'ArrowDown') {
+              const sel = window.getSelection();
+              if (e.shiftKey) {
+                if (isCaretAtLastLine(el) || (sel && !sel.isCollapsed)) {
+                  e.preventDefault();
+                  onExtendSelection?.('down');
+                  return;
+                }
+              } else {
+                if (isCaretAtLastLine(el)) {
+                  e.preventDefault();
+                  const range = sel?.rangeCount ? sel.getRangeAt(0) : null;
+                  const rect = range?.getBoundingClientRect();
+                  onNavigateLine(lineIndex, 'down', rect?.left);
+                  return;
+                }
+              }
             }
 
             if (e.key === 'ArrowLeft') {
               if (isCaretAtStart(el) && lineIndex > 0) {
                 e.preventDefault();
-                onNavigateLine(lineIndex, 'up');
+                if (e.shiftKey) {
+                  onExtendSelection?.('up');
+                } else {
+                  onNavigateLine(lineIndex, 'up');
+                }
+                return;
               }
-              return;
             }
 
             if (e.key === 'ArrowRight') {
               if (isCaretAtEnd(el) && totalLines !== undefined && lineIndex < totalLines - 1) {
                 e.preventDefault();
-                onNavigateLine(lineIndex, 'down');
+                if (e.shiftKey) {
+                  onExtendSelection?.('down');
+                } else {
+                  onNavigateLine(lineIndex, 'down');
+                }
+                return;
               }
-              return;
             }
           }}
           className={`outline-none w-full min-h-[24px] break-words ${typographyClass} ${
