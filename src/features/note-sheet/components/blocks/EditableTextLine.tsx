@@ -8,17 +8,19 @@ import { useTranslation } from 'react-i18next';
 
 interface Props {
   lineIndex: number;
+  totalLines?: number;
   rawLine: string;
   notes: NoteItem[];
   placeholder?: string;
   exclusionPadding?: { left?: number; right?: number; marginTop?: number };
   onUpdateLine: (idx: number, nextRaw: string) => void;
-  onSplitLine: (idx: number, beforeRaw: string, afterRaw: string) => void;
+  onSplitLine: (idx: number, beforeRaw: string, afterRaw: string, focusToEnd?: boolean) => void;
+  onPasteLines?: (idx: number, newLines: string[], targetOffset?: number) => void;
   onMergeWithPrev: (idx: number, currentTailRaw: string) => void;
   onToggleCheckbox: (idx: number) => void;
   onFocusLine: (idx: number, el: HTMLDivElement) => void;
   onSelectionChange: (coords: { x: number; y: number } | null, applyFn: (action: RichFormatAction) => void) => void;
-  onNavigateLine: (fromIdx: number, dir: 'up' | 'down') => void;
+  onNavigateLine: (fromIdx: number, dir: 'up' | 'down', targetX?: number) => void;
   onSelectNote: (noteId: string, subjectId: string) => void;
   onCreateNoteWithTitle: (title: string) => void;
   onPasteImageAtLine: (idx: number, e: React.ClipboardEvent) => boolean;
@@ -26,14 +28,103 @@ interface Props {
   onMoveLine?: (fromIdx: number, toIdx: number) => void;
 }
 
+function isCaretAtStart(el: HTMLElement): boolean {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount || !sel.isCollapsed) return false;
+  const range = sel.getRangeAt(0);
+  if (!el.contains(range.startContainer)) return false;
+  const preRange = range.cloneRange();
+  preRange.selectNodeContents(el);
+  preRange.setEnd(range.startContainer, range.startOffset);
+  return preRange.toString().length === 0;
+}
+
+function isCaretAtEnd(el: HTMLElement): boolean {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount || !sel.isCollapsed) return false;
+  const range = sel.getRangeAt(0);
+  if (!el.contains(range.endContainer)) return false;
+  const postRange = range.cloneRange();
+  postRange.selectNodeContents(el);
+  postRange.setStart(range.endContainer, range.endOffset);
+  return postRange.toString().length === 0;
+}
+
+function isCaretAtFirstLine(el: HTMLElement): boolean {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount || !sel.isCollapsed) return false;
+  const range = sel.getRangeAt(0);
+  if (!el.contains(range.startContainer)) return false;
+
+  if (isCaretAtStart(el)) return true;
+
+  const rects = range.getClientRects();
+  const caretRect = rects.length > 0 ? rects[0] : range.getBoundingClientRect();
+  const elRect = el.getBoundingClientRect();
+
+  if (!caretRect || caretRect.height === 0) {
+    return isCaretAtStart(el);
+  }
+
+  return caretRect.top - elRect.top < 18;
+}
+
+function isCaretAtLastLine(el: HTMLElement): boolean {
+  const sel = window.getSelection();
+  if (!sel || !sel.rangeCount || !sel.isCollapsed) return false;
+  const range = sel.getRangeAt(0);
+  if (!el.contains(range.startContainer)) return false;
+
+  if (isCaretAtEnd(el)) return true;
+
+  const rects = range.getClientRects();
+  const caretRect = rects.length > 0 ? rects[0] : range.getBoundingClientRect();
+  const elRect = el.getBoundingClientRect();
+
+  if (!caretRect || caretRect.height === 0) {
+    return isCaretAtEnd(el);
+  }
+
+  return elRect.bottom - caretRect.bottom < 18;
+}
+
+function extractContentAroundCaret(el: HTMLElement, fallbackBody: string): { before: string; after: string } {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) {
+    return { before: fallbackBody, after: '' };
+  }
+  const range = sel.getRangeAt(0);
+  if (!el.contains(range.startContainer)) {
+    return { before: fallbackBody, after: '' };
+  }
+
+  const preRange = range.cloneRange();
+  preRange.selectNodeContents(el);
+  preRange.setEnd(range.startContainer, range.startOffset);
+  const preDiv = document.createElement('div');
+  preDiv.appendChild(preRange.cloneContents());
+  const before = visualHtmlToStored(preDiv).replace(/\r?\n/g, ' ');
+
+  const postRange = range.cloneRange();
+  postRange.selectNodeContents(el);
+  postRange.setStart(range.endContainer, range.endOffset);
+  const postDiv = document.createElement('div');
+  postDiv.appendChild(postRange.cloneContents());
+  const after = visualHtmlToStored(postDiv).replace(/\r?\n/g, ' ');
+
+  return { before, after };
+}
+
 export const EditableTextLine: React.FC<Props> = ({
   lineIndex,
+  totalLines,
   rawLine,
   notes,
   placeholder,
   exclusionPadding,
   onUpdateLine,
   onSplitLine,
+  onPasteLines,
   onMergeWithPrev,
   onToggleCheckbox,
   onFocusLine,
@@ -242,15 +333,30 @@ export const EditableTextLine: React.FC<Props> = ({
             e.preventDefault();
             const text = e.clipboardData.getData('text/plain');
             if (!text) return;
-            const lines = text.replace(/\r\n/g, '\n').split('\n');
-            if (lines.length === 1) {
-              document.execCommand('insertText', false, lines[0]);
+
+            const el = editorRef.current;
+            if (!el) return;
+
+            const normalized = text.replace(/\r\n?/g, '\n');
+            const pasteLines = normalized.split('\n');
+
+            if (pasteLines.length === 1) {
+              document.execCommand('insertText', false, pasteLines[0]);
               syncDom();
             } else {
-              document.execCommand('insertText', false, lines[0]);
-              const currentFull = `${prefix}${visualHtmlToStored(editorRef.current!)}`;
-              const restJoined = lines.slice(1).join('\n');
-              onSplitLine(lineIndex, currentFull, restJoined);
+              const currentBody = visualHtmlToStored(el).replace(/\r?\n/g, ' ');
+              const { before, after } = extractContentAroundCaret(el, currentBody);
+
+              const firstLineFull = `${prefix}${before}${pasteLines[0]}`;
+              const middleLines = pasteLines.slice(1, -1);
+              const lastLineFull = `${pasteLines[pasteLines.length - 1]}${after}`;
+              const allSplice = [firstLineFull, ...middleLines, lastLineFull];
+
+              if (onPasteLines) {
+                onPasteLines(lineIndex, allSplice, pasteLines[pasteLines.length - 1].length);
+              } else {
+                onSplitLine(lineIndex, firstLineFull, [...middleLines, lastLineFull].join('\n'), true);
+              }
             }
           }}
           onKeyDown={(e) => {
@@ -274,29 +380,27 @@ export const EditableTextLine: React.FC<Props> = ({
               return;
             }
 
-            if (e.key === 'Enter' && !e.shiftKey) {
+            if (e.key === 'Enter') {
               e.preventDefault();
               const currentBody = visualHtmlToStored(el).replace(/\r?\n/g, ' ');
+
               // If inside an empty task or bullet, pressing Enter exits the list
               if ((taskMatch || bulletMatch) && !currentBody.trim()) {
                 onUpdateLine(lineIndex, '');
                 return;
               }
-              const nextLinePrefix = taskMatch ? '- [ ] ' : bulletMatch ? '- ' : '';
-              onSplitLine(lineIndex, `${prefix}${currentBody}`, nextLinePrefix);
+
+              const { before, after } = extractContentAroundCaret(el, currentBody);
+              const nextLinePrefix = e.shiftKey ? '' : taskMatch ? '- [ ] ' : bulletMatch ? '- ' : '';
+              const beforeRaw = `${prefix}${before}`;
+              const afterRaw = `${nextLinePrefix}${after}`;
+
+              onSplitLine(lineIndex, beforeRaw, afterRaw, false);
               return;
             }
 
             if (e.key === 'Backspace') {
-              const sel = window.getSelection();
-              const atStart =
-                sel &&
-                sel.isCollapsed &&
-                sel.rangeCount > 0 &&
-                sel.getRangeAt(0).startOffset === 0 &&
-                (sel.getRangeAt(0).startContainer === el ||
-                  sel.getRangeAt(0).startContainer === el.firstChild);
-
+              const atStart = isCaretAtStart(el);
               const currentBody = visualHtmlToStored(el).replace(/\r?\n/g, ' ');
               if (!currentBody.trim() || atStart) {
                 if (prefix) {
@@ -313,11 +417,41 @@ export const EditableTextLine: React.FC<Props> = ({
             }
 
             if (e.key === 'ArrowUp') {
-              e.preventDefault();
-              onNavigateLine(lineIndex, 'up');
-            } else if (e.key === 'ArrowDown') {
-              e.preventDefault();
-              onNavigateLine(lineIndex, 'down');
+              if (isCaretAtFirstLine(el)) {
+                e.preventDefault();
+                const sel = window.getSelection();
+                const range = sel?.rangeCount ? sel.getRangeAt(0) : null;
+                const rect = range?.getBoundingClientRect();
+                onNavigateLine(lineIndex, 'up', rect?.left);
+              }
+              return;
+            }
+
+            if (e.key === 'ArrowDown') {
+              if (isCaretAtLastLine(el)) {
+                e.preventDefault();
+                const sel = window.getSelection();
+                const range = sel?.rangeCount ? sel.getRangeAt(0) : null;
+                const rect = range?.getBoundingClientRect();
+                onNavigateLine(lineIndex, 'down', rect?.left);
+              }
+              return;
+            }
+
+            if (e.key === 'ArrowLeft') {
+              if (isCaretAtStart(el) && lineIndex > 0) {
+                e.preventDefault();
+                onNavigateLine(lineIndex, 'up');
+              }
+              return;
+            }
+
+            if (e.key === 'ArrowRight') {
+              if (isCaretAtEnd(el) && totalLines !== undefined && lineIndex < totalLines - 1) {
+                e.preventDefault();
+                onNavigateLine(lineIndex, 'down');
+              }
+              return;
             }
           }}
           className={`outline-none w-full min-h-[24px] break-words ${typographyClass} ${

@@ -177,16 +177,73 @@ export const UniversalFlatSheet: React.FC<Props> = ({
     else lineElementsRef.current.delete(idx);
   }, []);
 
-  const focusLineAt = useCallback((idx: number, toEnd = true) => {
+  const focusLineAt = useCallback((idx: number, position: boolean | number = true, targetX?: number) => {
     requestAnimationFrame(() => {
       const targetEl = lineElementsRef.current.get(idx);
       if (!targetEl) return;
       targetEl.focus();
       const sel = window.getSelection();
       if (!sel) return;
+
+      if (targetX !== undefined) {
+        const doc = document as unknown as {
+          createRange: () => Range;
+          caretRangeFromPoint?: (x: number, y: number) => Range | null;
+          caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
+        };
+        const rect = targetEl.getBoundingClientRect();
+        const targetY = typeof position === 'boolean' && position ? Math.max(rect.top, rect.bottom - 6) : Math.min(rect.bottom, rect.top + 6);
+        let pointRange: Range | null = null;
+        if (typeof doc.caretRangeFromPoint === 'function') {
+          pointRange = doc.caretRangeFromPoint(targetX, targetY);
+        } else if (typeof doc.caretPositionFromPoint === 'function') {
+          const pos = doc.caretPositionFromPoint(targetX, targetY);
+          if (pos) {
+            const r = doc.createRange();
+            r.setStart(pos.offsetNode, pos.offset);
+            r.collapse(true);
+            pointRange = r;
+          }
+        }
+        if (pointRange && targetEl.contains(pointRange.startContainer)) {
+          sel.removeAllRanges();
+          sel.addRange(pointRange);
+          return;
+        }
+      }
+
       const range = document.createRange();
-      range.selectNodeContents(targetEl);
-      range.collapse(!toEnd);
+      if (typeof position === 'number') {
+        let currentOffset = 0;
+        let found = false;
+        const traverse = (node: Node) => {
+          if (found) return;
+          if (node.nodeType === Node.TEXT_NODE) {
+            const len = node.textContent?.length || 0;
+            if (currentOffset + len >= position) {
+              range.setStart(node, Math.min(position - currentOffset, len));
+              range.collapse(true);
+              found = true;
+              return;
+            }
+            currentOffset += len;
+          } else {
+            for (let i = 0; i < node.childNodes.length; i++) {
+              traverse(node.childNodes[i]);
+              if (found) return;
+            }
+          }
+        };
+        traverse(targetEl);
+        if (!found) {
+          range.selectNodeContents(targetEl);
+          range.collapse(false);
+        }
+      } else {
+        range.selectNodeContents(targetEl);
+        range.collapse(!position);
+      }
+
       sel.removeAllRanges();
       sel.addRange(range);
     });
@@ -198,14 +255,23 @@ export const UniversalFlatSheet: React.FC<Props> = ({
     onChangeContent(nextLines.join('\n'));
   }, [lines, onChangeContent]);
 
-  const handleSplitLine = useCallback((idx: number, beforeRaw: string, afterRaw: string) => {
+  const handleSplitLine = useCallback((idx: number, beforeRaw: string, afterRaw: string, focusToEnd = false) => {
     const nextLines = [...lines];
     const extraLines = afterRaw.split('\n');
     nextLines.splice(idx, 1, beforeRaw, ...extraLines);
     onChangeContent(nextLines.join('\n'));
-    const nextFocusIdx = idx + extraLines.length;
+    const nextFocusIdx = idx + 1;
     activeCursorLineRef.current = nextFocusIdx;
-    focusLineAt(nextFocusIdx, true);
+    focusLineAt(nextFocusIdx, focusToEnd);
+  }, [lines, onChangeContent, activeCursorLineRef, focusLineAt]);
+
+  const handlePasteLines = useCallback((idx: number, newLines: string[], targetOffset?: number) => {
+    const nextLines = [...lines];
+    nextLines.splice(idx, 1, ...newLines);
+    onChangeContent(nextLines.join('\n'));
+    const nextFocusIdx = idx + newLines.length - 1;
+    activeCursorLineRef.current = nextFocusIdx;
+    focusLineAt(nextFocusIdx, targetOffset !== undefined ? targetOffset : true);
   }, [lines, onChangeContent, activeCursorLineRef, focusLineAt]);
 
   const handleMergeWithPrev = useCallback((idx: number, currentTailRaw: string) => {
@@ -218,10 +284,16 @@ export const UniversalFlatSheet: React.FC<Props> = ({
       focusLineAt(idx - 1, false);
       return;
     }
+    const prevTaskMatch = prevLine.match(/^(\s*[-*]\s+)\[([ xX])\]\s*(.*)$/);
+    const prevHMatch = !prevTaskMatch ? prevLine.match(/^#{1,3}\s+(.*)$/) : null;
+    const prevBulletMatch = !prevTaskMatch && !prevHMatch ? prevLine.match(/^(\s*[-*]\s+)(.*)$/) : null;
+    const prevBody = prevTaskMatch ? prevTaskMatch[3] : prevHMatch ? prevHMatch[1] : prevBulletMatch ? prevBulletMatch[2] : prevLine;
+    const junctionOffset = prevBody.length;
+
     nextLines.splice(idx - 1, 2, `${prevLine}${currentTailRaw}`);
     onChangeContent(nextLines.join('\n'));
     activeCursorLineRef.current = idx - 1;
-    focusLineAt(idx - 1, true);
+    focusLineAt(idx - 1, junctionOffset);
   }, [lines, onChangeContent, activeCursorLineRef, focusLineAt]);
 
   const handleToggleCheckbox = useCallback((idx: number) => {
@@ -237,12 +309,12 @@ export const UniversalFlatSheet: React.FC<Props> = ({
     }
   }, [lines, onChangeContent]);
 
-  const handleNavigateLine = useCallback((fromIdx: number, dir: 'up' | 'down') => {
+  const handleNavigateLine = useCallback((fromIdx: number, dir: 'up' | 'down', targetX?: number) => {
     let step = dir === 'up' ? fromIdx - 1 : fromIdx + 1;
     while (step >= 0 && step < lines.length) {
       if (!EMBED_REGEX.test(lines[step].trim())) {
         activeCursorLineRef.current = step;
-        focusLineAt(step, true);
+        focusLineAt(step, dir === 'up', targetX);
         return;
       }
       step = dir === 'up' ? step - 1 : step + 1;
@@ -276,10 +348,23 @@ export const UniversalFlatSheet: React.FC<Props> = ({
         try {
           const text = await navigator.clipboard.readText();
           if (text) {
-            const idx = activeCursorLineRef.current;
+            const idx = Math.max(0, Math.min(activeCursorLineRef.current, lines.length - 1));
+            const pasteLines = text.replace(/\r\n?/g, '\n').split('\n');
             const nextLines = [...lines];
-            nextLines[idx] = `${nextLines[idx] || ''}${text}`;
-            onChangeContent(nextLines.join('\n'));
+            const currentLine = nextLines[idx] || '';
+            if (pasteLines.length === 1) {
+              nextLines[idx] = `${currentLine}${pasteLines[0]}`;
+              onChangeContent(nextLines.join('\n'));
+              focusLineAt(idx, true);
+            } else {
+              const firstLine = `${currentLine}${pasteLines[0]}`;
+              const rest = pasteLines.slice(1);
+              nextLines.splice(idx, 1, firstLine, ...rest);
+              onChangeContent(nextLines.join('\n'));
+              const targetIdx = idx + pasteLines.length - 1;
+              activeCursorLineRef.current = targetIdx;
+              focusLineAt(targetIdx, true);
+            }
           }
         } catch {}
       }},
@@ -372,10 +457,11 @@ export const UniversalFlatSheet: React.FC<Props> = ({
 
         return (
           <EditableTextLine
-            key={`line-${idx}`} lineIndex={idx} rawLine={line} notes={notes}
+            key={`line-${idx}`} lineIndex={idx} totalLines={lines.length} rawLine={line} notes={notes}
             placeholder={idx === 0 && lines.length === 1 ? t('note.flatSheetPlaceholder') : undefined}
             exclusionPadding={getLineExclusion(idx)}
             onUpdateLine={handleUpdateLine} onSplitLine={handleSplitLine}
+            onPasteLines={handlePasteLines}
             onMergeWithPrev={handleMergeWithPrev} onToggleCheckbox={handleToggleCheckbox}
             onFocusLine={(i) => { activeCursorLineRef.current = i; }}
             onSelectionChange={handleSelectionChange} onNavigateLine={handleNavigateLine}
