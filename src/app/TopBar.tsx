@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { FocusTimerState } from '../shared/hooks/useFocusTimer';
+import { UpdateInfo } from '../shared/hooks/useUpdateChecker';
 
 interface Props {
   currentSubjectName?: string;
@@ -61,6 +62,11 @@ interface Props {
   onOpenPinChange?: () => void;
   onLockVault?: () => void;
   onWorkspaceReloaded?: () => void;
+  appVersion?: string;
+  updateInfo?: UpdateInfo | null;
+  onCheckForUpdates?: (force: boolean) => void;
+  isCheckingUpdates?: boolean;
+  onOpenRelease?: () => void;
 }
 
 export const TopBar: React.FC<Props> = ({
@@ -101,6 +107,11 @@ export const TopBar: React.FC<Props> = ({
   onOpenPinChange,
   onLockVault,
   onWorkspaceReloaded,
+  appVersion,
+  updateInfo,
+  onCheckForUpdates,
+  isCheckingUpdates,
+  onOpenRelease,
 }) => {
   const { t } = useTranslation();
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -325,6 +336,11 @@ export const TopBar: React.FC<Props> = ({
         onOpenPinChange={onOpenPinChange}
         onLockVault={onLockVault}
         onWorkspaceReloaded={onWorkspaceReloaded}
+        appVersion={appVersion}
+        updateInfo={updateInfo}
+        onCheckForUpdates={onCheckForUpdates}
+        isCheckingUpdates={isCheckingUpdates}
+        onOpenRelease={onOpenRelease}
       />
     </header>
   );

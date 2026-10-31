@@ -171,6 +171,33 @@ export function useWorkspaceBatchActions({
     [recordSnapshot, getSnapshot, setSubjects]
   );
 
+  const handleToggleFolderPrivate = useCallback(
+    (folder: FolderItem) => {
+      recordSnapshot(getSnapshot());
+      const updated: FolderItem = {
+        ...folder,
+        isPrivate: !folder.isPrivate,
+      };
+      setFolders((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
+      api.saveFolder(updated);
+    },
+    [recordSnapshot, getSnapshot, setFolders]
+  );
+
+  const handleToggleNotePrivate = useCallback(
+    (note: NoteItem) => {
+      recordSnapshot(getSnapshot());
+      const updated: NoteItem = {
+        ...note,
+        isPrivate: !note.isPrivate,
+        updatedAt: new Date().toISOString(),
+      };
+      setNotes((prev) => prev.map((n) => (n.id === updated.id ? updated : n)));
+      api.saveNote(updated);
+    },
+    [recordSnapshot, getSnapshot, setNotes]
+  );
+
   const handleDuplicateNote = useCallback(
     (noteId: string) => {
       const source = notes.find((n) => n.id === noteId);
@@ -199,6 +226,8 @@ export function useWorkspaceBatchActions({
     handleBatchMoveNotesToFolder,
     handleBatchMoveNotesToSubject,
     handleToggleSubjectPrivate,
+    handleToggleFolderPrivate,
+    handleToggleNotePrivate,
     handleDuplicateNote,
   };
 }

@@ -32,9 +32,21 @@ export function isNewerVersion(remoteTag: string, currentVer: string): boolean {
 }
 
 export function useUpdateChecker() {
+  const [appVersion, setAppVersion] = useState<string>(APP_VERSION);
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [isChecking, setIsChecking] = useState<boolean>(false);
   const [checkError, setCheckError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && '__TAURI_INTERNALS__' in window) {
+      import('@tauri-apps/api/app')
+        .then(({ getVersion }) => getVersion())
+        .then((ver) => {
+          if (ver) setAppVersion(ver);
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   const checkForUpdates = useCallback(async (force = false) => {
     if (!force) {
@@ -65,13 +77,14 @@ export function useUpdateChecker() {
       localStorage.setItem(LAST_CHECK_KEY, Date.now().toString());
 
       const remoteTag = data.tag_name || '';
-      const hasUpdate = isNewerVersion(remoteTag, APP_VERSION);
+      const currentVer = appVersion || APP_VERSION;
+      const hasUpdate = isNewerVersion(remoteTag, currentVer);
       const dismissedTag = localStorage.getItem(DISMISSED_KEY);
 
       if (hasUpdate && (force || dismissedTag !== remoteTag)) {
         setUpdateInfo({
           available: true,
-          currentVersion: APP_VERSION,
+          currentVersion: currentVer,
           latestVersion: remoteTag,
           releaseName: data.name || remoteTag,
           releaseUrl: data.html_url || GITHUB_RELEASES_URL,
@@ -79,10 +92,10 @@ export function useUpdateChecker() {
           publishedAt: data.published_at || '',
         });
       } else {
-        setUpdateInfo(hasUpdate ? null : {
+        setUpdateInfo({
           available: false,
-          currentVersion: APP_VERSION,
-          latestVersion: remoteTag || APP_VERSION,
+          currentVersion: currentVer,
+          latestVersion: remoteTag || currentVer,
           releaseName: data.name || '',
           releaseUrl: data.html_url || GITHUB_RELEASES_URL,
           releaseNotes: '',
@@ -95,7 +108,7 @@ export function useUpdateChecker() {
     } finally {
       setIsChecking(false);
     }
-  }, []);
+  }, [appVersion]);
 
   const dismissUpdate = useCallback(() => {
     if (updateInfo?.latestVersion) {
@@ -104,8 +117,11 @@ export function useUpdateChecker() {
     setUpdateInfo(null);
   }, [updateInfo]);
 
-  const openReleasePage = useCallback(async (targetUrl?: string) => {
-    const url = targetUrl || updateInfo?.releaseUrl || GITHUB_RELEASES_URL;
+  const openReleasePage = useCallback(async (targetUrl?: unknown) => {
+    const url =
+      typeof targetUrl === 'string' && (targetUrl.startsWith('http://') || targetUrl.startsWith('https://'))
+        ? targetUrl
+        : updateInfo?.releaseUrl || GITHUB_RELEASES_URL;
     try {
       const { invoke } = await import('@tauri-apps/api/core');
       await invoke('open_external_url', { url });
@@ -123,6 +139,7 @@ export function useUpdateChecker() {
   }, [checkForUpdates]);
 
   return {
+    appVersion,
     updateInfo,
     isChecking,
     checkError,

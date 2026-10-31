@@ -455,7 +455,7 @@
     "unlockTitle": "Desbloquear Bóveda Privada",
     "setupTitle": "Configurar PIN de la Bóveda",
     "changeTitle": "Cambiar PIN de la Bóveda",
-    "enterPin": "Ingresa tu PIN (4-12 dígitos)",
+    "enterPin": "Ingresa tu PIN",
     "enterNewPin": "Ingresa el nuevo PIN (4-12 dígitos)",
     "confirmPin": "Confirma tu PIN",
     "enterCurrentPin": "Ingresa tu PIN actual",
@@ -475,7 +475,13 @@
     "changePin": "Cambiar PIN",
     "setPin": "Configurar PIN",
     "locked": "Bóveda Privada (Bloqueada)",
-    "unlocked": "Bóveda Privada (Abierta)"
+    "unlocked": "Bóveda Privada (Abierta)",
+    "privateFolder": "Carpeta Privada",
+    "privateNote": "Nota Privada",
+    "makeFolderPrivate": "Mover a Bóveda Privada",
+    "makeNotePrivate": "Mover a Bóveda Privada",
+    "private": "Privada",
+    "makePrivate": "Hacer privada"
   },
   "trash": {
     "title": "Papelera de Reciclaje",

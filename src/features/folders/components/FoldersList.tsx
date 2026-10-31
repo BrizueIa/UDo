@@ -28,6 +28,7 @@ interface Props {
   searchQuery?: string;
   activeTagFilter?: string | null;
   isFocused?: boolean;
+  isVaultUnlocked?: boolean;
   onClearTagFilter?: () => void;
   onSelectFolder: (id: string) => void;
   onSelectNote: (id: string) => void;
@@ -46,28 +47,42 @@ interface Props {
   onBatchMoveNotesToFolder?: (ids: string[], folderId: string) => void;
   onDuplicateNote?: (id: string) => void;
   onOpenInSplitView?: (noteId: string) => void;
+  onToggleNotePrivate?: (note: NoteItem) => void;
+  onToggleFolderPrivate?: (folder: FolderItem) => void;
 }
 
 export const FoldersList: React.FC<Props> = ({
   currentSubject, folders, notes, selectedFolderId, selectedNoteId, secondaryNoteId,
   activeNoteFolderId, secondaryNoteFolderId,
-  filter, searchQuery = '', activeTagFilter, isFocused = false, onClearTagFilter,
+  filter, searchQuery = '', activeTagFilter, isFocused = false, isVaultUnlocked = true, onClearTagFilter,
   onSelectFolder, onSelectNote, onToggleNoteComplete, onToggleFolderExpand,
   onAddFolder, onUpdateFolder, onDeleteFolder, onAddNote, onMoveNoteToFolder,
   onReorderOrMoveNote, onReorderFolder, onBatchDeleteNotes, onBatchDeleteFolders, onBatchToggleCompleteNotes,
   onBatchMoveNotesToFolder, onDuplicateNote, onOpenInSplitView,
+  onToggleNotePrivate, onToggleFolderPrivate,
 }) => {
   const { t } = useTranslation();
   const [isCreating, setIsCreating] = useState(false);
+
+  const displayFolders = useMemo(() => {
+    if (isVaultUnlocked) return folders;
+    return folders.filter((f) => !f.isPrivate);
+  }, [folders, isVaultUnlocked]);
+
+  const displayNotes = useMemo(() => {
+    if (isVaultUnlocked) return notes;
+    const privateFolderSet = new Set(folders.filter((f) => f.isPrivate).map((f) => f.id));
+    return notes.filter((n) => !n.isPrivate && (!n.folderId || !privateFolderSet.has(n.folderId)));
+  }, [notes, folders, isVaultUnlocked]);
 
   // Root notes belonging to the current subject without a folder
   const currentSubjectId = currentSubject?.id;
   const rootNotes = useMemo(() => {
     if (!currentSubjectId) return [];
-    return notes.filter(
+    return displayNotes.filter(
       (n) => n.subjectId === currentSubjectId && (!n.folderId || n.folderId === '')
     );
-  }, [notes, currentSubjectId]);
+  }, [displayNotes, currentSubjectId]);
 
   const visibleRootNotes = useMemo(() => {
     return filterAndSortFolderNotes({
@@ -80,7 +95,7 @@ export const FoldersList: React.FC<Props> = ({
 
   const currentFolderNoteIds = useMemo(() => {
     if (selectedFolderId) {
-      const folderNotes = notes.filter((n) => n.folderId === selectedFolderId);
+      const folderNotes = displayNotes.filter((n) => n.folderId === selectedFolderId);
       return filterAndSortFolderNotes({
         notes: folderNotes,
         filter,
@@ -91,22 +106,22 @@ export const FoldersList: React.FC<Props> = ({
     if (visibleRootNotes.length > 0) {
       return visibleRootNotes.map((n) => n.id);
     }
-    const targetFolderId = activeNoteFolderId || folders[0]?.id;
+    const targetFolderId = activeNoteFolderId || displayFolders[0]?.id;
     if (!targetFolderId) return [];
-    const folderNotes = notes.filter((n) => n.folderId === targetFolderId);
+    const folderNotes = displayNotes.filter((n) => n.folderId === targetFolderId);
     return filterAndSortFolderNotes({
       notes: folderNotes,
       filter,
       searchQuery,
       activeTagFilter,
     }).map((n) => n.id);
-  }, [notes, selectedFolderId, visibleRootNotes, activeNoteFolderId, folders, filter, searchQuery, activeTagFilter]);
+  }, [displayNotes, selectedFolderId, visibleRootNotes, activeNoteFolderId, displayFolders, filter, searchQuery, activeTagFilter]);
 
   const orderedVisibleNoteIds = useMemo(() => {
     const ids: string[] = visibleRootNotes.map((n) => n.id);
-    folders.forEach((f) => {
+    displayFolders.forEach((f) => {
       if (f.isExpanded) {
-        const folderNotes = notes.filter((n) => n.folderId === f.id);
+        const folderNotes = displayNotes.filter((n) => n.folderId === f.id);
         const filtered = filterAndSortFolderNotes({
           notes: folderNotes,
           filter,
@@ -117,11 +132,11 @@ export const FoldersList: React.FC<Props> = ({
       }
     });
     return ids;
-  }, [visibleRootNotes, folders, notes, filter, searchQuery, activeTagFilter]);
+  }, [visibleRootNotes, displayFolders, displayNotes, filter, searchQuery, activeTagFilter]);
 
   const allVisibleFolderIds = useMemo(() => {
-    return folders.map((f) => f.id);
-  }, [folders]);
+    return displayFolders.map((f) => f.id);
+  }, [displayFolders]);
 
   const {
     selectedNoteIds,
@@ -149,7 +164,7 @@ export const FoldersList: React.FC<Props> = ({
   });
 
   const { handleNoteContextMenu, handleFolderContextMenu } = useFoldersContextMenu({
-    folders,
+    folders: displayFolders,
     selectedNoteIds,
     selectedFolderIds,
     onToggleNoteComplete,
@@ -163,11 +178,13 @@ export const FoldersList: React.FC<Props> = ({
     onAddNote,
     onToggleFolderExpand,
     onDeleteFolder,
+    onToggleNotePrivate,
+    onToggleFolderPrivate,
   });
 
   // Count notes matching activeTagFilter across current subject
   const totalTagMatchingNotes = activeTagFilter
-    ? notes.filter(
+    ? displayNotes.filter(
         (n) =>
           n.subjectId === currentSubjectId &&
           n.tags.some(
@@ -274,7 +291,7 @@ export const FoldersList: React.FC<Props> = ({
         }}
         className="flex-1 overflow-y-auto px-2 py-2 space-y-2 relative"
       >
-        {(!currentSubject || (folders.length === 0 && visibleRootNotes.length === 0 && !isCreating)) ? (
+        {(!currentSubject || (displayFolders.length === 0 && visibleRootNotes.length === 0 && !isCreating)) ? (
           <FolderEmptyState
             currentSubject={currentSubject}
             onCreateFolder={() => setIsCreating(true)}
@@ -297,8 +314,8 @@ export const FoldersList: React.FC<Props> = ({
             />
 
             {/* Folders List */}
-            {folders.map((folder) => {
-              const folderNotes = notes.filter((n) => n.folderId === folder.id);
+            {displayFolders.map((folder) => {
+              const folderNotes = displayNotes.filter((n) => n.folderId === folder.id);
               const visibleNotes = filterAndSortFolderNotes({
                 notes: folderNotes,
                 filter,
@@ -358,7 +375,7 @@ export const FoldersList: React.FC<Props> = ({
 
         <BatchActionBar
           selectedCount={selectedNoteIds.size + selectedFolderIds.size}
-          folders={folders}
+          folders={displayFolders}
           onToggleCompleteAll={() => onBatchToggleCompleteNotes?.(Array.from(selectedNoteIds))}
           onMoveAllToFolder={(folderId) => onBatchMoveNotesToFolder?.(Array.from(selectedNoteIds), folderId)}
           onDeleteAll={() => {

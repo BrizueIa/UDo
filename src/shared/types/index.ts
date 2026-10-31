@@ -106,6 +106,7 @@ export interface NoteItem {
   dueDate?: string; // Optional deadline
   focusMinutes?: number; // Estimated countdown time
   order?: number; // Manual sorting order in folder
+  isPrivate?: boolean;
 }
 
 export interface FolderItem {
@@ -114,6 +115,7 @@ export interface FolderItem {
   name: string;
   isExpanded: boolean;
   order: number;
+  isPrivate?: boolean;
 }
 
 export interface SubjectItem {

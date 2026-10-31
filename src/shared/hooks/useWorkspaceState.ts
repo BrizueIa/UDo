@@ -56,6 +56,8 @@ export function useWorkspaceState() {
     handleBatchMoveNotesToFolder,
     handleBatchMoveNotesToSubject,
     handleToggleSubjectPrivate,
+    handleToggleFolderPrivate,
+    handleToggleNotePrivate,
     handleDuplicateNote,
   } = useWorkspaceBatchActions({
     notes,
@@ -357,6 +359,8 @@ export function useWorkspaceState() {
     handleBatchMoveNotesToFolder,
     handleBatchMoveNotesToSubject,
     handleToggleSubjectPrivate,
+    handleToggleFolderPrivate,
+    handleToggleNotePrivate,
     handleDuplicateNote,
   };
 }

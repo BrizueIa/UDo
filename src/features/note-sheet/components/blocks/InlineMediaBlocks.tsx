@@ -3,8 +3,9 @@ import { SketchItem, SketchWrapMode, LinkItem, NoteAttachment } from '../../../.
 import { FileAttachmentCard } from '../FileAttachmentCard';
 import { AudioAttachmentCard } from '../AudioAttachmentCard';
 import { SketchWrapPopover } from './SketchWrapPopover';
-import { Pencil, Maximize2, Trash2, Link as LinkIcon, ExternalLink, X, Move, Layers } from 'lucide-react';
+import { Pencil, Maximize2, Trash2, Link as LinkIcon, ExternalLink, X, Move, Layers, ChevronUp, ChevronDown, GripVertical } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { api } from '../../../../shared/api/ipc';
 
 interface ResizableSketchProps {
   sketch: SketchItem;
@@ -169,29 +170,155 @@ export const ResizableSketchBlock: React.FC<ResizableSketchProps> = ({
   );
 };
 
-export const InlineLinkBlock: React.FC<{ link: LinkItem; onRemove: (id: string) => void }> = ({ link, onRemove }) => {
+export interface InlineLinkBlockProps {
+  link: LinkItem;
+  lineIndex?: number;
+  exclusionPadding?: { left?: number; right?: number; marginTop?: number };
+  registerLineEl?: (lineIndex: number, el: HTMLDivElement | null) => void;
+  onRemove: (id: string) => void;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
+  onMoveLine?: (fromIdx: number, toIdx: number) => void;
+}
+
+export const InlineLinkBlock: React.FC<InlineLinkBlockProps> = ({
+  link,
+  lineIndex,
+  exclusionPadding,
+  registerLineEl,
+  onRemove,
+  onMoveUp,
+  onMoveDown,
+  onMoveLine,
+}) => {
   const { t } = useTranslation();
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    if (lineIndex !== undefined && registerLineEl) {
+      registerLineEl(lineIndex, containerRef.current);
+      return () => registerLineEl(lineIndex, null);
+    }
+  }, [lineIndex, registerLineEl]);
+
   let domain = link.url;
   try {
     const u = new URL(link.url.startsWith('http') ? link.url : `https://${link.url}`);
     domain = u.hostname.replace(/^www\./, '');
   } catch {}
 
+  const handleOpenLink = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    api.openExternalUrl(link.url);
+  };
+
   return (
-    <div className="my-1.5 inline-flex items-center space-x-2.5 px-3 py-1.5 rounded-xl bg-theme-card/70 hover:bg-theme-card border border-white/[0.07] hover:border-white/[0.15] transition-all shadow-xs max-w-md group select-none">
-      <div className="w-7 h-7 rounded-lg bg-theme-column/80 border border-white/[0.04] flex items-center justify-center shrink-0 text-blue-400">
-        <LinkIcon size={13} />
-      </div>
-      <a href={link.url} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0 pr-2">
-        <div className="text-xs font-medium text-theme-text truncate group-hover:text-theme-accent transition-colors">{link.title}</div>
-        <div className="text-[10px] text-theme-muted truncate flex items-center space-x-1">
-          <span>{domain}</span>
-          <ExternalLink size={9} className="opacity-60 shrink-0" />
+    <div
+      ref={containerRef}
+      style={{
+        paddingLeft: exclusionPadding?.left ? `${exclusionPadding.left}px` : undefined,
+        paddingRight: exclusionPadding?.right ? `${exclusionPadding.right}px` : undefined,
+        marginTop: exclusionPadding?.marginTop ? `${exclusionPadding.marginTop}px` : undefined,
+      }}
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes('application/udo-link-line')) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        }
+      }}
+      onDrop={(e) => {
+        const fromIdxStr = e.dataTransfer.getData('application/udo-link-line');
+        if (fromIdxStr && lineIndex !== undefined && onMoveLine) {
+          e.preventDefault();
+          e.stopPropagation();
+          const fromIdx = parseInt(fromIdxStr, 10);
+          if (!isNaN(fromIdx) && fromIdx !== lineIndex) {
+            onMoveLine(fromIdx, lineIndex);
+          }
+        }
+      }}
+      className="group/link-container relative py-1 transition-[padding,margin] duration-75 block max-w-full"
+    >
+      <div
+        draggable={lineIndex !== undefined}
+        onDragStart={(e) => {
+          if (lineIndex !== undefined) {
+            e.dataTransfer.setData('application/udo-link-line', String(lineIndex));
+            e.dataTransfer.effectAllowed = 'move';
+          }
+        }}
+        className="inline-flex items-center space-x-2.5 px-3 py-1.5 rounded-xl bg-theme-card/70 hover:bg-theme-card border border-white/[0.07] hover:border-white/[0.15] transition-all shadow-xs max-w-md group select-none relative"
+      >
+        {/* Drag handle */}
+        {lineIndex !== undefined && (
+          <div
+            className="text-theme-muted/40 hover:text-theme-muted cursor-grab active:cursor-grabbing p-0.5 -ml-1 opacity-0 group-hover:opacity-100 transition-opacity"
+            title={t('note.dragPosition') || 'Arrastrar para reordenar'}
+          >
+            <GripVertical size={13} />
+          </div>
+        )}
+
+        <div className="w-7 h-7 rounded-lg bg-theme-column/80 border border-white/[0.04] flex items-center justify-center shrink-0 text-blue-400">
+          <LinkIcon size={13} />
         </div>
-      </a>
-      <button type="button" onClick={() => onRemove(link.id)} className="text-theme-muted hover:text-red-400 p-1 rounded opacity-0 group-hover:opacity-100 transition-all shrink-0 cursor-pointer" title={t('note.deleteLink')}>
-        <X size={12} />
-      </button>
+
+        <button
+          type="button"
+          onClick={handleOpenLink}
+          className="flex-1 min-w-0 pr-2 text-left cursor-pointer"
+        >
+          <div className="text-xs font-medium text-theme-text truncate group-hover:text-theme-accent transition-colors">
+            {link.title || domain}
+          </div>
+          <div className="text-[10px] text-theme-muted truncate flex items-center space-x-1">
+            <span>{domain}</span>
+            <ExternalLink size={9} className="opacity-60 shrink-0" />
+          </div>
+        </button>
+
+        {/* Action buttons (Move Up, Move Down, Delete) */}
+        <div className="flex items-center space-x-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
+          {onMoveUp && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoveUp();
+              }}
+              className="text-theme-muted hover:text-theme-text p-1 rounded hover:bg-white/5 transition-colors cursor-pointer"
+              title={t('note.moveUp') || 'Subir'}
+            >
+              <ChevronUp size={12} />
+            </button>
+          )}
+          {onMoveDown && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onMoveDown();
+              }}
+              className="text-theme-muted hover:text-theme-text p-1 rounded hover:bg-white/5 transition-colors cursor-pointer"
+              title={t('note.moveDown') || 'Bajar'}
+            >
+              <ChevronDown size={12} />
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onRemove(link.id);
+            }}
+            className="text-theme-muted hover:text-red-400 p-1 rounded hover:bg-red-400/10 transition-all cursor-pointer"
+            title={t('note.deleteLink')}
+          >
+            <X size={12} />
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

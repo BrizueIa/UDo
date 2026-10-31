@@ -1,5 +1,5 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { ViewFilter, SketchItem, NoteItem } from '../shared/types';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import { ViewFilter, SketchItem, NoteItem, FolderItem } from '../shared/types';
 import { useThemeManager } from '../shared/hooks/useThemeManager';
 import { useWorkspaceState } from '../shared/hooks/useWorkspaceState';
 import { useTreeNavigation } from '../shared/hooks/useTreeNavigation';
@@ -24,7 +24,7 @@ import { UpdateNotificationBanner } from '../shared/components/UpdateNotificatio
 
 export const App: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { updateInfo, dismissUpdate, openReleasePage } = useUpdateChecker();
+  const { appVersion, updateInfo, isChecking, checkForUpdates, dismissUpdate, openReleasePage } = useUpdateChecker();
 
   const {
     subjects, folders, notes, selectedSubjectId, selectedFolderId, selectedNoteId, activeTagFilter,
@@ -34,27 +34,79 @@ export const App: React.FC = () => {
     handleMoveNoteToFolder, handleReorderOrMoveNote, handleReorderFolder,
     handleMoveNoteToSubject, handleMoveFolderToSubject, handleConvertFolderToSubject,
     handleAddFolder, handleUpdateFolder, handleDeleteFolder, handleToggleFolderExpand,
-    handleAddSubject, handleUpdateSubject, handleDeleteSubject, getSubjectNoteCount,
+    handleAddSubject, handleUpdateSubject, handleDeleteSubject,
     handleWorkspaceUndo, handleWorkspaceRedo, reloadWorkspaceData,
     handleBatchDeleteNotes, handleBatchDeleteFolders, handleBatchToggleCompleteNotes, handleBatchMoveNotesToFolder,
-    handleBatchMoveNotesToSubject, handleToggleSubjectPrivate, handleDuplicateNote,
+    handleBatchMoveNotesToSubject, handleToggleSubjectPrivate, handleToggleFolderPrivate, handleToggleNotePrivate, handleDuplicateNote,
   } = useWorkspaceState();
 
   const vault = useVaultState();
-  const isPrivateNote = !vault.isVaultUnlocked && subjects.some((s) => s.id === currentNote?.subjectId && s.isPrivate);
-  const effectiveCurrentNote = isPrivateNote ? undefined : currentNote;
+
+  const isFolderItemPrivate = useCallback((fId?: string): boolean => {
+    if (!fId) return false;
+    const f = folders.find((folder) => folder.id === fId);
+    if (!f) return false;
+    if (f.isPrivate) return true;
+    return subjects.some((s) => s.id === f.subjectId && s.isPrivate);
+  }, [folders, subjects]);
+
+  const isNoteItemPrivate = useCallback((note?: NoteItem): boolean => {
+    if (!note) return false;
+    if (note.isPrivate) return true;
+    if (note.folderId && isFolderItemPrivate(note.folderId)) return true;
+    return subjects.some((s) => s.id === note.subjectId && s.isPrivate);
+  }, [isFolderItemPrivate, subjects]);
+
+  const isCurrentNotePrivate = !vault.isVaultUnlocked && isNoteItemPrivate(currentNote);
+  const effectiveCurrentNote = isCurrentNotePrivate ? undefined : currentNote;
 
   useEffect(() => {
     if (!vault.isVaultUnlocked) {
       const isSubPrivate = subjects.some((s) => s.id === selectedSubjectId && s.isPrivate);
-      if (isPrivateNote || isSubPrivate) {
-        const pub = subjects.find((s) => !s.isPrivate);
-        setSelectedSubjectId(pub?.id || '');
-        setSelectedFolderId(folders.find((f) => f.subjectId === pub?.id)?.id || '');
-        setSelectedNoteId(notes.find((n) => n.subjectId === pub?.id)?.id || '');
+      const isFoldPrivate = isFolderItemPrivate(selectedFolderId);
+      const isNotePriv = notes.some((n) => n.id === selectedNoteId && isNoteItemPrivate(n));
+
+      if (isSubPrivate || isFoldPrivate || isNotePriv) {
+        const pubSubject = subjects.find((s) => !s.isPrivate);
+        setSelectedSubjectId(pubSubject?.id || '');
+
+        const pubFolders = folders.filter((f) => f.subjectId === pubSubject?.id && !f.isPrivate);
+        setSelectedFolderId(pubFolders[0]?.id || '');
+
+        const pubNotes = notes.filter((n) => n.subjectId === pubSubject?.id && !isNoteItemPrivate(n));
+        setSelectedNoteId(pubNotes[0]?.id || '');
       }
     }
-  }, [vault.isVaultUnlocked, subjects, folders, notes, selectedSubjectId, isPrivateNote, setSelectedSubjectId, setSelectedFolderId, setSelectedNoteId]);
+  }, [vault.isVaultUnlocked, subjects, folders, notes, selectedSubjectId, selectedFolderId, selectedNoteId, isFolderItemPrivate, isNoteItemPrivate, setSelectedSubjectId, setSelectedFolderId, setSelectedNoteId]);
+
+  const visibleNotes = useMemo(() => {
+    if (vault.isVaultUnlocked) return notes;
+    return notes.filter((n) => !isNoteItemPrivate(n));
+  }, [notes, vault.isVaultUnlocked, isNoteItemPrivate]);
+
+  const pendingCount = useMemo(() => visibleNotes.filter((n) => !n.isCompleted).length, [visibleNotes]);
+  const completedCount = useMemo(() => visibleNotes.filter((n) => n.isCompleted).length, [visibleNotes]);
+  const totalCount = visibleNotes.length;
+
+  const getVisibleSubjectNoteCount = useCallback((subjectId: string) => {
+    return visibleNotes.filter((n) => n.subjectId === subjectId).length;
+  }, [visibleNotes]);
+
+  const handleToggleNotePrivateWithPin = useCallback((note: NoteItem) => {
+    if (!vault.hasPin) {
+      vault.openUnlockOrSetup();
+      return;
+    }
+    handleToggleNotePrivate(note);
+  }, [vault, handleToggleNotePrivate]);
+
+  const handleToggleFolderPrivateWithPin = useCallback((folder: FolderItem) => {
+    if (!vault.hasPin) {
+      vault.openUnlockOrSetup();
+      return;
+    }
+    handleToggleFolderPrivate(folder);
+  }, [vault, handleToggleFolderPrivate]);
 
   const [filter, setFilter] = useState<ViewFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -120,6 +172,7 @@ export const App: React.FC = () => {
   useTrayEvents({
     onToggleWidget: () => handleToggleWidgetMode(),
     onQuickAdd: () => modalState.setIsQuickAddOpen(true),
+    onRestoreFull: () => handleToggleWidgetMode(false),
   });
 
   const {
@@ -252,9 +305,9 @@ export const App: React.FC = () => {
     <div className="flex flex-col h-screen w-screen overflow-hidden bg-theme-base text-theme-text font-sans antialiased">
       <TopBar
         currentSubjectName={currentSubject?.name} searchQuery={searchQuery} filter={filter}
-        pendingCount={notes.filter((n) => !n.isCompleted).length}
-        completedCount={notes.filter((n) => n.isCompleted).length}
-        totalCount={notes.length} currentTheme={currentTheme} currentAccent={currentAccent}
+        pendingCount={pendingCount}
+        completedCount={completedCount}
+        totalCount={totalCount} currentTheme={currentTheme} currentAccent={currentAccent}
         customThemes={customThemes} timer={focusTimer} isAudioMuted={soundMuted} audioVolume={soundVolume}
         isSidebarCollapsed={isSidebarCollapsed} isFoldersCollapsed={isFoldersCollapsed} isZenMode={isZenMode}
         onVolumeChange={handleVolumeChange} onSearchChange={setSearchQuery}
@@ -271,6 +324,11 @@ export const App: React.FC = () => {
         hasVaultPin={vault.hasPin} isVaultUnlocked={vault.isVaultUnlocked}
         onOpenPinSetup={vault.openUnlockOrSetup} onOpenPinChange={vault.openChangePin}
         onLockVault={vault.lockVault} onWorkspaceReloaded={reloadWorkspaceData}
+        appVersion={appVersion}
+        updateInfo={updateInfo}
+        onCheckForUpdates={checkForUpdates}
+        isCheckingUpdates={isChecking}
+        onOpenRelease={openReleasePage}
       />
 
       <main className="flex-1 flex overflow-hidden">
@@ -286,7 +344,7 @@ export const App: React.FC = () => {
             onAddFolderToSubject={(subjId) => handleAddFolder(t('folders.addFolder'), subjId)}
             onSelectSubject={(id) => { setSelectedSubjectId(id); setActiveColumn(1); }}
             onAddSubject={handleAddSubject} onUpdateSubject={handleUpdateSubject}
-            onDeleteSubject={handleDeleteSubject} getSubjectNoteCount={getSubjectNoteCount}
+            onDeleteSubject={handleDeleteSubject} getSubjectNoteCount={getVisibleSubjectNoteCount}
             onMoveNoteToFolder={handleMoveNoteToFolder} onMoveNoteToSubject={handleMoveNoteToSubject}
             onBatchMoveNotesToSubject={handleBatchMoveNotesToSubject}
             onMoveFolderToSubject={handleMoveFolderToSubject}
@@ -305,6 +363,7 @@ export const App: React.FC = () => {
             filter={filter}
             searchQuery={searchQuery} activeTagFilter={activeTagFilter}
             isFocused={activeColumn === 2} onClearTagFilter={() => setActiveTagFilter(null)}
+            isVaultUnlocked={vault.isVaultUnlocked}
             onSelectFolder={(id) => { setSelectedFolderId(id); setActiveColumn(2); }}
             onSelectNote={(id) => { setSelectedNoteId(id); setActiveColumn(2); }}
             onToggleNoteComplete={handleToggleNoteCompleteWithSound}
@@ -317,6 +376,8 @@ export const App: React.FC = () => {
             onBatchToggleCompleteNotes={handleBatchToggleCompleteNotes}
             onBatchMoveNotesToFolder={handleBatchMoveNotesToFolder}
             onDuplicateNote={handleDuplicateNote} onOpenInSplitView={handleOpenInSplitView}
+            onToggleNotePrivate={handleToggleNotePrivateWithPin}
+            onToggleFolderPrivate={handleToggleFolderPrivateWithPin}
           />
         )}
 
@@ -334,6 +395,7 @@ export const App: React.FC = () => {
             onRevealNoteLocation={handleRevealLocation}
             onOpenFocusTimer={() => modalState.setIsTimerModalOpen(true)}
             onUpdateNote={handleUpdateNote} onDeleteNote={handleDeleteNote}
+            onToggleNotePrivate={handleToggleNotePrivateWithPin}
             onSelectNote={(noteId, subjectId) => { setSelectedSubjectId(subjectId); setSelectedNoteId(noteId); setActiveColumn(3); }}
             onCreateNoteWithTitle={(title) => handleCreateNewNote(selectedFolderId, title)}
             onCreateNewNote={() => handleCreateNewNote()}

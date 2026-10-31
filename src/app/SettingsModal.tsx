@@ -8,6 +8,7 @@ import {
   Keyboard,
   Check,
   Shield,
+  RefreshCw,
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { ThemeId, AccentColor, CustomThemeDefinition } from '../shared/types';
@@ -16,6 +17,8 @@ import { UDoLogo } from '../shared/ui/UDoLogo';
 import { AudioSettingsTab } from './AudioSettingsTab';
 import { ShortcutsSettingsTab } from './ShortcutsSettingsTab';
 import { DataSecuritySettingsTab } from './DataSecuritySettingsTab';
+import { APP_VERSION } from '../shared/constants/appVersion';
+import { UpdateInfo } from '../shared/hooks/useUpdateChecker';
 
 interface Props {
   isOpen: boolean;
@@ -41,6 +44,11 @@ interface Props {
   onOpenPinChange?: () => void;
   onLockVault?: () => void;
   onWorkspaceReloaded?: () => void;
+  appVersion?: string;
+  updateInfo?: UpdateInfo | null;
+  onCheckForUpdates?: (force: boolean) => void;
+  isCheckingUpdates?: boolean;
+  onOpenRelease?: () => void;
 }
 
 export const SettingsModal: React.FC<Props> = ({
@@ -66,9 +74,15 @@ export const SettingsModal: React.FC<Props> = ({
   onOpenPinChange = () => {},
   onLockVault = () => {},
   onWorkspaceReloaded,
+  appVersion,
+  updateInfo,
+  onCheckForUpdates,
+  isCheckingUpdates = false,
+  onOpenRelease,
 }) => {
   const { t, i18n } = useTranslation();
   const [activeTab, setActiveTab] = useState<'appearance' | 'audio' | 'shortcuts' | 'language' | 'dataSecurity'>(initialTab);
+  const displayVersion = appVersion || APP_VERSION;
 
   useEffect(() => {
     if (isOpen) setActiveTab(initialTab);
@@ -119,6 +133,9 @@ export const SettingsModal: React.FC<Props> = ({
           <div className="flex items-center space-x-2.5">
             <UDoLogo variant="color" size={20} className="shrink-0 drop-shadow-sm" />
             <span className="font-semibold text-sm text-theme-text">{t('settings.title')}</span>
+            <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-theme-column border border-white/[0.08] text-theme-muted">
+              v{displayVersion}
+            </span>
           </div>
           <button
             type="button"
@@ -133,25 +150,55 @@ export const SettingsModal: React.FC<Props> = ({
         {/* Body with Sidebar Tabs */}
         <div className="flex flex-1 min-h-0 overflow-hidden">
           {/* Left Navigation */}
-          <div className="w-44 border-r border-white/[0.06] p-3 space-y-1 bg-theme-column/30 shrink-0">
-            {navItems.map((item) => {
-              const isSelected = activeTab === item.id;
-              return (
+          <div className="w-44 border-r border-white/[0.06] p-3 flex flex-col justify-between bg-theme-column/30 shrink-0">
+            <div className="space-y-1">
+              {navItems.map((item) => {
+                const isSelected = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setActiveTab(item.id)}
+                    className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer text-left ${
+                      isSelected
+                        ? 'bg-theme-accent text-white shadow-xs font-semibold'
+                        : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover'
+                    }`}
+                  >
+                    <span className="shrink-0">{item.icon}</span>
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Version & Update check card at bottom of navigation */}
+            <div className="p-2.5 rounded-xl bg-theme-column/70 border border-white/[0.06] space-y-2 select-none">
+              <div className="flex items-center justify-between text-[11px]">
+                <span className="text-theme-muted">{t('settings.version', 'Versión')}</span>
+                <span className="font-mono font-semibold text-theme-text">v{displayVersion}</span>
+              </div>
+              {onCheckForUpdates && (
                 <button
-                  key={item.id}
                   type="button"
-                  onClick={() => setActiveTab(item.id)}
-                  className={`w-full flex items-center space-x-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors cursor-pointer text-left ${
-                    isSelected
-                      ? 'bg-theme-accent text-white shadow-xs font-semibold'
-                      : 'text-theme-muted hover:text-theme-text hover:bg-theme-hover'
-                  }`}
+                  disabled={isCheckingUpdates}
+                  onClick={() => onCheckForUpdates(true)}
+                  className="w-full flex items-center justify-center space-x-1.5 px-2 py-1.5 rounded-lg bg-theme-card hover:bg-theme-hover border border-white/[0.06] text-[11px] font-medium text-theme-text transition-colors cursor-pointer disabled:opacity-50"
                 >
-                  <span className="shrink-0">{item.icon}</span>
-                  <span className="truncate">{item.label}</span>
+                  <RefreshCw size={11} className={isCheckingUpdates ? 'animate-spin text-theme-accent' : 'text-theme-muted'} />
+                  <span>{isCheckingUpdates ? t('updates.checking', 'Buscando...') : t('updates.checkUpdates', 'Buscar actualizaciones')}</span>
                 </button>
-              );
-            })}
+              )}
+              {updateInfo?.available && (
+                <button
+                  type="button"
+                  onClick={() => onOpenRelease?.()}
+                  className="w-full text-center px-2 py-1 rounded-md bg-theme-accent/20 border border-theme-accent/40 text-[10px] font-semibold text-theme-accent hover:bg-theme-accent/30 transition-colors cursor-pointer"
+                >
+                  {t('updates.badge', 'Actualización')}: {updateInfo.latestVersion}
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Right Content Area */}

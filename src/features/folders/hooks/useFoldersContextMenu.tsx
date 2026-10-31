@@ -9,6 +9,8 @@ import {
   Plus,
   Folder,
   Columns2,
+  Lock,
+  Unlock,
 } from 'lucide-react';
 import { FolderItem, NoteItem } from '../../../shared/types';
 import { useContextMenu } from '../../../shared/ui/context-menu';
@@ -28,6 +30,8 @@ interface Props {
   onAddNote: (folderId: string) => void;
   onToggleFolderExpand: (folderId: string) => void;
   onDeleteFolder: (folderId: string) => void;
+  onToggleNotePrivate?: (note: NoteItem) => void;
+  onToggleFolderPrivate?: (folder: FolderItem) => void;
 }
 
 export function useFoldersContextMenu({
@@ -45,6 +49,8 @@ export function useFoldersContextMenu({
   onAddNote,
   onToggleFolderExpand,
   onDeleteFolder,
+  onToggleNotePrivate,
+  onToggleFolderPrivate,
 }: Props) {
   const { t } = useTranslation();
   const { openContextMenu } = useContextMenu();
@@ -135,6 +141,18 @@ export function useFoldersContextMenu({
             })),
           ],
         },
+        ...(onToggleNotePrivate
+          ? [
+              {
+                id: 'toggle-note-private',
+                label: note.isPrivate
+                  ? t('vault.removeFromVault') || 'Quitar de Bóveda Privada'
+                  : t('vault.makeNotePrivate') || 'Mover a Bóveda Privada',
+                icon: note.isPrivate ? <Unlock size={14} /> : <Lock size={14} />,
+                onClick: () => onToggleNotePrivate(note),
+              },
+            ]
+          : []),
         { id: 'sep-1', label: '', separator: true },
         {
           id: 'delete-note',
@@ -191,6 +209,18 @@ export function useFoldersContextMenu({
         icon: <Folder size={14} />,
         onClick: () => onToggleFolderExpand(folder.id),
       },
+      ...(onToggleFolderPrivate
+        ? [
+            {
+              id: 'toggle-folder-private',
+              label: folder.isPrivate
+                ? t('vault.removeFromVault') || 'Quitar de Bóveda Privada'
+                : t('vault.makeFolderPrivate') || 'Mover a Bóveda Privada',
+              icon: folder.isPrivate ? <Unlock size={14} /> : <Lock size={14} />,
+              onClick: () => onToggleFolderPrivate(folder),
+            },
+          ]
+        : []),
       { id: 'sep-1', label: '', separator: true },
       {
         id: 'delete-folder',

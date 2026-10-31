@@ -76,8 +76,11 @@ export const api = {
     const privateSubIds = new Set(
       state.subjects.filter((s) => s.isPrivate).map((s) => s.id)
     );
+    const privateFolderIds = new Set(
+      state.folders.filter((f) => f.isPrivate).map((f) => f.id)
+    );
     return state.notes.filter((n) => {
-      if (!includePrivate && privateSubIds.has(n.subjectId)) return false;
+      if (!includePrivate && (n.isPrivate || privateFolderIds.has(n.folderId) || privateSubIds.has(n.subjectId))) return false;
 
       if (lowerRaw === '.canvas' || lowerRaw === 'canvas' || lowerRaw === '.sketch') {
         return (n.sketches && n.sketches.length > 0) ?? false;
@@ -357,5 +360,18 @@ export const api = {
         });
       }
     }
+  },
+
+  async openExternalUrl(url: string): Promise<void> {
+    if (isTauri) {
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('open_external_url', { url });
+        return;
+      } catch (err) {
+        console.warn('Tauri open_external_url failed, falling back to window.open', err);
+      }
+    }
+    window.open(url, '_blank');
   },
 };

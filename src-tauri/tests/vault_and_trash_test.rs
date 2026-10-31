@@ -74,6 +74,7 @@ fn test_vault_privacy_filtering_and_trash() {
         due_date: None,
         focus_minutes: None,
         order: Some(0),
+        is_private: false, // In private subject, note itself is also protected
     };
     db.save_note(&secret_note).expect("Failed to save secret note");
 
@@ -117,5 +118,105 @@ fn test_vault_privacy_filtering_and_trash() {
     assert!(!final_trash.iter().any(|n| n.id == secret_note.id));
 
     // Cleanup
+    std::fs::remove_file(path).ok();
+}
+
+#[test]
+fn test_private_folder_and_note_in_public_subject() {
+    let (db, path) = create_temp_db("private-folder-note");
+    let initial = db.get_initial_data().expect("Failed to load initial data");
+    let public_sub = &initial.subjects[0];
+
+    // 1. Create a private folder in public subject
+    let private_folder = udo_lib::models::FolderItem {
+        id: "folder-private-1".to_string(),
+        subject_id: public_sub.id.clone(),
+        name: "Carpeta Privada".to_string(),
+        is_expanded: true,
+        order: 99,
+        is_private: true,
+    };
+    db.save_folder(&private_folder).expect("Failed to save private folder");
+
+    // 2. Create note in private folder
+    let note_in_priv_folder = NoteItem {
+        id: "note-in-priv-folder".to_string(),
+        folder_id: private_folder.id.clone(),
+        subject_id: public_sub.id.clone(),
+        title: "Nota en carpeta privada".to_string(),
+        content: "KeywordPrivFolder inside private folder.".to_string(),
+        is_completed: false,
+        is_pinned: false,
+        tags: vec![],
+        links: vec![],
+        sketches: vec![],
+        attachments: vec![],
+        created_at: "2026-10-29T00:00:00Z".to_string(),
+        updated_at: "2026-10-29T00:00:00Z".to_string(),
+        due_date: None,
+        focus_minutes: None,
+        order: Some(0),
+        is_private: false,
+    };
+    db.save_note(&note_in_priv_folder).expect("Failed to save note in private folder");
+
+    // 3. Create a private note directly in a public folder
+    let priv_note_in_pub_folder = NoteItem {
+        id: "note-priv-in-pub-folder".to_string(),
+        folder_id: initial.folders[0].id.clone(),
+        subject_id: public_sub.id.clone(),
+        title: "Nota privada en carpeta publica".to_string(),
+        content: "KeywordPrivNote directly private.".to_string(),
+        is_completed: false,
+        is_pinned: false,
+        tags: vec![],
+        links: vec![],
+        sketches: vec![],
+        attachments: vec![],
+        created_at: "2026-10-29T00:00:00Z".to_string(),
+        updated_at: "2026-10-29T00:00:00Z".to_string(),
+        due_date: None,
+        focus_minutes: None,
+        order: Some(1),
+        is_private: true,
+    };
+    db.save_note(&priv_note_in_pub_folder).expect("Failed to save private note in public folder");
+
+    // Search with include_private = false must exclude BOTH
+    let search_locked = db.search_notes("KeywordPriv", false).expect("Search failed");
+    assert!(!search_locked.iter().any(|n| n.id == note_in_priv_folder.id), "Note in private folder must be hidden");
+    assert!(!search_locked.iter().any(|n| n.id == priv_note_in_pub_folder.id), "Private note must be hidden");
+
+    // Search with include_private = true must find BOTH
+    let search_unlocked = db.search_notes("KeywordPriv", true).expect("Search failed");
+    assert!(search_unlocked.iter().any(|n| n.id == note_in_priv_folder.id), "Note in private folder should be found");
+    assert!(search_unlocked.iter().any(|n| n.id == priv_note_in_pub_folder.id), "Private note should be found");
+
+    // Cleanup
+    std::fs::remove_file(path).ok();
+}
+
+#[test]
+fn test_initial_seed_completed_no_reseed_when_empty() {
+    let (db, path) = create_temp_db("no-reseed");
+    let initial = db.get_initial_data().expect("Failed to load initial data");
+    assert!(!initial.subjects.is_empty());
+
+    // User deletes all subjects and notes
+    for s in &initial.subjects {
+        db.delete_subject(&s.id).expect("Failed to delete subject");
+    }
+
+    let empty_data = db.get_initial_data().expect("Failed to load initial data");
+    assert_eq!(empty_data.subjects.len(), 0, "Subjects should be 0");
+    assert_eq!(empty_data.notes.len(), 0, "Notes should be 0");
+
+    // Simulate closing app and reopening: DatabaseManager::new_with_path runs init_schema again
+    let reopened_db = DatabaseManager::new_with_path(path.clone()).expect("Failed to reopen DB");
+    let reopened_data = reopened_db.get_initial_data().expect("Failed to load reopened data");
+
+    assert_eq!(reopened_data.subjects.len(), 0, "Deleted subjects must NOT be reseeded on restart!");
+    assert_eq!(reopened_data.notes.len(), 0, "Deleted notes must NOT be reseeded on restart!");
+
     std::fs::remove_file(path).ok();
 }

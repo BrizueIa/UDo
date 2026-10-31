@@ -295,6 +295,17 @@ export const UniversalFlatSheet: React.FC<Props> = ({
     ]);
   };
 
+  const handleMoveLine = useCallback(
+    (fromIdx: number, toIdx: number) => {
+      if (fromIdx === toIdx || fromIdx < 0 || toIdx < 0 || fromIdx >= lines.length || toIdx >= lines.length) return;
+      const nextLines = [...lines];
+      const [moved] = nextLines.splice(fromIdx, 1);
+      nextLines.splice(toIdx, 0, moved);
+      onChangeContent(nextLines.join('\n'));
+    },
+    [lines, onChangeContent]
+  );
+
   let maxBottom = 380;
   boundsMap.forEach((b) => {
     if (b.top + b.height + 80 > maxBottom) maxBottom = b.top + b.height + 80;
@@ -343,7 +354,19 @@ export const UniversalFlatSheet: React.FC<Props> = ({
           if (kind === 'sketch' || kind === 'attachment') return null;
           if (kind === 'link') {
             const lnk = links.find((l) => l.id === itemId);
-            return lnk ? <InlineLinkBlock key={`lnk-${lnk.id}-${idx}`} link={lnk} onRemove={onRemoveLink} /> : null;
+            return lnk ? (
+              <InlineLinkBlock
+                key={`lnk-${lnk.id}-${idx}`}
+                link={lnk}
+                lineIndex={idx}
+                exclusionPadding={getLineExclusion(idx)}
+                registerLineEl={registerLineEl}
+                onRemove={onRemoveLink}
+                onMoveUp={idx > 0 ? () => handleMoveLine(idx, idx - 1) : undefined}
+                onMoveDown={idx < lines.length - 1 ? () => handleMoveLine(idx, idx + 1) : undefined}
+                onMoveLine={handleMoveLine}
+              />
+            ) : null;
           }
         }
 
@@ -358,13 +381,24 @@ export const UniversalFlatSheet: React.FC<Props> = ({
             onSelectionChange={handleSelectionChange} onNavigateLine={handleNavigateLine}
             onSelectNote={onSelectNote} onCreateNoteWithTitle={onCreateNoteWithTitle}
             onPasteImageAtLine={handlePasteImageAtLine} registerLineEl={registerLineEl}
+            onMoveLine={handleMoveLine}
           />
         );
       })}
 
-      {orphanLinks.map((lnk) => (
-        <InlineLinkBlock key={`legacy-lnk-${lnk.id}`} link={lnk} onRemove={onRemoveLink} />
-      ))}
+      {orphanLinks.map((lnk, orphanIdx) => {
+        const orphanLineIdx = lines.length + orphanIdx;
+        return (
+          <InlineLinkBlock
+            key={`legacy-lnk-${lnk.id}`}
+            link={lnk}
+            lineIndex={orphanLineIdx}
+            exclusionPadding={getLineExclusion(orphanLineIdx)}
+            registerLineEl={registerLineEl}
+            onRemove={onRemoveLink}
+          />
+        );
+      })}
 
       <div
         onClick={() => {

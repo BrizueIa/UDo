@@ -23,6 +23,7 @@ interface Props {
   onCreateNoteWithTitle: (title: string) => void;
   onPasteImageAtLine: (idx: number, e: React.ClipboardEvent) => boolean;
   registerLineEl: (idx: number, el: HTMLDivElement | null) => void;
+  onMoveLine?: (fromIdx: number, toIdx: number) => void;
 }
 
 export const EditableTextLine: React.FC<Props> = ({
@@ -42,6 +43,7 @@ export const EditableTextLine: React.FC<Props> = ({
   onCreateNoteWithTitle,
   onPasteImageAtLine,
   registerLineEl,
+  onMoveLine,
 }) => {
   const { t } = useTranslation();
   const editorRef = useRef<HTMLDivElement | null>(null);
@@ -174,6 +176,23 @@ export const EditableTextLine: React.FC<Props> = ({
         paddingLeft: exclusionPadding?.left ? `${exclusionPadding.left}px` : undefined,
         paddingRight: exclusionPadding?.right ? `${exclusionPadding.right}px` : undefined,
         marginTop: exclusionPadding?.marginTop ? `${exclusionPadding.marginTop}px` : undefined,
+      }}
+      onDragOver={(e) => {
+        if (e.dataTransfer.types.includes('application/udo-link-line')) {
+          e.preventDefault();
+          e.dataTransfer.dropEffect = 'move';
+        }
+      }}
+      onDrop={(e) => {
+        const fromIdxStr = e.dataTransfer.getData('application/udo-link-line');
+        if (fromIdxStr && onMoveLine) {
+          e.preventDefault();
+          e.stopPropagation();
+          const fromIdx = parseInt(fromIdxStr, 10);
+          if (!isNaN(fromIdx) && fromIdx !== lineIndex) {
+            onMoveLine(fromIdx, lineIndex);
+          }
+        }
       }}
       className={`group relative ${
         taskMatch

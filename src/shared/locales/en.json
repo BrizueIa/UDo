@@ -455,7 +455,7 @@
     "unlockTitle": "Unlock Private Vault",
     "setupTitle": "Setup Vault PIN",
     "changeTitle": "Change Vault PIN",
-    "enterPin": "Enter your PIN (4-12 digits)",
+    "enterPin": "Enter your PIN",
     "enterNewPin": "Enter new PIN (4-12 digits)",
     "confirmPin": "Confirm your PIN",
     "enterCurrentPin": "Enter current PIN",
@@ -475,7 +475,13 @@
     "changePin": "Change PIN",
     "setPin": "Configure PIN",
     "locked": "Private Vault (Locked)",
-    "unlocked": "Private Vault (Unlocked)"
+    "unlocked": "Private Vault (Unlocked)",
+    "privateFolder": "Private Folder",
+    "privateNote": "Private Note",
+    "makeFolderPrivate": "Move to Private Vault",
+    "makeNotePrivate": "Move to Private Vault",
+    "private": "Private",
+    "makePrivate": "Make private"
   },
   "trash": {
     "title": "Trash",

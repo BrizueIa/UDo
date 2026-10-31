@@ -24,6 +24,7 @@ interface Props {
   onCloseSplitPane?: () => void;
   onOpenFocusTimer?: () => void; onUpdateNote: (note: NoteItem) => void;
   onDeleteNote: (id: string) => void;
+  onTogglePrivate?: (note: NoteItem) => void;
   onSelectNote: (noteId: string, subjectId: string) => void;
   onCreateNoteWithTitle: (title: string) => void;
   onSelectTagFilter: (tag: string) => void;
@@ -36,7 +37,7 @@ export const NoteDetailView: React.FC<Props> = ({
   note, notes, folderName, folders, subjectName, subjectColor,
   onRevealLocation, showBreadcrumbs, activeTagFilter, activeTimerFormatted,
   isTimerRunning, onCloseSplitPane,
-  onOpenFocusTimer, onUpdateNote, onDeleteNote, onSelectNote,
+  onOpenFocusTimer, onUpdateNote, onDeleteNote, onTogglePrivate, onSelectNote,
   onCreateNoteWithTitle, onSelectTagFilter, onOpenSketchAnnotator,
   onOpenWhiteboard, onWorkspaceUndo, onWorkspaceRedo,
 }) => {
@@ -192,6 +193,11 @@ export const NoteDetailView: React.FC<Props> = ({
         }}
         onTogglePin={() =>
           onUpdateNote({ ...note, isPinned: !note.isPinned, updatedAt: new Date().toISOString() })
+        }
+        onTogglePrivate={() =>
+          onTogglePrivate
+            ? onTogglePrivate(note)
+            : onUpdateNote({ ...note, isPrivate: !note.isPrivate, updatedAt: new Date().toISOString() })
         }
         onSelectFolder={(folderId) =>
           onUpdateNote({ ...note, folderId, updatedAt: new Date().toISOString() })

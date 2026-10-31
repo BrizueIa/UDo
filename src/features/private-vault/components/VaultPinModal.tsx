@@ -54,7 +54,11 @@ export const VaultPinModal: React.FC<Props> = ({ isOpen, mode, onClose, onSucces
 
   const handleSubmit = useCallback(async () => {
     if (pin.length < 4) {
-      triggerError(t('vault.pinMinLength') || 'Mínimo 4 dígitos requeridos');
+      if (effectiveMode === 'unlock' || stage === 'current') {
+        triggerError(t('vault.invalidPin') || 'PIN incorrecto');
+      } else {
+        triggerError(t('vault.pinMinLength') || 'Mínimo 4 dígitos requeridos');
+      }
       return;
     }
 
@@ -164,7 +168,8 @@ export const VaultPinModal: React.FC<Props> = ({ isOpen, mode, onClose, onSucces
   };
 
   const { title, sub } = getHeaderInfo();
-  const canSubmit = pin.length >= 4 && pin.length <= 12;
+  const isExistingPinCheck = effectiveMode === 'unlock' || stage === 'current';
+  const canSubmit = isExistingPinCheck ? pin.length >= 1 : pin.length >= 4 && pin.length <= 12;
 
   return (
     <div
@@ -202,11 +207,13 @@ export const VaultPinModal: React.FC<Props> = ({ isOpen, mode, onClose, onSucces
               ))
             )}
           </div>
-          <div className="text-[11px] text-theme-muted mt-1.5 font-medium">
-            {pin.length < 4
-              ? t('vault.pinMinLength') || 'Mínimo 4 dígitos'
-              : `${pin.length} / 12 dígitos`}
-          </div>
+          {!isExistingPinCheck && (
+            <div className="text-[11px] text-theme-muted mt-1.5 font-medium">
+              {pin.length < 4
+                ? t('vault.pinMinLength') || 'Mínimo 4 dígitos'
+                : `${pin.length} / 12 dígitos`}
+            </div>
+          )}
         </div>
 
         {/* Error message */}

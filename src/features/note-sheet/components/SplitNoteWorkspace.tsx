@@ -24,6 +24,7 @@ interface Props {
   onOpenFocusTimer: () => void;
   onUpdateNote: (note: NoteItem) => void;
   onDeleteNote: (id: string) => void;
+  onToggleNotePrivate?: (note: NoteItem) => void;
   onSelectNote: (noteId: string, subjectId: string) => void;
   onCreateNoteWithTitle: (title: string) => void;
   onCreateNewNote: () => void;
@@ -41,7 +42,7 @@ interface Props {
 export const SplitNoteWorkspace: React.FC<Props> = ({
   primaryNote, secondaryNote, notes, subjects, folders, currentSubjectFolders,
   showBreadcrumbs, activeTagFilter, focusTimer, onRevealNoteLocation,
-  onOpenFocusTimer, onUpdateNote, onDeleteNote, onSelectNote,
+  onOpenFocusTimer, onUpdateNote, onDeleteNote, onToggleNotePrivate, onSelectNote,
   onCreateNoteWithTitle, onCreateNewNote, onSelectTagFilter,
   onOpenSketchAnnotator, onOpenWhiteboard, onWorkspaceUndo, onWorkspaceRedo,
   onOpenInSplitView, onCloseSplitView, onCreateSubject, onCreateFolder,
@@ -141,6 +142,7 @@ export const SplitNoteWorkspace: React.FC<Props> = ({
         onOpenFocusTimer={onOpenFocusTimer}
         onUpdateNote={onUpdateNote}
         onDeleteNote={onDeleteNote}
+        onTogglePrivate={onToggleNotePrivate}
         onSelectNote={onSelectNote}
         onCreateNoteWithTitle={onCreateNoteWithTitle}
         onSelectTagFilter={onSelectTagFilter}

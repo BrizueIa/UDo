@@ -30,6 +30,7 @@ fn test_database_init_and_search() {
         due_date: None,
         focus_minutes: None,
         order: Some(0),
+        is_private: false,
     };
     db.save_note(&test_calculo_note).expect("Failed to save test calculo note");
 
@@ -70,6 +71,7 @@ fn test_database_init_and_search() {
         due_date: None,
         focus_minutes: None,
         order: Some(0),
+        is_private: false,
     };
 
     db.save_note(&new_note).expect("Failed to save note");
@@ -137,6 +139,7 @@ fn test_database_init_and_search() {
         due_date: None,
         focus_minutes: None,
         order: Some(0),
+        is_private: false,
     };
     db.save_note(&note_with_cv).expect("Failed to save note with attachments");
 
@@ -186,6 +189,7 @@ fn test_database_init_and_search() {
         due_date: None,
         focus_minutes: None,
         order: Some(0),
+        is_private: false,
     };
     db.save_note(&root_note).expect("Failed to save root note without folder");
 

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { NoteItem, FolderItem } from '../../../shared/types';
-import { CheckSquare, Pin, ChevronDown, Trash2, Timer, Folder, FileText, X } from 'lucide-react';
+import { CheckSquare, Pin, ChevronDown, Trash2, Timer, Folder, FileText, X, Lock, Unlock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { renderRichTitle } from '../utils/inlineRichTextParser';
@@ -14,6 +14,7 @@ interface Props {
   onCloseSplitPane?: () => void;
   onToggleComplete: () => void;
   onTogglePin: () => void;
+  onTogglePrivate?: () => void;
   onSelectFolder: (folderId: string) => void;
   onDeleteNote: (id: string) => void;
   onOpenFocusTimer?: () => void;
@@ -28,6 +29,7 @@ export const NoteActionRibbon: React.FC<Props> = ({
   onCloseSplitPane,
   onToggleComplete,
   onTogglePin,
+  onTogglePrivate,
   onSelectFolder,
   onDeleteNote,
   onOpenFocusTimer,
@@ -81,6 +83,22 @@ export const NoteActionRibbon: React.FC<Props> = ({
           <Pin size={13} className={note.isPinned ? 'fill-amber-400 rotate-45' : 'rotate-45'} />
           <span>{note.isPinned ? t('note.pinned') : t('note.pin')}</span>
         </button>
+
+        {/* Private note button */}
+        {onTogglePrivate && (
+          <button
+            onClick={onTogglePrivate}
+            className={`flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+              note.isPrivate
+                ? 'bg-amber-500/20 text-amber-400 border border-amber-500/40 shadow-sm'
+                : 'bg-theme-card hover:bg-theme-hover text-theme-muted hover:text-theme-text border border-white/[0.06]'
+            }`}
+            title={note.isPrivate ? t('vault.removeFromVault') : t('vault.makeNotePrivate')}
+          >
+            {note.isPrivate ? <Lock size={13} className="text-amber-400" /> : <Unlock size={13} />}
+            <span>{note.isPrivate ? (t('vault.private') || 'Privada') : (t('vault.makePrivate') || 'Privada')}</span>
+          </button>
+        )}
 
         {/* Focus Timer Sprint Button (FR-14) */}
         {onOpenFocusTimer && (

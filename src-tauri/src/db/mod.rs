@@ -56,17 +56,19 @@ impl DatabaseManager {
             .collect::<Result<Vec<_>, _>>()?;
 
         let mut folders_stmt = conn.prepare(
-            "SELECT id, subject_id, name, is_expanded, sort_order FROM folders ORDER BY sort_order ASC",
+            "SELECT id, subject_id, name, is_expanded, sort_order, is_private FROM folders ORDER BY sort_order ASC",
         )?;
         let folders = folders_stmt
             .query_map([], |row| {
                 let is_expanded_int: i32 = row.get(3)?;
+                let is_priv: i32 = row.get(5).unwrap_or(0);
                 Ok(FolderItem {
                     id: row.get(0)?,
                     subject_id: row.get(1)?,
                     name: row.get(2)?,
                     is_expanded: is_expanded_int != 0,
                     order: row.get(4)?,
+                    is_private: is_priv != 0,
                 })
             })?
             .collect::<Result<Vec<_>, _>>()?;
@@ -166,20 +168,23 @@ impl DatabaseManager {
 
     pub fn save_folder(&self, folder: &FolderItem) -> Result<()> {
         let conn = self.get_connection()?;
+        let is_priv = if folder.is_private { 1 } else { 0 };
         conn.execute(
-            "INSERT INTO folders (id, subject_id, name, is_expanded, sort_order)
-             VALUES (?1, ?2, ?3, ?4, ?5)
+            "INSERT INTO folders (id, subject_id, name, is_expanded, sort_order, is_private)
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6)
              ON CONFLICT(id) DO UPDATE SET
              subject_id=excluded.subject_id,
              name=excluded.name,
              is_expanded=excluded.is_expanded,
-             sort_order=excluded.sort_order;",
+             sort_order=excluded.sort_order,
+             is_private=excluded.is_private;",
             params![
                 folder.id,
                 folder.subject_id,
                 folder.name,
                 if folder.is_expanded { 1 } else { 0 },
-                folder.order
+                folder.order,
+                is_priv
             ],
         )?;
         Ok(())

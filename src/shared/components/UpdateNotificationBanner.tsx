@@ -58,7 +58,7 @@ export const UpdateNotificationBanner: React.FC<UpdateNotificationBannerProps> =
             <div className="mt-3 flex items-center gap-2">
               <button
                 type="button"
-                onClick={onOpenRelease}
+                onClick={() => onOpenRelease()}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-theme-accent text-white rounded-lg shadow-sm hover:opacity-90 active:scale-95 transition-all"
               >
                 <ExternalLink className="w-3.5 h-3.5" />

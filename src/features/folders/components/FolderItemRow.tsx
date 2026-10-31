@@ -9,6 +9,7 @@ import {
   X,
   Folder,
   FolderOpen,
+  Lock,
 } from 'lucide-react';
 import { FolderItem } from '../../../shared/types';
 import { useTranslation } from 'react-i18next';
@@ -243,6 +244,11 @@ export const FolderItemRow: React.FC<Props> = ({
         <span className="text-[11px] text-theme-muted font-mono ml-1">
           ({noteCount})
         </span>
+        {folder.isPrivate && (
+          <span title={t('vault.privateFolder') || 'Carpeta Privada'} className="inline-flex items-center">
+            <Lock size={11} className="text-amber-500/80 shrink-0 ml-1" />
+          </span>
+        )}
       </button>
 
       {/* Folder Actions (visible on hover or when selected) */}

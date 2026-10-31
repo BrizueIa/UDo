@@ -89,6 +89,8 @@ pub struct NoteItem {
     pub focus_minutes: Option<u32>,
     #[serde(rename = "order", default)]
     pub order: Option<i32>,
+    #[serde(rename = "isPrivate", default)]
+    pub is_private: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -100,6 +102,8 @@ pub struct FolderItem {
     #[serde(rename = "isExpanded")]
     pub is_expanded: bool,
     pub order: i32,
+    #[serde(rename = "isPrivate", default)]
+    pub is_private: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

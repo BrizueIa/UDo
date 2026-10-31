@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Pin } from 'lucide-react';
+import { Check, Pin, Lock } from 'lucide-react';
 import { NoteItem } from '../../../shared/types';
 import { useTranslation } from 'react-i18next';
 import { renderRichTitle } from '../../note-sheet/utils/inlineRichTextParser';
@@ -146,12 +146,17 @@ export const NoteItemRow: React.FC<Props> = ({
         </span>
       </div>
 
-      {/* Right container: Pinned Note Badge */}
-      {note.isPinned && (
-        <span className="relative z-10 flex items-center flex-shrink-0">
-          <Pin size={11} className="text-amber-400 rotate-45 flex-shrink-0 fill-amber-400/30" />
-        </span>
-      )}
+      {/* Right container: Private Lock & Pinned Note Badges */}
+      <div className="relative z-10 flex items-center space-x-1 shrink-0">
+        {note.isPrivate && (
+          <span title={t('vault.privateNote') || 'Nota Privada'} className="inline-flex items-center">
+            <Lock size={11} className="text-amber-500/80 shrink-0" />
+          </span>
+        )}
+        {note.isPinned && (
+          <Pin size={11} className="text-amber-400 rotate-45 shrink-0 fill-amber-400/30" />
+        )}
+      </div>
     </div>
   );
 };

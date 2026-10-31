@@ -8,6 +8,7 @@ pub fn map_note_row(row: &rusqlite::Row) -> Result<NoteItem> {
     let links_str: String = row.get(8)?;
     let sketches_str: String = row.get(9)?;
     let attachments_str: String = row.get(15).unwrap_or_else(|_| "[]".to_string());
+    let is_priv_int: i32 = row.get(16).unwrap_or(0);
 
     let tags: Vec<String> = serde_json::from_str(&tags_str).unwrap_or_default();
     let links: Vec<LinkItem> = serde_json::from_str(&links_str).unwrap_or_default();
@@ -32,6 +33,7 @@ pub fn map_note_row(row: &rusqlite::Row) -> Result<NoteItem> {
         due_date: row.get(12)?,
         focus_minutes: row.get(13)?,
         order: Some(sort_order),
+        is_private: is_priv_int != 0,
     })
 }
 
@@ -39,7 +41,7 @@ pub fn get_all_notes(conn: &Connection) -> Result<Vec<NoteItem>> {
     let mut notes_stmt = conn.prepare(
         "SELECT id, folder_id, subject_id, title, content, is_completed, is_pinned,
                 tags_json, links_json, sketches_json, created_at, updated_at, due_date,
-                focus_minutes, sort_order, attachments_json
+                focus_minutes, sort_order, attachments_json, is_private
          FROM notes
          WHERE is_deleted = 0
          ORDER BY is_pinned DESC, sort_order ASC, updated_at DESC",
@@ -64,10 +66,14 @@ pub fn search_notes(conn: &Connection, query: &str, include_private: bool) -> Re
         SELECT id, folder_id, subject_id, title, content,
                is_completed, is_pinned, tags_json, links_json,
                sketches_json, created_at, updated_at, due_date,
-               focus_minutes, sort_order, attachments_json
+               focus_minutes, sort_order, attachments_json, is_private
         FROM notes
         WHERE is_deleted = 0
-          AND (?1 = 1 OR subject_id NOT IN (SELECT id FROM subjects WHERE is_private = 1))
+          AND (?1 = 1 OR (
+              is_private = 0
+              AND (folder_id IS NULL OR folder_id = '' OR folder_id NOT IN (SELECT id FROM folders WHERE is_private = 1))
+              AND subject_id NOT IN (SELECT id FROM subjects WHERE is_private = 1)
+          ))
     ";
 
     // 1. Check for special queries: .canvas, canvas, .sketch
@@ -150,11 +156,15 @@ pub fn search_notes(conn: &Connection, query: &str, include_private: bool) -> Re
             SELECT notes.id, notes.folder_id, notes.subject_id, notes.title, notes.content,
                    notes.is_completed, notes.is_pinned, notes.tags_json, notes.links_json,
                    notes.sketches_json, notes.created_at, notes.updated_at, notes.due_date,
-                   notes.focus_minutes, notes.sort_order, notes.attachments_json
+                   notes.focus_minutes, notes.sort_order, notes.attachments_json, notes.is_private
             FROM notes
             JOIN notes_fts ON notes.rowid = notes_fts.rowid
             WHERE notes.is_deleted = 0
-              AND (?2 = 1 OR notes.subject_id NOT IN (SELECT id FROM subjects WHERE is_private = 1))
+              AND (?2 = 1 OR (
+                  notes.is_private = 0
+                  AND (notes.folder_id IS NULL OR notes.folder_id = '' OR notes.folder_id NOT IN (SELECT id FROM folders WHERE is_private = 1))
+                  AND notes.subject_id NOT IN (SELECT id FROM subjects WHERE is_private = 1)
+              ))
               AND notes_fts MATCH ?1
             ORDER BY rank
             LIMIT 50;
@@ -213,6 +223,7 @@ pub fn save_note(conn: &Connection, note: &NoteItem) -> Result<()> {
     let sketches_json = serde_json::to_string(&note.sketches).unwrap_or_else(|_| "[]".to_string());
     let attachments_json = serde_json::to_string(&note.attachments).unwrap_or_else(|_| "[]".to_string());
     let sort_order = note.order.unwrap_or(0);
+    let is_priv = if note.is_private { 1 } else { 0 };
     let folder_id_param: Option<&str> = if note.folder_id.trim().is_empty() {
         None
     } else {
@@ -222,8 +233,8 @@ pub fn save_note(conn: &Connection, note: &NoteItem) -> Result<()> {
     conn.execute(
         "INSERT INTO notes (id, folder_id, subject_id, title, content, is_completed, is_pinned,
                             tags_json, links_json, sketches_json, attachments_json,
-                            created_at, updated_at, due_date, focus_minutes, sort_order, is_deleted)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, 0)
+                            created_at, updated_at, due_date, focus_minutes, sort_order, is_deleted, is_private)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16, 0, ?17)
          ON CONFLICT(id) DO UPDATE SET
          folder_id=excluded.folder_id,
          subject_id=excluded.subject_id,
@@ -239,7 +250,8 @@ pub fn save_note(conn: &Connection, note: &NoteItem) -> Result<()> {
          due_date=excluded.due_date,
          focus_minutes=excluded.focus_minutes,
          sort_order=excluded.sort_order,
-         is_deleted=0;",
+         is_deleted=0,
+         is_private=excluded.is_private;",
         params![
             note.id,
             folder_id_param,
@@ -256,7 +268,8 @@ pub fn save_note(conn: &Connection, note: &NoteItem) -> Result<()> {
             note.updated_at,
             note.due_date,
             note.focus_minutes,
-            sort_order
+            sort_order,
+            is_priv
         ],
     )?;
 
@@ -283,10 +296,14 @@ pub fn get_deleted_notes(conn: &Connection, include_private: bool) -> Result<Vec
     let mut stmt = conn.prepare(
         "SELECT id, folder_id, subject_id, title, content, is_completed, is_pinned,
                 tags_json, links_json, sketches_json, created_at, updated_at, due_date,
-                focus_minutes, sort_order, attachments_json
+                focus_minutes, sort_order, attachments_json, is_private
          FROM notes
          WHERE is_deleted = 1
-           AND (?1 = 1 OR subject_id NOT IN (SELECT id FROM subjects WHERE is_private = 1))
+           AND (?1 = 1 OR (
+               is_private = 0
+               AND (folder_id IS NULL OR folder_id = '' OR folder_id NOT IN (SELECT id FROM folders WHERE is_private = 1))
+               AND subject_id NOT IN (SELECT id FROM subjects WHERE is_private = 1)
+           ))
          ORDER BY updated_at DESC",
     )?;
     let notes = stmt
@@ -321,7 +338,10 @@ pub fn empty_trash(conn: &Connection, include_private: bool) -> Result<()> {
         conn.execute("DELETE FROM notes WHERE is_deleted = 1", [])?;
     } else {
         conn.execute(
-            "DELETE FROM notes WHERE is_deleted = 1 AND subject_id NOT IN (SELECT id FROM subjects WHERE is_private = 1)",
+            "DELETE FROM notes WHERE is_deleted = 1
+             AND is_private = 0
+             AND (folder_id IS NULL OR folder_id = '' OR folder_id NOT IN (SELECT id FROM folders WHERE is_private = 1))
+             AND subject_id NOT IN (SELECT id FROM subjects WHERE is_private = 1)",
             [],
         )?;
     }

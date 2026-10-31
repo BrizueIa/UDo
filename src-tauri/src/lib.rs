@@ -21,6 +21,8 @@ pub fn run() {
         }
     }
 
+    let single_instance_listener = window::check_or_setup_single_instance_early();
+
     tauri::Builder::default()
         .on_permission_request(|_webview, kind| match kind {
             PermissionKind::Microphone => PermissionResponse::Allow,
@@ -38,7 +40,11 @@ pub fn run() {
         )
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
-        .setup(|app| {
+        .setup(move |app| {
+            if let Some(listener) = single_instance_listener {
+                window::listen_single_instance(listener, app.handle().clone());
+            }
+
             let db = DatabaseManager::new().map_err(|e| Box::new(e) as Box<dyn std::error::Error>)?;
             services::backup::perform_daily_auto_backup(&db).ok();
             app.manage(db);

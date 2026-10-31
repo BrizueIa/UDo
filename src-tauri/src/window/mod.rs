@@ -134,6 +134,7 @@ pub fn setup_tray(app: &App) -> Result<(), Box<dyn std::error::Error>> {
                     let _ = window.unminimize();
                     let _ = window.show();
                     let _ = window.set_focus();
+                    let _ = window.emit("tray:restore-full", ());
                 }
             }
             "toggle_widget" => {
@@ -304,3 +305,66 @@ pub fn set_widget_size(app: AppHandle, size: String) -> Result<(), String> {
     }
     Ok(())
 }
+
+#[cfg(unix)]
+pub fn check_or_setup_single_instance_early() -> Option<std::os::unix::net::UnixListener> {
+    use std::io::Write;
+    use std::os::unix::net::{UnixListener, UnixStream};
+
+    let mut data_dir = dirs::data_local_dir().unwrap_or_else(|| std::path::PathBuf::from("."));
+    data_dir.push("udo");
+    std::fs::create_dir_all(&data_dir).ok();
+    let sock_path = data_dir.join("udo-instance.sock");
+
+    // Try to connect to existing instance
+    if let Ok(mut stream) = UnixStream::connect(&sock_path) {
+        let _ = stream.write_all(b"ACTIVATE\n");
+        let _ = stream.flush();
+        println!("Another instance of UDo is already running. Activating existing instance and exiting.");
+        std::process::exit(0);
+    }
+
+    // No responding instance found, clean stale socket file
+    let _ = std::fs::remove_file(&sock_path);
+
+    UnixListener::bind(&sock_path).ok()
+}
+
+#[cfg(not(unix))]
+pub fn check_or_setup_single_instance_early() -> Option<()> {
+    None
+}
+
+#[cfg(unix)]
+pub fn listen_single_instance(listener: std::os::unix::net::UnixListener, app_handle: AppHandle) {
+    std::thread::spawn(move || {
+        use std::io::{BufRead, BufReader};
+        for stream in listener.incoming().flatten() {
+            let mut reader = BufReader::new(stream);
+            let mut line = String::new();
+            if reader.read_line(&mut line).is_ok() && line.trim() == "ACTIVATE" {
+                if let Some(window) = app_handle.get_webview_window("main") {
+                    let _ = window.unminimize();
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                    let _ = window.emit("tray:restore-full", ());
+
+                    #[cfg(target_os = "linux")]
+                    {
+                        let is_hyprland = std::env::var("HYPRLAND_INSTANCE_SIGNATURE").is_ok()
+                            || std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default().to_lowercase().contains("hyprland");
+                        if is_hyprland {
+                            let pid = std::process::id();
+                            let _ = std::process::Command::new("hyprctl")
+                                .args(["dispatch", "focuswindow", &format!("pid:{pid}")])
+                                .spawn();
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+#[cfg(not(unix))]
+pub fn listen_single_instance(_listener: (), _app_handle: AppHandle) {}
