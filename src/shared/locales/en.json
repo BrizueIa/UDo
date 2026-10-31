@@ -10,6 +10,7 @@
   },
   "nav": {
     "subjects": "PROJECTS",
+    "notes": "NOTES",
     "addSubject": "New Project",
     "editSubject": "Edit Project",
     "deleteSubject": "Delete Project",

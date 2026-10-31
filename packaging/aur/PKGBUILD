@@ -1,6 +1,6 @@
 # Maintainer: Brizuela
 pkgname=udo-bin
-pkgver=1.0.5
+pkgver=1.0.6
 pkgrel=1
 pkgdesc="The way u do. Opinionated, local-first notes and project organizer"
 arch=('x86_64')
