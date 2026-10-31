@@ -13,6 +13,6 @@ pkgbase = udo-bin
 	conflicts = udo
 	options = !strip
 	source = udo-bin-1.0.5.deb::https://github.com/BrizueIa/UDo/releases/download/v1.0.5/UDo_1.0.5_amd64.deb
-	sha256sums = ef90ab05afe119fc296a3595770d02114d5e94b46c6e7e1ef0033adabda9e761
+	sha256sums = ef90ab05afe119fc296a3595770d021140906eac59248dba149256c1d2b88a91
 
 pkgname = udo-bin
