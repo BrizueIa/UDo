@@ -43,7 +43,6 @@ fn test_vault_pin_service() {
 #[test]
 fn test_vault_privacy_filtering_and_trash() {
     let (db, path) = create_temp_db("vault-trash");
-    let initial = db.get_initial_data().expect("Failed to load initial data");
 
     // Create a private subject
     let private_sub = SubjectItem {
@@ -59,7 +58,7 @@ fn test_vault_privacy_filtering_and_trash() {
     // Add note in private subject
     let secret_note = NoteItem {
         id: "note-secret-vault".to_string(),
-        folder_id: initial.folders[0].id.clone(),
+        folder_id: "".to_string(),
         subject_id: private_sub.id.clone(),
         title: "Top Secret Strategy".to_string(),
         content: "TopSecretKeyword inside private vault note.".to_string(),
@@ -124,8 +123,16 @@ fn test_vault_privacy_filtering_and_trash() {
 #[test]
 fn test_private_folder_and_note_in_public_subject() {
     let (db, path) = create_temp_db("private-folder-note");
-    let initial = db.get_initial_data().expect("Failed to load initial data");
-    let public_sub = &initial.subjects[0];
+
+    let public_sub = SubjectItem {
+        id: "subject-public-test".to_string(),
+        name: "Public Project".to_string(),
+        color: "#5551f5".to_string(),
+        icon: None,
+        order: 0,
+        is_private: false,
+    };
+    db.save_subject(&public_sub).expect("Failed to save public subject");
 
     // 1. Create a private folder in public subject
     let private_folder = udo_lib::models::FolderItem {
@@ -137,6 +144,16 @@ fn test_private_folder_and_note_in_public_subject() {
         is_private: true,
     };
     db.save_folder(&private_folder).expect("Failed to save private folder");
+
+    let public_folder = udo_lib::models::FolderItem {
+        id: "folder-public-1".to_string(),
+        subject_id: public_sub.id.clone(),
+        name: "Carpeta Publica".to_string(),
+        is_expanded: true,
+        order: 1,
+        is_private: false,
+    };
+    db.save_folder(&public_folder).expect("Failed to save public folder");
 
     // 2. Create note in private folder
     let note_in_priv_folder = NoteItem {
@@ -163,7 +180,7 @@ fn test_private_folder_and_note_in_public_subject() {
     // 3. Create a private note directly in a public folder
     let priv_note_in_pub_folder = NoteItem {
         id: "note-priv-in-pub-folder".to_string(),
-        folder_id: initial.folders[0].id.clone(),
+        folder_id: public_folder.id.clone(),
         subject_id: public_sub.id.clone(),
         title: "Nota privada en carpeta publica".to_string(),
         content: "KeywordPrivNote directly private.".to_string(),
@@ -198,25 +215,17 @@ fn test_private_folder_and_note_in_public_subject() {
 
 #[test]
 fn test_initial_seed_completed_no_reseed_when_empty() {
-    let (db, path) = create_temp_db("no-reseed");
+    let (db, path) = create_temp_db("clean-no-seed");
     let initial = db.get_initial_data().expect("Failed to load initial data");
-    assert!(!initial.subjects.is_empty());
-
-    // User deletes all subjects and notes
-    for s in &initial.subjects {
-        db.delete_subject(&s.id).expect("Failed to delete subject");
-    }
-
-    let empty_data = db.get_initial_data().expect("Failed to load initial data");
-    assert_eq!(empty_data.subjects.len(), 0, "Subjects should be 0");
-    assert_eq!(empty_data.notes.len(), 0, "Notes should be 0");
+    assert_eq!(initial.subjects.len(), 0, "Fresh database must be 100% clean and empty!");
+    assert_eq!(initial.notes.len(), 0, "Fresh database must have 0 notes!");
 
     // Simulate closing app and reopening: DatabaseManager::new_with_path runs init_schema again
     let reopened_db = DatabaseManager::new_with_path(path.clone()).expect("Failed to reopen DB");
     let reopened_data = reopened_db.get_initial_data().expect("Failed to load reopened data");
 
-    assert_eq!(reopened_data.subjects.len(), 0, "Deleted subjects must NOT be reseeded on restart!");
-    assert_eq!(reopened_data.notes.len(), 0, "Deleted notes must NOT be reseeded on restart!");
+    assert_eq!(reopened_data.subjects.len(), 0, "Reopened database must stay 100% clean!");
+    assert_eq!(reopened_data.notes.len(), 0, "Reopened database must have 0 notes!");
 
     std::fs::remove_file(path).ok();
 }

@@ -260,8 +260,8 @@ pub fn toggle_widget_mode(app: AppHandle, is_mini: bool) -> Result<(), String> {
                 .ok();
             window
                 .set_min_size(Some(tauri::Size::Logical(tauri::LogicalSize {
-                    width: 850.0,
-                    height: 550.0,
+                    width: 320.0,
+                    height: 200.0,
                 })))
                 .ok();
 

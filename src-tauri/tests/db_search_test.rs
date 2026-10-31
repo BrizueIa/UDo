@@ -10,13 +10,54 @@ fn test_database_init_and_search() {
     let temp_path = std::env::temp_dir().join(format!("udo-search-test-{}.db", now));
     let db = DatabaseManager::new_with_path(temp_path.clone()).expect("Failed to initialize test DatabaseManager");
     let initial = db.get_initial_data().expect("Failed to load initial data");
-    assert!(!initial.subjects.is_empty(), "Subjects should not be empty");
+    assert_eq!(initial.subjects.len(), 0, "Subjects should start completely clean");
+
+    let test_subject = udo_lib::models::SubjectItem {
+        id: "subj-test-search".to_string(),
+        name: "Test Subject".to_string(),
+        color: "#5551f5".to_string(),
+        icon: None,
+        order: 0,
+        is_private: false,
+    };
+    db.save_subject(&test_subject).expect("Failed to save subject");
+
+    let test_folder = udo_lib::models::FolderItem {
+        id: "fold-test-search".to_string(),
+        subject_id: test_subject.id.clone(),
+        name: "Test Folder".to_string(),
+        is_expanded: true,
+        order: 0,
+        is_private: false,
+    };
+    db.save_folder(&test_folder).expect("Failed to save folder");
+
+    let test_diseno_note = NoteItem {
+        id: "note-test-diseno".to_string(),
+        folder_id: test_folder.id.clone(),
+        subject_id: test_subject.id.clone(),
+        title: "Diseños".to_string(),
+        content: "Ideas y Referencias de Diseños Botánicos".to_string(),
+        is_completed: false,
+        is_pinned: false,
+        tags: vec!["Diseño".to_string()],
+        links: vec![],
+        sketches: vec![],
+        attachments: vec![],
+        created_at: "2026-10-27T00:00:00Z".to_string(),
+        updated_at: "2026-10-27T00:00:00Z".to_string(),
+        due_date: None,
+        focus_minutes: None,
+        order: Some(0),
+        is_private: false,
+    };
+    db.save_note(&test_diseno_note).expect("Failed to save test diseno note");
 
     // Ensure a self-contained test note with diacritics exists
     let test_calculo_note = NoteItem {
         id: "note-test-calculo".to_string(),
-        folder_id: initial.folders[0].id.clone(),
-        subject_id: initial.subjects[0].id.clone(),
+        folder_id: test_folder.id.clone(),
+        subject_id: test_subject.id.clone(),
         title: "Cálculo de presupuestos".to_string(),
         content: "Cálculo automático de filamento.".to_string(),
         is_completed: false,
@@ -56,8 +97,8 @@ fn test_database_init_and_search() {
                 .unwrap()
                 .as_millis()
         ),
-        folder_id: initial.folders[0].id.clone(),
-        subject_id: initial.subjects[0].id.clone(),
+        folder_id: test_folder.id.clone(),
+        subject_id: test_subject.id.clone(),
         title: "Quantum Robotics Note".to_string(),
         content: "Testing SQLite FTS5 synchronization triggers automatically.".to_string(),
         is_completed: false,
@@ -93,8 +134,8 @@ fn test_database_init_and_search() {
     // Test advanced search by attachment name and extension
     let note_with_cv = NoteItem {
         id: "note-test-attachment-cv".to_string(),
-        folder_id: initial.folders[0].id.clone(),
-        subject_id: initial.subjects[0].id.clone(),
+        folder_id: test_folder.id.clone(),
+        subject_id: test_subject.id.clone(),
         title: "Nota con Documentos".to_string(),
         content: "Sin palabras clave en texto.".to_string(),
         is_completed: false,
@@ -175,7 +216,7 @@ fn test_database_init_and_search() {
     let root_note = NoteItem {
         id: "note-root-project".to_string(),
         folder_id: "".to_string(),
-        subject_id: initial.subjects[0].id.clone(),
+        subject_id: test_subject.id.clone(),
         title: "Nota en raíz de proyecto".to_string(),
         content: "Contenido directo en el proyecto sin carpeta.".to_string(),
         is_completed: false,

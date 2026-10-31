@@ -1,4 +1,4 @@
-use rusqlite::{params, Connection, Result};
+use rusqlite::{Connection, Result};
 
 pub fn init_schema(conn: &Connection) -> Result<()> {
     // Execute core table schema
@@ -202,8 +202,8 @@ pub fn init_schema(conn: &Connection) -> Result<()> {
         }
     }
 
-    // Seed default sample data ONLY if freshly created database and not previously seeded
-    let has_seeded: bool = conn
+    // Mark initial setup as completed so database starts 100% clean
+    let has_initialized: bool = conn
         .query_row(
             "SELECT count(*) FROM app_settings WHERE key = 'initial_seed_completed'",
             [],
@@ -212,52 +212,12 @@ pub fn init_schema(conn: &Connection) -> Result<()> {
         .map(|c| c > 0)
         .unwrap_or(false);
 
-    if !has_seeded {
-        let existing_subjects: i64 = conn
-            .query_row("SELECT count(*) FROM subjects", [], |r| r.get(0))
-            .unwrap_or(0);
-        let existing_notes: i64 = conn
-            .query_row("SELECT count(*) FROM notes", [], |r| r.get(0))
-            .unwrap_or(0);
-
-        if existing_subjects == 0 && existing_notes == 0 {
-            seed_defaults(conn)?;
-        }
-
+    if !has_initialized {
         conn.execute(
             "INSERT OR REPLACE INTO app_settings (key, value) VALUES ('initial_seed_completed', '1');",
             [],
         )?;
     }
-
-    Ok(())
-}
-
-fn seed_defaults(conn: &Connection) -> Result<()> {
-    conn.execute(
-        "INSERT OR IGNORE INTO subjects (id, name, color, sort_order, is_private) VALUES 
-        ('subj-3d', '3D', '#f97316', 0, 0), ('subj-loteria', 'Lotería app', '#10b981', 1, 0), ('subj-stardew', 'StardewValley', '#6366f1', 2, 0);",
-        [],
-    )?;
-
-    conn.execute(
-        "INSERT OR IGNORE INTO folders (id, subject_id, name, is_expanded, sort_order, is_private) VALUES 
-        ('fold-plantas', 'subj-3d', 'Plantas', 1, 0, 0), ('fold-eucce', 'subj-3d', 'EUCCE', 0, 1, 0);",
-        [],
-    )?;
-
-    let sample_content = "### Ideas y Referencias de Diseños Botánicos\n\nExplorar macetas geométricas y articuladas con autorriego para plantas de interior.\n\n- [x] Dimensionar tolerancias para boquilla de 0.4mm\n- [ ] Diseñar depósito de agua con indicador visual de nivel\n- [ ] Probar filamento PLA mate color menta\n\n[embed:link:link-1]\n[embed:link:link-2]";
-    let sample_sketch = r#"[{"id":"sketch-1","title":"Maceta Menta 3D","dataUrl":"data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 120 120\"><rect width=\"120\" height=\"120\" rx=\"16\" fill=\"%23ffffff\"/><path d=\"M50 40 Q40 25 35 32 Q35 48 48 45\" fill=\"%2322c55e\"/><path d=\"M42 55 L78 55 L72 90 L48 90 Z\" fill=\"%23a7f3d0\" stroke=\"%236ee7b7\" stroke-width=\"2\"/></svg>","createdAt":"2026-10-27T03:00:00Z"}]"#;
-    let sample_links = r#"[{"id":"link-1","title":"Modelos en Printables","url":"https://www.printables.com"},{"id":"link-2","title":"Inspiración Pinterest Plantas","url":"https://pinterest.com"}]"#;
-
-    conn.execute(
-        "INSERT OR IGNORE INTO notes (id, folder_id, subject_id, title, content, is_completed, is_pinned, tags_json, links_json, sketches_json, attachments_json, created_at, updated_at, focus_minutes, is_private) VALUES 
-        ('note-disenos', 'fold-plantas', 'subj-3d', 'Diseños', ?1, 0, 1, '[\"Modelado\",\"Prototipo\"]', ?2, ?3, '[]', '2026-10-27T02:00:00Z', 'Hoy, 10:15 AM', 25, 0),
-        ('note-laminar', 'fold-plantas', 'subj-3d', 'Laminar', 'Configurar parámetros en OrcaSlicer.', 0, 0, '[\"Slicer\"]', '[]', '[]', '[]', '2026-10-27T02:10:00Z', 'Ayer', NULL, 0),
-        ('note-costos', 'fold-plantas', 'subj-3d', 'Costos, presupuestos', 'Cálculo de consumo y filamento.', 0, 0, '[\"Presupuesto\"]', '[]', '[]', '[]', '2026-10-27T02:15:00Z', 'Ayer', NULL, 0),
-        ('note-cotizacion', 'fold-plantas', 'subj-3d', 'Cotización', 'Aprobado por el cliente.', 1, 0, '[\"Cliente\"]', '[]', '[]', '[]', '2026-10-27T01:30:00Z', '24 Oct', NULL, 0);",
-        params![sample_content, sample_links, sample_sketch],
-    )?;
 
     Ok(())
 }
