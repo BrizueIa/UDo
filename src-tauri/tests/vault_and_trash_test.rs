@@ -229,3 +229,74 @@ fn test_initial_seed_completed_no_reseed_when_empty() {
 
     std::fs::remove_file(path).ok();
 }
+
+#[test]
+fn test_delete_folder_soft_deletes_contained_notes_and_prevents_orphan_revival() {
+    let (db, path) = create_temp_db("delete-folder-notes");
+
+    let sub = SubjectItem {
+        id: "sub-1".to_string(),
+        name: "Mi Proyecto".to_string(),
+        color: "#5551f5".to_string(),
+        icon: None,
+        order: 0,
+        is_private: false,
+    };
+    db.save_subject(&sub).expect("Save subject failed");
+
+    let folder = udo_lib::models::FolderItem {
+        id: "folder-1".to_string(),
+        subject_id: "sub-1".to_string(),
+        name: "d".to_string(),
+        is_expanded: true,
+        order: 0,
+        is_private: false,
+    };
+    db.save_folder(&folder).expect("Save folder failed");
+
+    let note = NoteItem {
+        id: "note-1".to_string(),
+        folder_id: "folder-1".to_string(),
+        subject_id: "sub-1".to_string(),
+        title: "Notaaaaaaaaaaaaaaa".to_string(),
+        content: "".to_string(),
+        is_completed: false,
+        is_pinned: false,
+        tags: vec![],
+        links: vec![],
+        sketches: vec![],
+        attachments: vec![],
+        created_at: "2026-10-31T00:00:00Z".to_string(),
+        updated_at: "2026-10-31T00:00:00Z".to_string(),
+        due_date: None,
+        focus_minutes: None,
+        order: Some(0),
+        is_private: false,
+    };
+    db.save_note(&note).expect("Save note failed");
+
+    // Verify initial data has 1 folder and 1 active note
+    let init_before = db.get_initial_data().expect("Failed get_initial_data");
+    assert_eq!(init_before.folders.len(), 1);
+    assert_eq!(init_before.notes.len(), 1);
+
+    // Now delete folder
+    db.delete_folder("folder-1").expect("Delete folder failed");
+
+    // Verify that get_initial_data now has 0 folders and 0 active notes! (Note must NOT be in root!)
+    let init_after = db.get_initial_data().expect("Failed get_initial_data after delete");
+    assert_eq!(init_after.folders.len(), 0, "Folder must be deleted");
+    assert_eq!(init_after.notes.len(), 0, "Note inside deleted folder must not appear in active notes or root!");
+
+    // Late save_note (simulating debounce or editor unmount flush) must NOT revive the deleted note
+    db.save_note(&note).expect("Late save_note should succeed");
+    let init_after_late_save = db.get_initial_data().expect("Failed get_initial_data after late save");
+    assert_eq!(init_after_late_save.notes.len(), 0, "Late save_note must not resurrect a soft-deleted note!");
+
+    // The note should be in trash
+    let deleted = db.get_deleted_notes(true).expect("Failed to get deleted notes");
+    assert_eq!(deleted.len(), 1, "Note must be safely in trash");
+    assert_eq!(deleted[0].id, "note-1");
+
+    std::fs::remove_file(path).ok();
+}

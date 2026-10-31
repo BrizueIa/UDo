@@ -19,4 +19,11 @@ i18n
     },
   });
 
+i18n.on('languageChanged', (lng) => {
+  if (typeof window !== 'undefined' && lng) {
+    const normalized = lng.startsWith('es') ? 'es' : 'en';
+    localStorage.setItem('udo_language', normalized);
+  }
+});
+
 export default i18n;

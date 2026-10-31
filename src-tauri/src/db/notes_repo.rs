@@ -227,7 +227,18 @@ pub fn save_note(conn: &Connection, note: &NoteItem) -> Result<()> {
     let folder_id_param: Option<&str> = if note.folder_id.trim().is_empty() {
         None
     } else {
-        Some(note.folder_id.as_str())
+        let folder_exists: bool = conn
+            .query_row(
+                "SELECT 1 FROM folders WHERE id = ?1",
+                params![note.folder_id.as_str()],
+                |_| Ok(true),
+            )
+            .unwrap_or(false);
+        if folder_exists {
+            Some(note.folder_id.as_str())
+        } else {
+            None
+        }
     };
 
     conn.execute(
@@ -250,7 +261,7 @@ pub fn save_note(conn: &Connection, note: &NoteItem) -> Result<()> {
          due_date=excluded.due_date,
          focus_minutes=excluded.focus_minutes,
          sort_order=excluded.sort_order,
-         is_deleted=0,
+         is_deleted=notes.is_deleted,
          is_private=excluded.is_private;",
         params![
             note.id,

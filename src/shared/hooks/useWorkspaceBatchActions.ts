@@ -16,6 +16,7 @@ interface Props {
   setSelectedNoteId: React.Dispatch<React.SetStateAction<string>>;
   recordSnapshot: (snapshot: WorkspaceSnapshot) => void;
   getSnapshot: () => WorkspaceSnapshot;
+  deletedNoteIdsRef?: React.MutableRefObject<Set<string>>;
 }
 
 export function useWorkspaceBatchActions({
@@ -31,12 +32,20 @@ export function useWorkspaceBatchActions({
   setSelectedNoteId,
   recordSnapshot,
   getSnapshot,
+  deletedNoteIdsRef,
 }: Props) {
   const handleBatchDeleteFolders = useCallback(
     (folderIds: string[]) => {
       if (!folderIds || folderIds.length === 0) return;
       recordSnapshot(getSnapshot());
       const idSet = new Set(folderIds);
+
+      // Track deleted notes and notify API so late editor flush doesn't revive them
+      const folderNotes = notes.filter((n) => n.folderId && idSet.has(n.folderId));
+      folderNotes.forEach((n) => {
+        deletedNoteIdsRef?.current.add(n.id);
+        api.deleteNote(n.id);
+      });
 
       setFolders((prev) => prev.filter((f) => !idSet.has(f.id)));
       setNotes((prev) => prev.filter((n) => !n.folderId || !idSet.has(n.folderId)));
@@ -47,7 +56,7 @@ export function useWorkspaceBatchActions({
         setSelectedFolderId(remaining[0]?.id || '');
       }
     },
-    [folders, selectedFolderId, selectedSubjectId, recordSnapshot, getSnapshot, setFolders, setNotes, setSelectedFolderId]
+    [folders, notes, selectedFolderId, selectedSubjectId, recordSnapshot, getSnapshot, setFolders, setNotes, setSelectedFolderId, deletedNoteIdsRef]
   );
   const handleBatchDeleteNotes = useCallback(
     (ids: string[]) => {
@@ -55,15 +64,19 @@ export function useWorkspaceBatchActions({
       recordSnapshot(getSnapshot());
       const idSet = new Set(ids);
 
+      ids.forEach((id) => {
+        deletedNoteIdsRef?.current.add(id);
+        api.deleteNote(id);
+      });
+
       setNotes((prev) => prev.filter((n) => !idSet.has(n.id)));
-      ids.forEach((id) => api.deleteNote(id));
 
       if (idSet.has(selectedNoteId)) {
         const remaining = notes.filter((n) => !idSet.has(n.id));
         setSelectedNoteId(remaining.length > 0 ? remaining[0].id : '');
       }
     },
-    [notes, selectedNoteId, recordSnapshot, getSnapshot, setNotes, setSelectedNoteId]
+    [notes, selectedNoteId, recordSnapshot, getSnapshot, setNotes, setSelectedNoteId, deletedNoteIdsRef]
   );
 
   const handleBatchToggleCompleteNotes = useCallback(

@@ -192,6 +192,11 @@ impl DatabaseManager {
 
     pub fn delete_folder(&self, id: &str) -> Result<()> {
         let conn = self.get_connection()?;
+        let now = chrono::Utc::now().to_rfc3339();
+        conn.execute(
+            "UPDATE notes SET is_deleted = 1, folder_id = NULL, updated_at = ?2 WHERE folder_id = ?1 AND is_deleted = 0",
+            params![id, now],
+        )?;
         conn.execute("DELETE FROM folders WHERE id = ?1", params![id])?;
         Ok(())
     }
