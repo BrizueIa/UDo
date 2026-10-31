@@ -302,7 +302,7 @@ export const App: React.FC = () => {
   }
 
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-theme-base text-theme-text font-sans antialiased">
+    <div className="flex flex-col h-screen w-full max-w-full overflow-hidden bg-theme-base text-theme-text font-sans antialiased">
       <TopBar
         currentSubjectName={currentSubject?.name} searchQuery={searchQuery} filter={filter}
         pendingCount={pendingCount}

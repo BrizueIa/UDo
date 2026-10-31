@@ -204,7 +204,7 @@ export const TopBar: React.FC<Props> = ({
           </h1>
 
           {currentSubjectName && (
-            <span className="hidden sm:inline-block px-2 py-0.5 rounded-md bg-theme-card text-[11px] font-semibold text-theme-muted border border-white/[0.05] truncate max-w-[130px]">
+            <span className="hidden md:inline-block px-2 py-0.5 rounded-md bg-theme-card text-[11px] font-semibold text-theme-muted border border-white/[0.05] truncate max-w-[130px]">
               {renderRichTitle(currentSubjectName)}
             </span>
           )}
@@ -215,11 +215,11 @@ export const TopBar: React.FC<Props> = ({
       <div
         data-tauri-drag-region
         onDoubleClick={() => api.toggleMaximizeWindow()}
-        className="flex-1 h-full min-w-4 cursor-move"
+        className="flex-1 h-full min-w-0 cursor-move"
       />
 
       {/* Middle: Unified Search Bar */}
-      <div className="shrink-0 flex-1 max-w-md mx-1 min-w-0 pointer-events-auto" data-tauri-drag-region="false">
+      <div className="flex-1 max-w-md mx-1 min-w-[100px] pointer-events-auto" data-tauri-drag-region="false">
         <TopBarSearch
           searchQuery={searchQuery}
           onSearchChange={onSearchChange}
@@ -231,7 +231,7 @@ export const TopBar: React.FC<Props> = ({
       <div
         data-tauri-drag-region
         onDoubleClick={() => api.toggleMaximizeWindow()}
-        className="flex-1 h-full min-w-4 cursor-move"
+        className="flex-1 h-full min-w-0 cursor-move"
       />
 
       {/* Right: Filter Pills + Quick Tools */}
