@@ -1,12 +1,13 @@
 {
   "name": "udo",
   "private": true,
-  "version": "1.0.9",
+  "version": "1.1.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "test": "node --test src/features/note-sheet/utils/crossLineSelectionEngine.test.ts",
     "tauri": "tauri"
   },
   "dependencies": {

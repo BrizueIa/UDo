@@ -1,7 +1,11 @@
 import React, { useRef, useEffect, useCallback } from 'react';
 import { CheckSquare, Square, FileText } from 'lucide-react';
 import { NoteItem } from '../../../../shared/types';
-import { storedToVisualHtml, visualHtmlToStored, storedToPlainText } from '../../utils/richTextHtmlCodec';
+import {
+  storedToVisualHtmlWithSelection,
+  visualHtmlToStored,
+  storedToPlainText,
+} from '../../utils/richTextHtmlCodec';
 import { RichFormatAction } from '../RichTextToolbar';
 import { applyFormatToContentEditable } from '../../utils/richTextDomCommands';
 import { useTranslation } from 'react-i18next';
@@ -11,10 +15,15 @@ interface Props {
   totalLines?: number;
   rawLine: string;
   notes: NoteItem[];
-  isSelected?: boolean;
-  onMouseDown?: (e: React.MouseEvent) => void;
-  onMouseEnter?: () => void;
-  onExtendSelection?: (dir: 'up' | 'down') => void;
+  selectionSlice?: { start: number; end: number };
+  onLinePointerDown?: (lineIdx: number, charOffset: number, e: React.MouseEvent) => void;
+  onLinePointerMove?: (lineIdx: number, charOffset: number, e: React.MouseEvent) => void;
+  onStartOrExtendCrossSelection?: (
+    anchorOffset: number,
+    focusOffset: number,
+    dir: 'left' | 'right' | 'up' | 'down',
+    byWord: boolean
+  ) => void;
   onSelectAll?: () => void;
   placeholder?: string;
   exclusionPadding?: { left?: number; right?: number; marginTop?: number };
@@ -31,6 +40,78 @@ interface Props {
   onPasteImageAtLine: (idx: number, e: React.ClipboardEvent) => boolean;
   registerLineEl: (idx: number, el: HTMLDivElement | null) => void;
   onMoveLine?: (fromIdx: number, toIdx: number) => void;
+}
+
+export function getCharOffsetFromPointWithin(
+  el: HTMLElement,
+  clientX: number,
+  clientY: number
+): number {
+  const totalText = el.textContent || '';
+  const totalLen = Array.from(totalText).length;
+  if (totalLen === 0) return 0;
+
+  const rect = el.getBoundingClientRect();
+  const clampedX = Math.max(rect.left + 2, Math.min(clientX, rect.right - 2));
+  const clampedY = Math.max(rect.top + 4, Math.min(clientY, rect.bottom - 4));
+
+  const doc = document as unknown as {
+    createRange: () => Range;
+    caretRangeFromPoint?: (x: number, y: number) => Range | null;
+    caretPositionFromPoint?: (x: number, y: number) => { offsetNode: Node; offset: number } | null;
+  };
+
+  let pointRange: Range | null = null;
+  if (typeof doc.caretRangeFromPoint === 'function') {
+    pointRange = doc.caretRangeFromPoint(clampedX, clampedY);
+  } else if (typeof doc.caretPositionFromPoint === 'function') {
+    const pos = doc.caretPositionFromPoint(clampedX, clampedY);
+    if (pos) {
+      const r = doc.createRange();
+      r.setStart(pos.offsetNode, pos.offset);
+      r.collapse(true);
+      pointRange = r;
+    }
+  }
+
+  if (pointRange && el.contains(pointRange.startContainer)) {
+    const preRange = document.createRange();
+    preRange.selectNodeContents(el);
+    preRange.setEnd(pointRange.startContainer, pointRange.startOffset);
+    return Math.min(totalLen, Array.from(preRange.toString()).length);
+  }
+
+  return clientX <= rect.left + rect.width / 2 ? 0 : totalLen;
+}
+
+function getSelectionOffsetsWithin(el: HTMLElement): {
+  anchorOffset: number;
+  focusOffset: number;
+  totalLen: number;
+} {
+  const totalLen = Array.from(el.textContent || '').length;
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || !sel.anchorNode || !sel.focusNode) {
+    return { anchorOffset: 0, focusOffset: 0, totalLen };
+  }
+
+  let anchorOffset = 0;
+  if (el.contains(sel.anchorNode)) {
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    r.setEnd(sel.anchorNode, sel.anchorOffset);
+    anchorOffset = Math.min(totalLen, Array.from(r.toString()).length);
+  }
+
+  let focusOffset = anchorOffset;
+  if (el.contains(sel.focusNode)) {
+    const r = document.createRange();
+    r.selectNodeContents(el);
+    r.setEnd(sel.focusNode, sel.focusOffset);
+    focusOffset = Math.min(totalLen, Array.from(r.toString()).length);
+  }
+
+  return { anchorOffset, focusOffset, totalLen };
 }
 
 function isCaretAtStart(el: HTMLElement): boolean {
@@ -125,10 +206,10 @@ export const EditableTextLine: React.FC<Props> = ({
   totalLines,
   rawLine,
   notes,
-  isSelected,
-  onMouseDown,
-  onMouseEnter,
-  onExtendSelection,
+  selectionSlice,
+  onLinePointerDown,
+  onLinePointerMove,
+  onStartOrExtendCrossSelection,
   onSelectAll,
   placeholder,
   exclusionPadding,
@@ -182,23 +263,30 @@ export const EditableTextLine: React.FC<Props> = ({
 
   const isChecked = taskMatch ? taskMatch[2].toLowerCase() === 'x' : false;
   const lastBodyRef = useRef<string>(bodyText);
+  const hadSelectionSliceRef = useRef<boolean>(false);
+
+  const selStart = selectionSlice?.start;
+  const selEnd = selectionSlice?.end;
+  const hasActiveSlice = selStart !== undefined && selEnd !== undefined;
 
   useEffect(() => {
     const el = editorRef.current;
     if (!el) return;
-    const html = storedToVisualHtml(bodyText);
-    if (lastBodyRef.current !== bodyText || el.innerHTML !== html) {
-      if (document.activeElement !== el || lastBodyRef.current !== bodyText) {
+    const html = storedToVisualHtmlWithSelection(bodyText, selStart, selEnd);
+    const sliceChanged = hasActiveSlice || hadSelectionSliceRef.current;
+    if (sliceChanged || lastBodyRef.current !== bodyText || el.innerHTML !== html) {
+      if (sliceChanged || document.activeElement !== el || lastBodyRef.current !== bodyText) {
         el.innerHTML = html;
         lastBodyRef.current = bodyText;
       }
     }
-  }, [bodyText]);
+    hadSelectionSliceRef.current = hasActiveSlice;
+  }, [bodyText, selStart, selEnd, hasActiveSlice]);
 
   useEffect(() => {
     const el = editorRef.current;
     if (el) {
-      el.innerHTML = storedToVisualHtml(bodyText);
+      el.innerHTML = storedToVisualHtmlWithSelection(bodyText, selStart, selEnd);
       lastBodyRef.current = bodyText;
     }
   }, []);
@@ -273,8 +361,18 @@ export const EditableTextLine: React.FC<Props> = ({
 
   return (
     <div
-      onMouseDown={onMouseDown}
-      onMouseEnter={onMouseEnter}
+      onMouseDown={(e) => {
+        if (e.button !== 0) return;
+        const el = editorRef.current;
+        const offset = el ? getCharOffsetFromPointWithin(el, e.clientX, e.clientY) : 0;
+        onLinePointerDown?.(lineIndex, offset, e);
+      }}
+      onMouseMove={(e) => {
+        if ((e.buttons & 1) !== 1) return;
+        const el = editorRef.current;
+        const offset = el ? getCharOffsetFromPointWithin(el, e.clientX, e.clientY) : 0;
+        onLinePointerMove?.(lineIndex, offset, e);
+      }}
       style={{
         paddingLeft: exclusionPadding?.left ? `${exclusionPadding.left}px` : undefined,
         paddingRight: exclusionPadding?.right ? `${exclusionPadding.right}px` : undefined,
@@ -298,9 +396,7 @@ export const EditableTextLine: React.FC<Props> = ({
         }
       }}
       className={`group relative ${
-        isSelected
-          ? 'bg-theme-accent/20 ring-1 ring-theme-accent/50 text-theme-text rounded-md px-1'
-          : taskMatch
+        taskMatch
           ? isChecked
             ? 'flex items-start gap-2 bg-[#1fd4a5]/[0.06] px-2 py-1 text-theme-muted'
             : 'flex items-start gap-2 hover:bg-theme-hover/30 px-2 py-1'
@@ -439,9 +535,10 @@ export const EditableTextLine: React.FC<Props> = ({
             if (e.key === 'ArrowUp') {
               const sel = window.getSelection();
               if (e.shiftKey) {
-                if (isCaretAtFirstLine(el) || (sel && !sel.isCollapsed)) {
+                if (isCaretAtFirstLine(el) && lineIndex > 0) {
                   e.preventDefault();
-                  onExtendSelection?.('up');
+                  const { anchorOffset, focusOffset } = getSelectionOffsetsWithin(el);
+                  onStartOrExtendCrossSelection?.(anchorOffset, focusOffset, 'up', isCtrl);
                   return;
                 }
               } else {
@@ -458,9 +555,10 @@ export const EditableTextLine: React.FC<Props> = ({
             if (e.key === 'ArrowDown') {
               const sel = window.getSelection();
               if (e.shiftKey) {
-                if (isCaretAtLastLine(el) || (sel && !sel.isCollapsed)) {
+                if (isCaretAtLastLine(el) && totalLines !== undefined && lineIndex < totalLines - 1) {
                   e.preventDefault();
-                  onExtendSelection?.('down');
+                  const { anchorOffset, focusOffset } = getSelectionOffsetsWithin(el);
+                  onStartOrExtendCrossSelection?.(anchorOffset, focusOffset, 'down', isCtrl);
                   return;
                 }
               } else {
@@ -475,25 +573,31 @@ export const EditableTextLine: React.FC<Props> = ({
             }
 
             if (e.key === 'ArrowLeft') {
-              if (isCaretAtStart(el) && lineIndex > 0) {
-                e.preventDefault();
-                if (e.shiftKey) {
-                  onExtendSelection?.('up');
-                } else {
-                  onNavigateLine(lineIndex, 'up');
+              if (e.shiftKey) {
+                const { anchorOffset, focusOffset } = getSelectionOffsetsWithin(el);
+                if (focusOffset <= 0 && lineIndex > 0) {
+                  e.preventDefault();
+                  onStartOrExtendCrossSelection?.(anchorOffset, focusOffset, 'left', isCtrl);
+                  return;
                 }
+              } else if (isCaretAtStart(el) && lineIndex > 0) {
+                e.preventDefault();
+                onNavigateLine(lineIndex, 'up');
                 return;
               }
             }
 
             if (e.key === 'ArrowRight') {
-              if (isCaretAtEnd(el) && totalLines !== undefined && lineIndex < totalLines - 1) {
-                e.preventDefault();
-                if (e.shiftKey) {
-                  onExtendSelection?.('down');
-                } else {
-                  onNavigateLine(lineIndex, 'down');
+              if (e.shiftKey) {
+                const { anchorOffset, focusOffset, totalLen } = getSelectionOffsetsWithin(el);
+                if (focusOffset >= totalLen && totalLines !== undefined && lineIndex < totalLines - 1) {
+                  e.preventDefault();
+                  onStartOrExtendCrossSelection?.(anchorOffset, focusOffset, 'right', isCtrl);
+                  return;
                 }
+              } else if (isCaretAtEnd(el) && totalLines !== undefined && lineIndex < totalLines - 1) {
+                e.preventDefault();
+                onNavigateLine(lineIndex, 'down');
                 return;
               }
             }
@@ -502,6 +606,13 @@ export const EditableTextLine: React.FC<Props> = ({
             isChecked ? 'line-through opacity-70' : ''
           }`}
         />
+
+        {hasActiveSlice && selStart === 0 && selEnd === 0 && !bodyText.trim() && (
+          <span
+            data-udo-sel="true"
+            className="pointer-events-none absolute left-0 top-1 inline-block w-2 h-4 bg-[#3b82f6]/40 rounded-[2px]"
+          />
+        )}
 
         {isEmpty && placeholder && (
           <span className="pointer-events-none absolute left-0 top-0.5 text-sm text-theme-muted/45 italic select-none">

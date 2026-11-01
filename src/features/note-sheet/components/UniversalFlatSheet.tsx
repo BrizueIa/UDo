@@ -11,6 +11,16 @@ import { FreeBounds } from './blocks/FreeObjectWrapper';
 import { InlineLinkBlock } from './blocks/InlineMediaBlocks';
 import { useContextMenu } from '../../../shared/ui/context-menu';
 import { playTaskCompleteSound } from '../../../shared/utils/soundEffects';
+import {
+  CrossLineTextRange,
+  createCrossLineRange,
+  getVisibleLineLength,
+  getLineSelectionSlice,
+  applyFormatToCrossLineRange,
+  deleteOrReplaceCrossLineRange,
+  extractPlainTextFromCrossLineRange,
+  extendCrossLineRangeByKey,
+} from '../utils/crossLineSelectionEngine';
 
 interface Props {
   content: string; notes: NoteItem[]; sketches: SketchItem[]; links: LinkItem[]; attachments: NoteAttachment[];
@@ -27,13 +37,6 @@ interface Props {
 
 const EMBED_REGEX = /^\[embed:(sketch|attachment|link):([^\]]+)\]$/i;
 
-interface LineRange {
-  anchor: number;
-  current: number;
-  start: number;
-  end: number;
-}
-
 export const UniversalFlatSheet: React.FC<Props> = ({
   content, notes, sketches, links, attachments, findQuery = '',
   activeCursorLineRef, onChangeContent, onSelectNote, onCreateNoteWithTitle,
@@ -49,9 +52,10 @@ export const UniversalFlatSheet: React.FC<Props> = ({
   const sheetContainerRef = useRef<HTMLDivElement>(null);
   const [boundsMap, setBoundsMap] = useState<Map<string, FreeBounds>>(new Map());
 
-  const [selectedLineRange, setSelectedLineRange] = useState<LineRange | null>(null);
+  const [crossSelection, setCrossSelection] = useState<CrossLineTextRange | null>(null);
+  const [isDraggingMouse, setIsDraggingMouse] = useState<boolean>(false);
   const isMouseDownRef = useRef<boolean>(false);
-  const dragStartLineRef = useRef<number | null>(null);
+  const dragAnchorRef = useRef<{ line: number; offset: number } | null>(null);
   const applyFormatToRangeRef = useRef<((action: RichFormatAction) => void) | null>(null);
 
   const lines = (content || '').split('\n');
@@ -344,37 +348,67 @@ export const UniversalFlatSheet: React.FC<Props> = ({
     return true;
   }, [onAttachSketchesAtLine, t]);
 
-  const handleLineMouseDown = useCallback((lineIdx: number, e: React.MouseEvent) => {
-    if (e.button !== 0) return;
-    isMouseDownRef.current = true;
-    dragStartLineRef.current = lineIdx;
-    if (selectedLineRange) {
-      setSelectedLineRange(null);
-    }
-  }, [selectedLineRange]);
+  const handleLinePointerDown = useCallback(
+    (lineIdx: number, charOffset: number, e: React.MouseEvent) => {
+      if (e.button !== 0) return;
 
-  const handleLineMouseEnter = useCallback((lineIdx: number) => {
-    if (!isMouseDownRef.current || dragStartLineRef.current === null) return;
-    const anchor = dragStartLineRef.current;
-    if (anchor === lineIdx) {
-      if (selectedLineRange !== null) setSelectedLineRange(null);
-      return;
-    }
-    const start = Math.min(anchor, lineIdx);
-    const end = Math.max(anchor, lineIdx);
-    setSelectedLineRange({ anchor, current: lineIdx, start, end });
-    window.getSelection()?.removeAllRanges();
-  }, [selectedLineRange]);
+      if (e.shiftKey && dragAnchorRef.current) {
+        e.preventDefault();
+        const { line: anchorLine, offset: anchorOffset } = dragAnchorRef.current;
+        const range = createCrossLineRange(anchorLine, anchorOffset, lineIdx, charOffset);
+        setCrossSelection(range);
+        window.getSelection()?.removeAllRanges();
+        sheetContainerRef.current?.focus({ preventScroll: true });
+        return;
+      }
+
+      isMouseDownRef.current = true;
+      setIsDraggingMouse(true);
+      setToolbarCoords(null);
+      dragAnchorRef.current = { line: lineIdx, offset: charOffset };
+      if (crossSelection) {
+        setCrossSelection(null);
+      }
+    },
+    [crossSelection]
+  );
+
+  const handleLinePointerMove = useCallback(
+    (lineIdx: number, charOffset: number) => {
+      if (!isMouseDownRef.current || !dragAnchorRef.current) return;
+      const { line: anchorLine, offset: anchorOffset } = dragAnchorRef.current;
+
+      // While dragging inside the same starting line before crossing lines, preserve native browser selection
+      if (anchorLine === lineIdx && crossSelection === null) {
+        return;
+      }
+
+      if (anchorLine === lineIdx && charOffset === anchorOffset) {
+        if (crossSelection !== null) setCrossSelection(null);
+        return;
+      }
+
+      const nextRange = createCrossLineRange(anchorLine, anchorOffset, lineIdx, charOffset);
+      setCrossSelection(nextRange);
+      window.getSelection()?.removeAllRanges();
+    },
+    [crossSelection]
+  );
 
   useEffect(() => {
     const handleGlobalMouseUp = () => {
-      isMouseDownRef.current = false;
-      dragStartLineRef.current = null;
+      if (isMouseDownRef.current) {
+        isMouseDownRef.current = false;
+        setIsDraggingMouse(false);
+        if (crossSelection) {
+          sheetContainerRef.current?.focus({ preventScroll: true });
+        }
+      }
     };
     const handleDocumentClick = (e: MouseEvent) => {
-      if (selectedLineRange && sheetContainerRef.current) {
+      if (crossSelection && sheetContainerRef.current) {
         if (!sheetContainerRef.current.contains(e.target as Node)) {
-          setSelectedLineRange(null);
+          setCrossSelection(null);
         }
       }
     };
@@ -384,97 +418,111 @@ export const UniversalFlatSheet: React.FC<Props> = ({
       window.removeEventListener('mouseup', handleGlobalMouseUp);
       document.removeEventListener('mousedown', handleDocumentClick);
     };
-  }, [selectedLineRange]);
+  }, [crossSelection]);
 
-  const handleExtendSelection = useCallback((fromIdx: number, dir: 'up' | 'down') => {
-    setSelectedLineRange((prev) => {
-      const anchor = prev ? prev.anchor : fromIdx;
-      const current = prev ? prev.current : fromIdx;
-      let newCurrent = dir === 'up' ? current - 1 : current + 1;
-      newCurrent = Math.max(0, Math.min(newCurrent, lines.length - 1));
-      if (newCurrent === anchor && prev && prev.current !== anchor) {
-        return null;
-      }
-      const start = Math.min(anchor, newCurrent);
-      const end = Math.max(anchor, newCurrent);
-      return { anchor, current: newCurrent, start, end };
-    });
-    window.getSelection()?.removeAllRanges();
-  }, [lines.length]);
+  const handleStartOrExtendCrossSelection = useCallback(
+    (
+      fromLineIdx: number,
+      anchorOffset: number,
+      focusOffset: number,
+      dir: 'left' | 'right' | 'up' | 'down',
+      byWord: boolean
+    ) => {
+      const baseRange =
+        crossSelection ?? createCrossLineRange(fromLineIdx, anchorOffset, fromLineIdx, focusOffset);
+      const nextRange = extendCrossLineRangeByKey(lines, baseRange, dir, byWord);
 
-  const handleApplyFormatToRange = useCallback((startIdx: number, endIdx: number, action: RichFormatAction) => {
-    const nextLines = [...lines];
-    for (let i = startIdx; i <= endIdx; i++) {
-      const cur = nextLines[i] || '';
-      if (!cur.trim()) continue;
-      if (action.type === 'bold') {
-        nextLines[i] = cur.startsWith('**') && cur.endsWith('**') ? cur.slice(2, -2) : `**${cur}**`;
-      } else if (action.type === 'italic') {
-        nextLines[i] = cur.startsWith('*') && cur.endsWith('*') ? cur.slice(1, -1) : `*${cur}*`;
-      } else if (action.type === 'underline') {
-        nextLines[i] = cur.startsWith('<u>') && cur.endsWith('</u>') ? cur.slice(3, -4) : `<u>${cur}</u>`;
-      } else if (action.type === 'strikethrough') {
-        nextLines[i] = cur.startsWith('~~') && cur.endsWith('~~') ? cur.slice(2, -2) : `~~${cur}~~`;
-      } else if (action.type === 'color' && action.hex) {
-        nextLines[i] = `[color=${action.hex}]${cur}[/color]`;
-      } else if (action.type === 'bg' && action.hex) {
-        nextLines[i] = `[bg=${action.hex}]${cur}[/bg]`;
-      } else if (action.type === 'size' && action.size) {
-        nextLines[i] = `[size=${action.size}]${cur}[/size]`;
+      if (
+        nextRange.startLine === nextRange.endLine &&
+        nextRange.startOffset === nextRange.endOffset
+      ) {
+        setCrossSelection(null);
+        activeCursorLineRef.current = nextRange.focusLine;
+        focusLineAt(nextRange.focusLine, nextRange.focusOffset);
+        return;
       }
-    }
-    onChangeContent(nextLines.join('\n'));
-  }, [lines, onChangeContent]);
+
+      dragAnchorRef.current = { line: nextRange.anchorLine, offset: nextRange.anchorOffset };
+      setCrossSelection(nextRange);
+      window.getSelection()?.removeAllRanges();
+      sheetContainerRef.current?.focus({ preventScroll: true });
+    },
+    [crossSelection, lines, activeCursorLineRef, focusLineAt]
+  );
+
+  const handleApplyFormatToCrossRange = useCallback(
+    (range: CrossLineTextRange, action: RichFormatAction) => {
+      const { lines: nextLines, range: updatedRange } = applyFormatToCrossLineRange(
+        lines,
+        range,
+        action
+      );
+      onChangeContent(nextLines.join('\n'));
+      setCrossSelection(updatedRange);
+    },
+    [lines, onChangeContent]
+  );
 
   useEffect(() => {
-    if (!selectedLineRange) {
+    if (!crossSelection || isDraggingMouse) {
       if (activeApplyFormatRef.current === applyFormatToRangeRef.current) {
         setToolbarCoords(null);
         activeApplyFormatRef.current = null;
       }
       return;
     }
-    const targetEl = lineElementsRef.current.get(selectedLineRange.start);
+    const targetEl = lineElementsRef.current.get(crossSelection.startLine);
     if (!targetEl) return;
-    const rect = targetEl.getBoundingClientRect();
-    const x = rect.left + rect.width / 2;
-    const y = Math.max(20, rect.top);
+    const markEl = targetEl.querySelector('mark[data-udo-sel="true"]') as HTMLElement | null;
+    const rect = (markEl || targetEl).getBoundingClientRect();
+    const hostRect = targetEl.getBoundingClientRect();
+    const x = rect.width > 0 ? rect.left + rect.width / 2 : hostRect.left + hostRect.width / 2;
+    const y = Math.max(20, rect.top > 0 ? rect.top : hostRect.top);
     const applyFn = (action: RichFormatAction) => {
-      handleApplyFormatToRange(selectedLineRange.start, selectedLineRange.end, action);
+      handleApplyFormatToCrossRange(crossSelection, action);
     };
     applyFormatToRangeRef.current = applyFn;
     activeApplyFormatRef.current = applyFn;
     setToolbarCoords({ x, y });
-  }, [selectedLineRange, handleApplyFormatToRange]);
+  }, [crossSelection, isDraggingMouse, handleApplyFormatToCrossRange]);
 
   const handleSelectionChange = useCallback(
     (coords: { x: number; y: number } | null, applyFn: (action: RichFormatAction) => void) => {
-      if (selectedLineRange) return;
+      if (crossSelection) return;
       activeApplyFormatRef.current = applyFn;
       setToolbarCoords(coords);
     },
-    [selectedLineRange]
+    [crossSelection]
   );
+
+  const handleSelectAllDocument = useCallback(() => {
+    const lastIdx = Math.max(0, lines.length - 1);
+    const lastLen = getVisibleLineLength(lines[lastIdx] || '');
+    const fullRange = createCrossLineRange(0, 0, lastIdx, lastLen);
+    dragAnchorRef.current = { line: 0, offset: 0 };
+    setCrossSelection(fullRange);
+    window.getSelection()?.removeAllRanges();
+    sheetContainerRef.current?.focus({ preventScroll: true });
+  }, [lines]);
 
   const handleSheetContextMenu = (e: React.MouseEvent) => {
     openContextMenu(e, [
       { id: 'cut', label: t('editor.cut'), icon: <Scissors size={14} />, shortcut: 'Ctrl+X', onClick: () => {
-        if (selectedLineRange) {
-          const text = lines.slice(selectedLineRange.start, selectedLineRange.end + 1).join('\n');
+        if (crossSelection) {
+          const text = extractPlainTextFromCrossLineRange(lines, crossSelection);
           navigator.clipboard.writeText(text);
-          const nextLines = [...lines];
-          nextLines.splice(selectedLineRange.start, selectedLineRange.end - selectedLineRange.start + 1, '');
-          onChangeContent(nextLines.join('\n'));
-          const targetIdx = selectedLineRange.start;
-          setSelectedLineRange(null);
-          focusLineAt(targetIdx, false);
+          const res = deleteOrReplaceCrossLineRange(lines, crossSelection, '');
+          onChangeContent(res.lines.join('\n'));
+          setCrossSelection(null);
+          activeCursorLineRef.current = res.cursorLine;
+          focusLineAt(res.cursorLine, res.cursorOffset);
         } else {
           document.execCommand('cut');
         }
       }},
       { id: 'copy', label: t('editor.copy'), icon: <Copy size={14} />, shortcut: 'Ctrl+C', onClick: () => {
-        if (selectedLineRange) {
-          const text = lines.slice(selectedLineRange.start, selectedLineRange.end + 1).join('\n');
+        if (crossSelection) {
+          const text = extractPlainTextFromCrossLineRange(lines, crossSelection);
           navigator.clipboard.writeText(text);
         } else {
           document.execCommand('copy');
@@ -484,6 +532,14 @@ export const UniversalFlatSheet: React.FC<Props> = ({
         try {
           const text = await navigator.clipboard.readText();
           if (text) {
+            if (crossSelection) {
+              const res = deleteOrReplaceCrossLineRange(lines, crossSelection, text);
+              onChangeContent(res.lines.join('\n'));
+              setCrossSelection(null);
+              activeCursorLineRef.current = res.cursorLine;
+              focusLineAt(res.cursorLine, res.cursorOffset);
+              return;
+            }
             const idx = Math.max(0, Math.min(activeCursorLineRef.current, lines.length - 1));
             const pasteLines = text.replace(/\r\n?/g, '\n').split('\n');
             const nextLines = [...lines];
@@ -535,114 +591,143 @@ export const UniversalFlatSheet: React.FC<Props> = ({
   return (
     <div
       ref={sheetContainerRef}
+      tabIndex={-1}
       onContextMenu={handleSheetContextMenu}
       onKeyDown={(e) => {
         const isCtrl = e.ctrlKey || e.metaKey;
 
-        // Multi-line selection keyboard operations
-        if (selectedLineRange) {
+        // Granular cross-line selection keyboard operations
+        if (crossSelection) {
+          if (isCtrl && !e.shiftKey && e.key.toLowerCase() === 'b') {
+            e.preventDefault();
+            handleApplyFormatToCrossRange(crossSelection, { type: 'bold' });
+            return;
+          }
+          if (isCtrl && !e.shiftKey && e.key.toLowerCase() === 'i') {
+            e.preventDefault();
+            handleApplyFormatToCrossRange(crossSelection, { type: 'italic' });
+            return;
+          }
+          if (isCtrl && !e.shiftKey && e.key.toLowerCase() === 'u') {
+            e.preventDefault();
+            handleApplyFormatToCrossRange(crossSelection, { type: 'underline' });
+            return;
+          }
+
           if (isCtrl && e.key.toLowerCase() === 'c') {
             e.preventDefault();
-            const text = lines.slice(selectedLineRange.start, selectedLineRange.end + 1).join('\n');
+            const text = extractPlainTextFromCrossLineRange(lines, crossSelection);
             navigator.clipboard.writeText(text);
             return;
           }
 
           if (isCtrl && e.key.toLowerCase() === 'x') {
             e.preventDefault();
-            const text = lines.slice(selectedLineRange.start, selectedLineRange.end + 1).join('\n');
+            const text = extractPlainTextFromCrossLineRange(lines, crossSelection);
             navigator.clipboard.writeText(text);
-            const nextLines = [...lines];
-            nextLines.splice(selectedLineRange.start, selectedLineRange.end - selectedLineRange.start + 1, '');
-            onChangeContent(nextLines.join('\n'));
-            const targetIdx = selectedLineRange.start;
-            setSelectedLineRange(null);
-            activeCursorLineRef.current = targetIdx;
-            focusLineAt(targetIdx, false);
+            const res = deleteOrReplaceCrossLineRange(lines, crossSelection, '');
+            onChangeContent(res.lines.join('\n'));
+            setCrossSelection(null);
+            activeCursorLineRef.current = res.cursorLine;
+            focusLineAt(res.cursorLine, res.cursorOffset);
+            return;
+          }
+
+          if (isCtrl && e.key.toLowerCase() === 'v') {
+            e.preventDefault();
+            navigator.clipboard
+              .readText()
+              .then((text) => {
+                if (!text) return;
+                const res = deleteOrReplaceCrossLineRange(lines, crossSelection, text);
+                onChangeContent(res.lines.join('\n'));
+                setCrossSelection(null);
+                activeCursorLineRef.current = res.cursorLine;
+                focusLineAt(res.cursorLine, res.cursorOffset);
+              })
+              .catch(() => {});
             return;
           }
 
           if (e.key === 'Backspace' || e.key === 'Delete') {
             e.preventDefault();
-            const nextLines = [...lines];
-            nextLines.splice(selectedLineRange.start, selectedLineRange.end - selectedLineRange.start + 1, '');
-            onChangeContent(nextLines.join('\n'));
-            const targetIdx = selectedLineRange.start;
-            setSelectedLineRange(null);
-            activeCursorLineRef.current = targetIdx;
-            focusLineAt(targetIdx, false);
+            const res = deleteOrReplaceCrossLineRange(lines, crossSelection, '');
+            onChangeContent(res.lines.join('\n'));
+            setCrossSelection(null);
+            activeCursorLineRef.current = res.cursorLine;
+            focusLineAt(res.cursorLine, res.cursorOffset);
             return;
           }
 
           if (e.key === 'Enter') {
             e.preventDefault();
-            const nextLines = [...lines];
-            nextLines.splice(selectedLineRange.start, selectedLineRange.end - selectedLineRange.start + 1, '', '');
-            onChangeContent(nextLines.join('\n'));
-            const targetIdx = selectedLineRange.start + 1;
-            setSelectedLineRange(null);
-            activeCursorLineRef.current = targetIdx;
-            focusLineAt(targetIdx, false);
+            const res = deleteOrReplaceCrossLineRange(lines, crossSelection, '\n');
+            onChangeContent(res.lines.join('\n'));
+            setCrossSelection(null);
+            activeCursorLineRef.current = res.cursorLine;
+            focusLineAt(res.cursorLine, res.cursorOffset);
             return;
           }
 
           if (!isCtrl && !e.altKey && e.key.length === 1) {
             e.preventDefault();
-            const nextLines = [...lines];
-            nextLines.splice(selectedLineRange.start, selectedLineRange.end - selectedLineRange.start + 1, e.key);
-            onChangeContent(nextLines.join('\n'));
-            const targetIdx = selectedLineRange.start;
-            setSelectedLineRange(null);
-            activeCursorLineRef.current = targetIdx;
-            focusLineAt(targetIdx, true);
+            const res = deleteOrReplaceCrossLineRange(lines, crossSelection, e.key);
+            onChangeContent(res.lines.join('\n'));
+            setCrossSelection(null);
+            activeCursorLineRef.current = res.cursorLine;
+            focusLineAt(res.cursorLine, res.cursorOffset);
             return;
           }
 
-          if (e.shiftKey && e.key === 'ArrowUp') {
+          if (e.shiftKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
             e.preventDefault();
-            handleExtendSelection(selectedLineRange.current, 'up');
-            return;
-          }
-
-          if (e.shiftKey && e.key === 'ArrowDown') {
-            e.preventDefault();
-            handleExtendSelection(selectedLineRange.current, 'down');
+            const dirMap: Record<string, 'up' | 'down' | 'left' | 'right'> = {
+              ArrowUp: 'up',
+              ArrowDown: 'down',
+              ArrowLeft: 'left',
+              ArrowRight: 'right',
+            };
+            handleStartOrExtendCrossSelection(
+              crossSelection.focusLine,
+              crossSelection.anchorOffset,
+              crossSelection.focusOffset,
+              dirMap[e.key],
+              isCtrl
+            );
             return;
           }
 
           if (!e.shiftKey && ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Escape'].includes(e.key)) {
             e.preventDefault();
-            const targetIdx = (e.key === 'ArrowUp' || e.key === 'ArrowLeft') ? selectedLineRange.start : selectedLineRange.end;
-            setSelectedLineRange(null);
+            const collapseToStart = e.key === 'ArrowUp' || e.key === 'ArrowLeft';
+            const targetIdx = collapseToStart ? crossSelection.startLine : crossSelection.endLine;
+            const targetOffset = collapseToStart ? crossSelection.startOffset : crossSelection.endOffset;
+            setCrossSelection(null);
             activeCursorLineRef.current = targetIdx;
-            focusLineAt(targetIdx, e.key === 'ArrowRight' || e.key === 'ArrowDown');
+            focusLineAt(targetIdx, targetOffset);
             return;
           }
         }
 
-        // Ctrl + A (Select All lines)
+        // Ctrl + A (Select All document text)
         if (isCtrl && !e.shiftKey && e.key.toLowerCase() === 'a') {
           e.preventDefault();
-          setSelectedLineRange({
-            anchor: 0,
-            current: lines.length - 1,
-            start: 0,
-            end: lines.length - 1,
-          });
-          window.getSelection()?.removeAllRanges();
+          handleSelectAllDocument();
           return;
         }
 
         if (isCtrl && !e.shiftKey && e.key.toLowerCase() === 'z') {
           e.preventDefault();
+          setCrossSelection(null);
           onUndoText?.();
         } else if ((isCtrl && e.key.toLowerCase() === 'y') || (isCtrl && e.shiftKey && e.key.toLowerCase() === 'z')) {
           e.preventDefault();
+          setCrossSelection(null);
           onRedoText?.();
         }
       }}
       style={{ minHeight: `${maxBottom}px` }}
-      className="relative py-1 space-y-1 text-sm text-theme-text leading-relaxed select-text"
+      className="relative py-1 space-y-1 text-sm text-theme-text leading-relaxed select-text outline-none"
     >
       <RichTextToolbar
         inputRef={sheetContainerRef}
@@ -686,8 +771,10 @@ export const UniversalFlatSheet: React.FC<Props> = ({
           }
         }
 
-        const isLineSelected =
-          selectedLineRange !== null && idx >= selectedLineRange.start && idx <= selectedLineRange.end;
+        const lineVisibleLen = crossSelection ? getVisibleLineLength(line) : 0;
+        const selectionSlice = crossSelection
+          ? getLineSelectionSlice(idx, lineVisibleLen, crossSelection)
+          : undefined;
 
         return (
           <EditableTextLine
@@ -696,19 +783,13 @@ export const UniversalFlatSheet: React.FC<Props> = ({
             totalLines={lines.length}
             rawLine={line}
             notes={notes}
-            isSelected={isLineSelected}
-            onMouseDown={(e) => handleLineMouseDown(idx, e)}
-            onMouseEnter={() => handleLineMouseEnter(idx)}
-            onExtendSelection={(dir) => handleExtendSelection(idx, dir)}
-            onSelectAll={() => {
-              setSelectedLineRange({
-                anchor: 0,
-                current: lines.length - 1,
-                start: 0,
-                end: lines.length - 1,
-              });
-              window.getSelection()?.removeAllRanges();
-            }}
+            selectionSlice={selectionSlice}
+            onLinePointerDown={handleLinePointerDown}
+            onLinePointerMove={handleLinePointerMove}
+            onStartOrExtendCrossSelection={(anchorOffset, focusOffset, dir, byWord) =>
+              handleStartOrExtendCrossSelection(idx, anchorOffset, focusOffset, dir, byWord)
+            }
+            onSelectAll={handleSelectAllDocument}
             placeholder={idx === 0 && lines.length === 1 ? t('note.flatSheetPlaceholder') : undefined}
             exclusionPadding={getLineExclusion(idx)}
             onUpdateLine={handleUpdateLine}
@@ -718,8 +799,8 @@ export const UniversalFlatSheet: React.FC<Props> = ({
             onToggleCheckbox={handleToggleCheckbox}
             onFocusLine={(i) => {
               activeCursorLineRef.current = i;
-              if (selectedLineRange && (i < selectedLineRange.start || i > selectedLineRange.end)) {
-                setSelectedLineRange(null);
+              if (crossSelection && (i < crossSelection.startLine || i > crossSelection.endLine)) {
+                setCrossSelection(null);
               }
             }}
             onSelectionChange={handleSelectionChange}

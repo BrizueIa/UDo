@@ -1,6 +1,6 @@
 [package]
 name = "udo"
-version = "1.0.9"
+version = "1.1.0"
 description = "UDo: The way u do. Local-first notes and project organizer"
 authors = ["Brizuela"]
 edition = "2021"

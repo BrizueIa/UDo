@@ -1,6 +1,6 @@
 pkgbase = udo-bin
 	pkgdesc = The way u do. Opinionated, local-first notes and project organizer
-	pkgver = 1.0.9
+	pkgver = 1.1.0
 	pkgrel = 1
 	url = https://github.com/BrizueIa/UDo
 	arch = x86_64
@@ -12,7 +12,7 @@ pkgbase = udo-bin
 	provides = udo
 	conflicts = udo
 	options = !strip
-	source = udo-bin-1.0.9.deb::https://github.com/BrizueIa/UDo/releases/download/v1.0.9/UDo_1.0.9_amd64.deb
+	source = udo-bin-1.1.0.deb::https://github.com/BrizueIa/UDo/releases/download/v1.1.0/UDo_1.1.0_amd64.deb
 	sha256sums = c791df142fec049ae4640f87769aad7cd2fa9709d03fcdb8568560662d9d09b8
 
 pkgname = udo-bin
