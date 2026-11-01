@@ -16,7 +16,7 @@ provides=('udo')
 conflicts=('udo')
 options=('!strip')
 source=("${pkgname}-${pkgver}.deb::https://github.com/BrizueIa/UDo/releases/download/v${pkgver}/UDo_${pkgver}_amd64.deb")
-sha256sums=('c791df142fec049ae4640f87769aad7cd2fa9709d03fcdb8568560662d9d09b8')
+sha256sums=('5feacccd5aa2ff201f9bfa315b03bd56a9c09364307ec000ba8a5ca742b9dc79')
 
 package() {
     bsdtar -xf data.tar.gz -C "${pkgdir}"
